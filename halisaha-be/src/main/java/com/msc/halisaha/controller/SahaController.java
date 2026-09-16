@@ -6,6 +6,7 @@ import com.msc.halisaha.service.SahaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,16 +36,19 @@ public class SahaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_SAHA')")
     public ResponseEntity<SahaResponse> create(@Valid @RequestBody SahaRequest request) {
         return ResponseEntity.status(201).body(sahaService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_SAHA')")
     public SahaResponse update(@PathVariable Long id, @Valid @RequestBody SahaRequest request) {
         return sahaService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_SAHA')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         sahaService.delete(id);
         return ResponseEntity.noContent().build();

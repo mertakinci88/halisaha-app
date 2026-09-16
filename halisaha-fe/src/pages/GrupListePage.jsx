@@ -21,10 +21,10 @@ export default function GrupListePage() {
   const yukle = () => {
     setYukleniyor(true);
     setHata('');
-    Promise.all([grupService.list(), ogrenciService.list()])
+    Promise.all([grupService.list(), ogrenciService.list({ boyut: 1000 })])
       .then(([g, o]) => {
         setGruplar(g);
-        setOgrenciler(o);
+        setOgrenciler(o.icerik);
       })
       .catch((e) => setHata(apiHata(e)))
       .finally(() => setYukleniyor(false));

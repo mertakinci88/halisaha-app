@@ -3,6 +3,8 @@ package com.msc.halisaha.common.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +25,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), "Kullanıcı adı veya şifre hatalı"));
+    }
+
+    @ExceptionHandler(AccountStatusException.class)
+    public ResponseEntity<ErrorResponse> handleAccountStatus(AccountStatusException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), "Hesabınız pasif duruma alınmış, lütfen sistem yöneticinizle iletişime geçin"));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "Bu işlem için yetkiniz yok"));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

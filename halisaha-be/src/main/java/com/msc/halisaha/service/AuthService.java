@@ -7,6 +7,7 @@ import com.msc.halisaha.dto.LoginRequest;
 import com.msc.halisaha.dto.RefreshRequest;
 import com.msc.halisaha.dto.TokenResponse;
 import com.msc.halisaha.entity.Kullanici;
+import com.msc.halisaha.entity.KullaniciDurum;
 import com.msc.halisaha.entity.RefreshToken;
 import com.msc.halisaha.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class AuthService {
         }
 
         Kullanici kullanici = stored.getKullanici();
+        if (kullanici.getDurum() != KullaniciDurum.AKTIF) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Hesap pasif durumda");
+        }
         String newAccessToken = jwtService.generateAccessToken(new UserPrincipal(kullanici));
 
         return new TokenResponse(newAccessToken, stored.getToken(), TOKEN_TYPE);

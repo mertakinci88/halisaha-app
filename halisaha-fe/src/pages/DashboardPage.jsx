@@ -8,6 +8,7 @@ import { Tag } from '@/components/ui/tag';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
 import { ogrenciService, rezervasyonService, sahaService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { hh, saatOf, tl, toIsoDate } from '@/lib/format';
 
 const ACILIS = 9;
@@ -15,6 +16,7 @@ const KAPANIS = 23;
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { yetkiVar } = useAuth();
   const [veri, setVeri] = useState(null);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -25,11 +27,11 @@ export default function DashboardPage() {
     Promise.all([
       rezervasyonService.list({ tarih: toIsoDate(new Date()) }),
       sahaService.list(),
-      ogrenciService.list(),
+      ogrenciService.list({ boyut: 1000 }),
       urunService.list(),
     ])
-      .then(([rezervasyonlar, sahalar, ogrenciler, urunler]) =>
-        setVeri({ rezervasyonlar, sahalar, ogrenciler, urunler }),
+      .then(([rezervasyonlar, sahalar, ogrenciSayfasi, urunler]) =>
+        setVeri({ rezervasyonlar, sahalar, ogrenciler: ogrenciSayfasi.icerik, urunler }),
       )
       .catch((e) => setHata(apiHata(e)))
       .finally(() => setYukleniyor(false));
@@ -138,9 +140,11 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler')}>
-                  Öğrenci listesi
-                </Button>
+                {yetkiVar('OGRENCI') ? (
+                  <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler')}>
+                    Öğrenci listesi
+                  </Button>
+                ) : null}
               </Card>
 
               <Card>
@@ -163,9 +167,11 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
-                  Kafeteryaya git
-                </Button>
+                {yetkiVar('URUN') ? (
+                  <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
+                    Kafeteryaya git
+                  </Button>
+                ) : null}
               </Card>
             </div>
           </div>
