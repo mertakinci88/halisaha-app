@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authService } from '@/services';
 import { tokenStore } from '@/lib/api';
 
@@ -7,11 +7,29 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(() => tokenStore.user());
   const [girisli, setGirisli] = useState(() => Boolean(tokenStore.access()));
+  const [yukleniyor, setYukleniyor] = useState(() => Boolean(tokenStore.access()));
+
+  useEffect(() => {
+    if (!tokenStore.access()) {
+      setYukleniyor(false);
+      return;
+    }
+    authService
+      .me()
+      .then((me) => {
+        tokenStore.set(null, me);
+        setKullanici(me);
+      })
+      .catch(() => {})
+      .finally(() => setYukleniyor(false));
+  }, []);
 
   const login = useCallback(async (kullaniciAdi, sifre) => {
     const token = await authService.login(kullaniciAdi, sifre);
-    tokenStore.set(token, { kullaniciAdi });
-    setKullanici({ kullaniciAdi });
+    tokenStore.set(token);
+    const me = await authService.me();
+    tokenStore.set(null, me);
+    setKullanici(me);
     setGirisli(true);
     return token;
   }, []);
@@ -23,7 +41,16 @@ export function AuthProvider({ children }) {
     setGirisli(false);
   }, []);
 
-  const value = useMemo(() => ({ kullanici, girisli, login, logout }), [kullanici, girisli, login, logout]);
+  const isAdmin = kullanici?.rol === 'ADMIN';
+  const yetkiVar = useCallback(
+    (modul) => isAdmin || Boolean(kullanici?.yetkiler?.includes(modul)),
+    [isAdmin, kullanici],
+  );
+
+  const value = useMemo(
+    () => ({ kullanici, girisli, yukleniyor, isAdmin, yetkiVar, login, logout }),
+    [kullanici, girisli, yukleniyor, isAdmin, yetkiVar, login, logout],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

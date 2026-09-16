@@ -3,6 +3,7 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.dto.OgrenciRequest;
 import com.msc.halisaha.dto.OgrenciResponse;
+import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.entity.Grup;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.Ogrenci;
@@ -10,11 +11,12 @@ import com.msc.halisaha.entity.OgrenciDurum;
 import com.msc.halisaha.repository.GrupRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +26,10 @@ public class OgrenciService {
     private final OgrenciRepository ogrenciRepository;
     private final GrupRepository grupRepository;
 
-    public List<OgrenciResponse> list(Long grupId) {
-        List<Ogrenci> ogrenciler = grupId != null
-                ? ogrenciRepository.findByGrupId(grupId)
-                : ogrenciRepository.findAll();
-        return ogrenciler.stream().map(OgrenciResponse::from).toList();
+    public PageResponse<OgrenciResponse> list(Long grupId, String q, int sayfa, int boyut) {
+        PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(grupId, q, pageRequest);
+        return PageResponse.from(sonuc, OgrenciResponse::from);
     }
 
     public OgrenciResponse getById(Long id) {

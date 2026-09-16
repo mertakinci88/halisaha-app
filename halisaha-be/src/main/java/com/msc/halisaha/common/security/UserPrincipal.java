@@ -2,6 +2,8 @@ package com.msc.halisaha.common.security;
 
 import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.KullaniciDurum;
+import com.msc.halisaha.entity.Modul;
+import com.msc.halisaha.entity.Rol;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 @Getter
 public class UserPrincipal implements UserDetails {
@@ -25,7 +29,15 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + kullanici.getRol().name()));
+        Set<Modul> etkinYetkiler = kullanici.getRol() == Rol.ADMIN
+                ? Set.of(Modul.values())
+                : kullanici.getYetkiler();
+
+        return Stream.concat(
+                        Stream.of("ROLE_" + kullanici.getRol().name()),
+                        etkinYetkiler.stream().map(modul -> "MODUL_" + modul.name()))
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.msc.halisaha.service.GrupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,16 +36,19 @@ public class GrupController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_GRUP')")
     public ResponseEntity<GrupResponse> create(@Valid @RequestBody GrupRequest request) {
         return ResponseEntity.status(201).body(grupService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_GRUP')")
     public GrupResponse update(@PathVariable Long id, @Valid @RequestBody GrupRequest request) {
         return grupService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_GRUP')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         grupService.delete(id);
         return ResponseEntity.noContent().build();

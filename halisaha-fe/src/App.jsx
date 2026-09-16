@@ -19,10 +19,20 @@ import SahaDetayPage from '@/pages/SahaDetayPage';
 import UrunListePage from '@/pages/UrunListePage';
 import UrunKayitPage from '@/pages/UrunKayitPage';
 import UrunDetayPage from '@/pages/UrunDetayPage';
+import PersonelListePage from '@/pages/PersonelListePage';
+import PersonelKayitPage from '@/pages/PersonelKayitPage';
+import PersonelYetkiPage from '@/pages/PersonelYetkiPage';
 
 function KorumaliAlan({ children }) {
   const { girisli } = useAuth();
   return girisli ? children : <Navigate to="/giris" replace />;
+}
+
+/** Bir menü modülü (ör. "OGRENCI") ya da admin yetkisi gerektiren rotaları korur. */
+function YetkiliRota({ modul, sadeceAdmin, children }) {
+  const { isAdmin, yetkiVar } = useAuth();
+  const yetkili = sadeceAdmin ? isAdmin : yetkiVar(modul);
+  return yetkili ? children : <Navigate to="/panel" replace />;
 }
 
 export default function App() {
@@ -43,18 +53,71 @@ export default function App() {
         <Route path="/takvim" element={<TakvimPage />} />
         <Route path="/rezervasyon/yeni" element={<RezervasyonYeniPage />} />
         <Route path="/rezervasyon/:id" element={<RezervasyonDetayPage />} />
-        <Route path="/ogrenciler" element={<OgrenciListePage />} />
-        <Route path="/ogrenciler/yeni" element={<OgrenciKayitPage />} />
-        <Route path="/ogrenciler/:id" element={<OgrenciDetayPage />} />
-        <Route path="/gruplar" element={<GrupListePage />} />
-        <Route path="/gruplar/yeni" element={<GrupKayitPage />} />
-        <Route path="/gruplar/:id" element={<GrupDetayPage />} />
-        <Route path="/sahalar" element={<SahaListePage />} />
-        <Route path="/sahalar/yeni" element={<SahaKayitPage />} />
-        <Route path="/sahalar/:id" element={<SahaDetayPage />} />
-        <Route path="/urunler" element={<UrunListePage />} />
-        <Route path="/urunler/yeni" element={<UrunKayitPage />} />
-        <Route path="/urunler/:id" element={<UrunDetayPage />} />
+
+        <Route
+          path="/ogrenciler"
+          element={<YetkiliRota modul="OGRENCI"><OgrenciListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/ogrenciler/yeni"
+          element={<YetkiliRota modul="OGRENCI"><OgrenciKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/ogrenciler/:id"
+          element={<YetkiliRota modul="OGRENCI"><OgrenciDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/gruplar"
+          element={<YetkiliRota modul="GRUP"><GrupListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/gruplar/yeni"
+          element={<YetkiliRota modul="GRUP"><GrupKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/gruplar/:id"
+          element={<YetkiliRota modul="GRUP"><GrupDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/sahalar"
+          element={<YetkiliRota modul="SAHA"><SahaListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/sahalar/yeni"
+          element={<YetkiliRota modul="SAHA"><SahaKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/sahalar/:id"
+          element={<YetkiliRota modul="SAHA"><SahaDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/urunler"
+          element={<YetkiliRota modul="URUN"><UrunListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/urunler/yeni"
+          element={<YetkiliRota modul="URUN"><UrunKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/urunler/:id"
+          element={<YetkiliRota modul="URUN"><UrunDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/personel"
+          element={<YetkiliRota sadeceAdmin><PersonelListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/personel/yeni"
+          element={<YetkiliRota sadeceAdmin><PersonelKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/personel/:id"
+          element={<YetkiliRota sadeceAdmin><PersonelYetkiPage /></YetkiliRota>}
+        />
       </Route>
 
       <Route path="*" element={<Navigate to={girisli ? '/panel' : '/giris'} replace />} />

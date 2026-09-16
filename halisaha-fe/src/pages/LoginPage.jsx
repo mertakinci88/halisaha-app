@@ -68,10 +68,6 @@ export default function LoginPage() {
               {bekliyor ? 'Giriş yapılıyor…' : 'Giriş yap'}
             </Button>
           </form>
-
-          <div className="text-center text-[12.5px] uppercase tracking-[0.06em] text-ink/55">
-            Varsayılan kullanıcı · admin / admin123
-          </div>
         </Card>
       </div>
     </div>

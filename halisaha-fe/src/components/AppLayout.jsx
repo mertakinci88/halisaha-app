@@ -6,6 +6,7 @@ import {
   Layers,
   LogOut,
   Plus,
+  ShieldCheck,
   Square,
   UserRound,
   Users,
@@ -15,17 +16,22 @@ import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { to: '/panel', ad: 'Panel', Icon: LayoutDashboard },
-  { to: '/takvim', ad: 'Takvim', Icon: CalendarDays },
-  { to: '/ogrenciler', ad: 'Öğrenciler', Icon: Users },
-  { to: '/gruplar', ad: 'Gruplar', Icon: Layers },
-  { to: '/sahalar', ad: 'Sahalar', Icon: Square },
-  { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda },
+  { to: '/panel', ad: 'Panel', Icon: LayoutDashboard, modul: null },
+  { to: '/takvim', ad: 'Takvim', Icon: CalendarDays, modul: null },
+  { to: '/ogrenciler', ad: 'Öğrenciler', Icon: Users, modul: 'OGRENCI' },
+  { to: '/gruplar', ad: 'Gruplar', Icon: Layers, modul: 'GRUP' },
+  { to: '/sahalar', ad: 'Sahalar', Icon: Square, modul: 'SAHA' },
+  { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
 ];
 
 export default function AppLayout() {
-  const { kullanici, logout } = useAuth();
+  const { kullanici, logout, isAdmin, yetkiVar } = useAuth();
   const navigate = useNavigate();
+
+  const nav = NAV.filter((m) => !m.modul || yetkiVar(m.modul));
+  if (isAdmin) {
+    nav.push({ to: '/personel', ad: 'Personel', Icon: ShieldCheck, modul: null });
+  }
 
   const cikis = async () => {
     await logout();
@@ -42,7 +48,7 @@ export default function AppLayout() {
           </div>
           <div className="flex items-center gap-2 text-[13.5px] text-ink/55">
             <UserRound size={16} strokeWidth={1.5} />
-            <span>{kullanici?.kullaniciAdi || 'Kullanıcı'}</span>
+            <span>{kullanici?.adSoyad || kullanici?.kullaniciAdi || 'Kullanıcı'}</span>
           </div>
           <Button variant="secondary" onClick={cikis}>
             <LogOut size={16} strokeWidth={1.5} />
@@ -52,7 +58,7 @@ export default function AppLayout() {
 
         <div className="mx-auto max-w-[1360px] px-5">
           <nav className="flex flex-wrap gap-0.5">
-            {NAV.map(({ to, ad, Icon }) => (
+            {nav.map(({ to, ad, Icon }) => (
               <NavLink
                 key={to}
                 to={to}

@@ -11,6 +11,18 @@ export const authService = {
     if (!refreshToken) return Promise.resolve();
     return api.post('/api/auth/logout', { refreshToken }).catch(() => {});
   },
+  me: () => api.get('/api/auth/me').then((r) => r.data),
+};
+
+/* ── /api/kullanicilar (yalnızca admin) ───────────────────────── */
+export const kullaniciService = {
+  list: () => api.get('/api/kullanicilar').then((r) => r.data),
+  get: (id) => api.get('/api/kullanicilar/' + id).then((r) => r.data),
+  create: (body) => api.post('/api/kullanicilar', body).then((r) => r.data),
+  yetkileriGuncelle: (id, yetkiler) =>
+    api.put('/api/kullanicilar/' + id + '/yetkiler', { yetkiler }).then((r) => r.data),
+  durumGuncelle: (id, durum) =>
+    api.patch('/api/kullanicilar/' + id + '/durum', null, { params: { durum } }).then((r) => r.data),
 };
 
 /* ── /api/sahalar ──────────────────────────────────────────── */
@@ -40,7 +52,8 @@ export const rezervasyonService = {
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
 export const ogrenciService = {
-  list: () => api.get('/api/ogrenciler').then((r) => r.data),
+  /** params: { grupId, q, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  list: (params) => api.get('/api/ogrenciler', { params }).then((r) => r.data),
   get: (id) => api.get('/api/ogrenciler/' + id).then((r) => r.data),
   create: (body) => api.post('/api/ogrenciler', body).then((r) => r.data),
   update: (id, body) => api.put('/api/ogrenciler/' + id, body).then((r) => r.data),
