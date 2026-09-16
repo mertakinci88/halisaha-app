@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ghcr.io/mertakinci88/halisaha-be:latest
+    container_name: halisaha-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"

@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: halisaha-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: halisaha
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - halisaha-postgres-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: halisaha-app
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/halisaha
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  halisaha-postgres-data:

@@ -1,0 +1,546 @@
+{
+  "info": {
+    "name": "Halisaha BE",
+    "description": "halisaha-be projesinin tüm REST API endpointleri. Auth klasöründeki Login isteği çalıştırıldığında accessToken ve refreshToken değişkenleri otomatik olarak koleksiyon değişkenlerine yazılır ve diğer tüm istekler bu accessToken ile Bearer auth kullanır.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "sahaId", "value": "1", "type": "string" },
+    { "key": "urunId", "value": "1", "type": "string" },
+    { "key": "grupId", "value": "1", "type": "string" },
+    { "key": "ogrenciId", "value": "1", "type": "string" },
+    { "key": "rezervasyonId", "value": "1", "type": "string" },
+    { "key": "rezervasyonUrunId", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "auth": { "type": "noauth" },
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) { pm.collectionVariables.set('accessToken', json.accessToken); }",
+                  "if (json.refreshToken) { pm.collectionVariables.set('refreshToken', json.refreshToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kullaniciAdi\": \"admin\",\n  \"sifre\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) { pm.collectionVariables.set('accessToken', json.accessToken); }",
+                  "if (json.refreshToken) { pm.collectionVariables.set('refreshToken', json.refreshToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sahalar",
+      "item": [
+        {
+          "name": "Sahaları Listele",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sahalar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sahalar"]
+            }
+          }
+        },
+        {
+          "name": "Saha Detayı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sahalar/{{sahaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sahalar", "{{sahaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Saha Oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"Saha 1\",\n  \"durum\": \"AKTIF\",\n  \"saatlikUcret\": 500.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sahalar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sahalar"]
+            }
+          }
+        },
+        {
+          "name": "Saha Güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"Saha 1\",\n  \"durum\": \"AKTIF\",\n  \"saatlikUcret\": 550.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sahalar/{{sahaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sahalar", "{{sahaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Saha Sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sahalar/{{sahaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sahalar", "{{sahaId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ürünler",
+      "item": [
+        {
+          "name": "Ürünleri Listele",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urunler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urunler"]
+            }
+          }
+        },
+        {
+          "name": "Ürün Detayı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urunler/{{urunId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urunler", "{{urunId}}"]
+            }
+          }
+        },
+        {
+          "name": "Ürün Oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"Su\",\n  \"adet\": 50,\n  \"fiyat\": 10.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/urunler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urunler"]
+            }
+          }
+        },
+        {
+          "name": "Ürün Güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"Su\",\n  \"adet\": 40,\n  \"fiyat\": 12.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/urunler/{{urunId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urunler", "{{urunId}}"]
+            }
+          }
+        },
+        {
+          "name": "Ürün Sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urunler/{{urunId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urunler", "{{urunId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gruplar",
+      "item": [
+        {
+          "name": "Grupları Listele",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/gruplar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gruplar"]
+            }
+          }
+        },
+        {
+          "name": "Grup Detayı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/gruplar/{{grupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gruplar", "{{grupId}}"]
+            }
+          }
+        },
+        {
+          "name": "Grup Oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"U11\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gruplar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gruplar"]
+            }
+          }
+        },
+        {
+          "name": "Grup Güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad\": \"U12\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/gruplar/{{grupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gruplar", "{{grupId}}"]
+            }
+          }
+        },
+        {
+          "name": "Grup Sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/gruplar/{{grupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "gruplar", "{{grupId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Öğrenciler",
+      "item": [
+        {
+          "name": "Öğrencileri Listele",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ogrenciler?grupId={{grupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ogrenciler"],
+              "query": [
+                { "key": "grupId", "value": "{{grupId}}", "description": "Opsiyonel, gruba göre filtrelemek için" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Öğrenci Detayı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ogrenciler/{{ogrenciId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ogrenciler", "{{ogrenciId}}"]
+            }
+          }
+        },
+        {
+          "name": "Öğrenci Oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"aylikAidat\": 1500.00,\n  \"odemeDurumu\": \"ODENMEDI\",\n  \"odemePlani\": \"Aylık\",\n  \"odenenDonem\": null,\n  \"odemeTarihi\": null,\n  \"sonrakiOdemeTarih\": \"2026-10-01\",\n  \"odenenTutar\": 0,\n  \"odemeSekli\": \"NAKIT\",\n  \"not\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ogrenciler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ogrenciler"]
+            }
+          }
+        },
+        {
+          "name": "Öğrenci Güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"aylikAidat\": 1500.00,\n  \"odemeDurumu\": \"ODENDI\",\n  \"odemePlani\": \"Aylık\",\n  \"odenenDonem\": \"2026-09\",\n  \"odemeTarihi\": \"2026-09-05\",\n  \"sonrakiOdemeTarih\": \"2026-10-01\",\n  \"odenenTutar\": 1500.00,\n  \"odemeSekli\": \"HAVALE_EFT\",\n  \"not\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ogrenciler/{{ogrenciId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ogrenciler", "{{ogrenciId}}"]
+            }
+          }
+        },
+        {
+          "name": "Öğrenci Sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ogrenciler/{{ogrenciId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ogrenciler", "{{ogrenciId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rezervasyonlar",
+      "item": [
+        {
+          "name": "Rezervasyonları Listele",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar?sahaId={{sahaId}}&tarih=2026-09-12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar"],
+              "query": [
+                { "key": "sahaId", "value": "{{sahaId}}", "description": "Opsiyonel" },
+                { "key": "tarih", "value": "2026-09-12", "description": "Opsiyonel, ISO-8601 tarih (yyyy-MM-dd)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyon Detayı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyon Oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sahaId\": {{sahaId}},\n  \"adSoyad\": \"Ali Veli\",\n  \"baslangicTarih\": \"2026-09-15T18:00:00\",\n  \"bitisTarih\": \"2026-09-15T19:00:00\",\n  \"telNo\": \"05551234567\",\n  \"odemeYontemi\": \"NAKIT\",\n  \"odemeDurumu\": \"ODENMEDI\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyon Güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sahaId\": {{sahaId}},\n  \"adSoyad\": \"Ali Veli\",\n  \"baslangicTarih\": \"2026-09-15T18:00:00\",\n  \"bitisTarih\": \"2026-09-15T19:00:00\",\n  \"telNo\": \"05551234567\",\n  \"odemeYontemi\": \"KART\",\n  \"odemeDurumu\": \"ODENDI\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyon İptal Et",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}/iptal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}", "iptal"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyon Sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyona Ürün Ekle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"urunId\": {{urunId}},\n  \"miktar\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}/urunler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}", "urunler"]
+            }
+          }
+        },
+        {
+          "name": "Rezervasyondan Ürün Çıkar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rezervasyonlar/{{rezervasyonId}}/urunler/{{rezervasyonUrunId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rezervasyonlar", "{{rezervasyonId}}", "urunler", "{{rezervasyonUrunId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
