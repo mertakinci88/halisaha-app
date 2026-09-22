@@ -88,16 +88,13 @@ GitHub Actions secret'ı olarak image'a gömülüyor.
 
 ---
 
-## 4) GHCR (GitHub Container Registry) imajını public yapma
+## 4) GHCR (GitHub Container Registry) imajları
 
 CI/CD ilk kez `main`'e push edildiğinde imajları otomatik olarak
 `ghcr.io/<owner>/halisaha-be` ve `ghcr.io/<owner>/halisaha-fe` altına push
-eder. VPS'in bu imajları **login olmadan** `docker compose pull` ile
-çekebilmesi için paketleri public yapmanız gerekiyor:
-
-1. İlk push sonrası GitHub → profiliniz → **Packages** → ilgili pakete
-   girin.
-2. **Package settings** → **Change visibility** → **Public**.
+eder. Deploy adımı, `docker compose pull` çalıştırmadan önce VPS üzerinde
+`GITHUB_TOKEN` ile otomatik `docker login ghcr.io` yaptığı için paketlerin
+public olması **gerekmez**; private kalabilirler.
 
 ---
 

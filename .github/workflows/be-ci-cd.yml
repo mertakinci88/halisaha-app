@@ -117,6 +117,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -137,11 +140,16 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_ACTOR,GHCR_TOKEN
           script: |
             set -e
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
             mkdir -p /opt/halisaha-be
             mv /tmp/halisaha-be-deploy/docker-compose.prod.yml /opt/halisaha-be/docker-compose.yml
             cd /opt/halisaha-be
             docker compose pull
             docker compose up -d
             docker image prune -f
+        env:
+          GHCR_ACTOR: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
