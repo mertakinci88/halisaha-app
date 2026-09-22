@@ -11,6 +11,7 @@ Monorepo: backend ve frontend uygulamaları ayrı klasörlerde, tek repoda.
 
 ## CI/CD
 
-`.github/workflows/be-ci-cd.yml` yalnızca `halisaha-be/**` altında değişiklik
-olduğunda tetiklenir: build & test → Docker image (GHCR) → AWS EC2'ye deploy.
-Frontend için ayrı bir workflow henüz eklenmedi.
+`.github/workflows/be-ci-cd.yml` ve `fe-ci-cd.yml`, sırasıyla yalnızca
+`halisaha-be/**` ve `halisaha-fe/**` altında değişiklik olduğunda tetiklenir:
+build & test → Docker image (GHCR) → Hostinger VPS'e (Docker + Traefik)
+deploy. Detaylar için `halisaha-be/deploy/README.md`.

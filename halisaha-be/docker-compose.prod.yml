@@ -1,9 +1,31 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: halisaha-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - halisaha-postgres-data:/var/lib/postgresql/data
+
   app:
     image: ghcr.io/mertakinci88/halisaha-be:latest
     container_name: halisaha-app
     restart: unless-stopped
+    depends_on:
+      - postgres
     env_file:
       - .env
-    ports:
-      - "8080:8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.halisaha-api.rule=Host(`api.halisahapro.tech`)
+      - traefik.http.routers.halisaha-api.entrypoints=websecure
+      - traefik.http.routers.halisaha-api.tls.certresolver=letsencrypt
+      - traefik.http.services.halisaha-api.loadbalancer.server.port=8080
+
+volumes:
+  halisaha-postgres-data:
