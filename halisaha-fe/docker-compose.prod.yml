@@ -1,0 +1,11 @@
+services:
+  web:
+    image: ghcr.io/mertakinci88/halisaha-fe:latest
+    container_name: halisaha-web
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.halisaha-web.rule=Host(`app.halisahapro.tech`)
+      - traefik.http.routers.halisaha-web.entrypoints=websecure
+      - traefik.http.routers.halisaha-web.tls.certresolver=letsencrypt
+      - traefik.http.services.halisaha-web.loadbalancer.server.port=80
