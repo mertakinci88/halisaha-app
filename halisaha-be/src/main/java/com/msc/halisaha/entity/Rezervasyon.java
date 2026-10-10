@@ -51,7 +51,7 @@ public class Rezervasyon {
     @Column(name = "durum", nullable = false, length = 20)
     private RezervasyonDurum durum;
 
-    @Column(name = "tel_no", nullable = false)
+    @Column(name = "tel_no", nullable = false, length = 11)
     private String telNo;
 
     @Enumerated(EnumType.STRING)

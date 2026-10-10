@@ -8,6 +8,26 @@ export const tl = (n) =>
   '₺' + Number(n || 0).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
 
 /** 24 ve üzeri saatler ertesi güne taşar (26 -> 02:00) */
+/** Girdiden en fazla 10 haneli telefon rakamı çıkarır: başındaki 0 / +90 / 90 atılır (5469764613). */
+export const telRakam = (deger) => {
+  let r = String(deger || '').replace(/\D/g, '');
+  if (r.startsWith('90') && r.length > 10) r = r.slice(2);
+  if (r.startsWith('0')) r = r.slice(1);
+  return r.slice(0, 10);
+};
+
+/** Kayıtlı numara (05469764613) -> "0546 976 46 13"; beklenen biçimde değilse olduğu gibi döner. */
+export const telGoster = (telNo) => {
+  const r = String(telNo || '');
+  return /^05\d{9}$/.test(r) ? '0' + telMaske(r) : r || '—';
+};
+
+/** 5469764613 -> "546 976 46 13" */
+export const telMaske = (rakam) => {
+  const r = telRakam(rakam);
+  return [r.slice(0, 3), r.slice(3, 6), r.slice(6, 8), r.slice(8, 10)].filter(Boolean).join(' ');
+};
+
 export const hh = (h) => String(h % 24).padStart(2, '0') + ':00';
 
 /** Date -> "2026-09-12" (backend @DateTimeFormat ISO.DATE) */
@@ -48,6 +68,21 @@ export const ODEME_DURUMU_LABEL = {
   ODENDI: 'Ödendi',
   ODENMEDI: 'Ödenmedi',
   KISMI_ODENDI: 'Kısmi ödendi',
+};
+
+export const ODEME_TIPI_LABEL = {
+  KAPORA: 'Kapora',
+  KISMI: 'Kısmi ödeme',
+  ODEME: 'Ödeme',
+};
+
+/** Girilen tutarı 0 ile üst sınır arasında tutar (kapora/kısmi ödeme ödenecek tutarı aşamaz). */
+export const tutarSinirla = (deger, ust) => {
+  if (deger === '') return '';
+  const sayi = Number(String(deger).replace(',', '.'));
+  if (Number.isNaN(sayi)) return '';
+  if (sayi < 0) return '0';
+  return sayi > ust ? String(ust) : deger;
 };
 
 export const ODEME_YONTEMI_LABEL = {

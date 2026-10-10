@@ -2,6 +2,8 @@ package com.msc.halisaha.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,14 +17,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "rezervasyon_urun")
+@Table(name = "odeme")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RezervasyonUrun {
+public class Odeme {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +37,22 @@ public class RezervasyonUrun {
     @JoinColumn(name = "rezervasyon_id", nullable = false)
     private Rezervasyon rezervasyon;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "urun_id", nullable = false)
-    private Urun urun;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tip", nullable = false, length = 10)
+    private OdemeTipi tip;
 
-    @Column(name = "miktar", nullable = false)
-    private Integer miktar;
+    @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
+    private BigDecimal tutar;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "yontem", nullable = false, length = 20)
+    private OdemeYontemi yontem;
+
+    @Column(name = "odeme_tarihi", nullable = false)
+    private LocalDateTime odemeTarihi;
+
+    /** Ödemeyi alan kullanıcı. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kullanici_id")
+    private Kullanici kullanici;
 }

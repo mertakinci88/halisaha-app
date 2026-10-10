@@ -48,6 +48,15 @@ export const rezervasyonService = {
     api
       .delete('/api/rezervasyonlar/' + id + '/urunler/' + rezervasyonUrunId)
       .then((r) => r.data),
+  /** body: { tip: 'KAPORA' | 'ODEME', tutar, yontem } */
+  odemeEkle: (id, body) =>
+    api.post('/api/rezervasyonlar/' + id + '/odemeler', body).then((r) => r.data),
+};
+
+/* ── /api/raporlar (sadece ADMIN) ──────────────────────────── */
+export const raporService = {
+  /** params: { baslangic, bitis, sahaId, grupla: GUN|HAFTA|AY, esas: ODEME|SEANS } */
+  ciro: (params) => api.get('/api/raporlar/ciro', { params }).then((r) => r.data),
 };
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */

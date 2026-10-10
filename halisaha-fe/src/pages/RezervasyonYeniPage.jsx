@@ -8,13 +8,16 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { hh, tl, toIsoDate, toIsoDateTime, uzunTarih } from '@/lib/format';
+import { hh, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00
 // Saatler gerçek saat olarak tutulur: 12..23, sonra 00, 01, 02 (ertesi gün)
 const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => (ACILIS + i) % 24);
 const gece = (saat) => saat < ACILIS;
+
+// Havale / EFT'de gösterilen hesaplar. Şimdilik sabit; ileride bir kaynaktan (ayar/API) alınacak.
+const BANKA_HESAPLARI = ['Garanti Bankası X Şubesi', 'İş Bankası Y Şubesi', 'Farklı Hesap'];
 
 const gunEkle = (isoTarih, fark) => {
   const d = new Date(isoTarih + 'T00:00:00');
@@ -45,7 +48,8 @@ export default function RezervasyonYeniPage() {
     adSoyad: '',
     telNo: '',
     odemeYontemi: 'NAKIT',
-    odemeDurumu: 'ODENMEDI',
+    kapora: '',
+    banka: BANKA_HESAPLARI[0],
   }));
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -74,10 +78,27 @@ export default function RezervasyonYeniPage() {
     [sahalar, form.sahaId],
   );
   const toplam = Number(secilenSaha?.saatlikUcret || 0) * form.sure;
+  const kapora = Number(String(form.kapora).replace(',', '.')) || 0;
+
+  // Kapora ödenecek tutarı aşamaz: yazarken sınırla, süre/saha değişip tutar düşerse de düşür
+  useEffect(() => {
+    setForm((p) => {
+      const sinirli = tutarSinirla(p.kapora, toplam);
+      return sinirli === p.kapora ? p : { ...p, kapora: sinirli };
+    });
+  }, [toplam]);
 
   const kaydet = async (e) => {
     e.preventDefault();
     setHata('');
+    if (kapora < 0 || kapora > toplam) {
+      setHata('Kapora 0 ile ödenecek tutar (' + tl(toplam) + ') arasında olmalıdır.');
+      return;
+    }
+    if (!/^5\d{9}$/.test(form.telNo)) {
+      setHata('Telefon numarası 10 haneli olmalı ve 5 ile başlamalıdır (örn. 546 976 46 13).');
+      return;
+    }
     setKaydediyor(true);
     try {
       const gun = new Date(form.tarih + 'T00:00:00');
@@ -86,9 +107,9 @@ export default function RezervasyonYeniPage() {
         adSoyad: form.adSoyad.trim(),
         baslangicTarih: toIsoDateTime(gun, form.saat),
         bitisTarih: toIsoDateTime(gun, form.saat + form.sure),
-        telNo: form.telNo.trim(),
-        odemeYontemi: form.odemeYontemi,
-        odemeDurumu: form.odemeDurumu,
+        telNo: '0' + form.telNo,
+        odemeYontemi: kapora > 0 ? form.odemeYontemi : null,
+        kapora: kapora > 0 ? kapora : null,
       };
       const olusan = await rezervasyonService.create(body);
       navigate('/rezervasyon/' + olusan.id, { replace: true });
@@ -159,32 +180,56 @@ export default function RezervasyonYeniPage() {
               />
             </Field>
             <Field label="Telefon">
-              <Input
-                type="tel"
-                placeholder="05__ ___ __ __"
-                value={form.telNo}
-                onChange={(e) => set('telNo', e.target.value)}
-                required
-              />
+              <div className="flex">
+                <span className="grid min-h-10 place-items-center border border-r-0 border-divider bg-surface px-3 text-[15.5px] text-ink/60">
+                  0
+                </span>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="5__ ___ __ __"
+                  value={telMaske(form.telNo)}
+                  onChange={(e) => set('telNo', telRakam(e.target.value))}
+                  required
+                />
+              </div>
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Ödeme yöntemi">
+            <Field label="Kapora ödeme yöntemi">
               <Select value={form.odemeYontemi} onChange={(e) => set('odemeYontemi', e.target.value)}>
                 <option value="NAKIT">Nakit</option>
                 <option value="KART">Kart</option>
                 <option value="HAVALE_EFT">Havale / EFT</option>
               </Select>
             </Field>
-            <Field label="Ödeme durumu">
-              <Select value={form.odemeDurumu} onChange={(e) => set('odemeDurumu', e.target.value)}>
-                <option value="ODENMEDI">Ödenmedi</option>
-                <option value="ODENDI">Ödendi</option>
-                <option value="KISMI_ODENDI">Kısmi ödendi</option>
-              </Select>
+            <Field label="Kapora (₺)">
+              <Input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max={toplam}
+                step="0.01"
+                placeholder="0"
+                value={form.kapora}
+                onChange={(e) => set('kapora', tutarSinirla(e.target.value, toplam))}
+              />
             </Field>
           </div>
+
+          {form.odemeYontemi === 'HAVALE_EFT' && (
+            <Field label="Havale / EFT hesabı">
+              <Select value={form.banka} onChange={(e) => set('banka', e.target.value)}>
+                {BANKA_HESAPLARI.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
         </Card>
 
         <Card className="gap-3.5">
@@ -214,6 +259,18 @@ export default function RezervasyonYeniPage() {
             <span className="font-heading text-[18px] font-semibold">Ödenecek tutar</span>
             <span className="font-heading text-[32px] font-semibold tabular-nums">{tl(toplam)}</span>
           </div>
+          {kapora > 0 && kapora <= toplam && (
+            <>
+              <div className="flex justify-between text-[15.5px]">
+                <span className="text-ink/55">Kapora</span>
+                <span className="tabular-nums">{tl(kapora)}</span>
+              </div>
+              <div className="flex justify-between text-[15.5px]">
+                <span className="text-ink/55">Kalan</span>
+                <span className="tabular-nums">{tl(toplam - kapora)}</span>
+              </div>
+            </>
+          )}
           <p className="m-0 text-[13.5px] text-ink/55">
             Kafeterya ürünleri rezervasyon kaydedildikten sonra detay ekranından eklenir.
           </p>
