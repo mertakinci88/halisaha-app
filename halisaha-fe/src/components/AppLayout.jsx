@@ -1,3 +1,4 @@
+import { useBildirimAlani } from '@/context/ToastContext';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
@@ -88,12 +89,15 @@ export default function AppLayout() {
 
 export function PageHeader({ kicker, baslik, children }) {
   const navigate = useNavigate();
+  const bildirimAlani = useBildirimAlani();
   return (
     <div className="mb-5 flex flex-wrap items-end gap-4">
       <div>
         <div className="mb-0.5 text-[11.5px] uppercase tracking-[0.12em] text-ink/55">{kicker}</div>
         <h2 className="text-[36px]">{baslik}</h2>
       </div>
+      {/* Bildirimler (başarı/hata) butonların solundaki bu boşlukta, satırın hizasında görünür */}
+      <div ref={bildirimAlani} className="relative min-w-0 grow basis-0 self-stretch" />
       <div className="ml-auto flex flex-wrap gap-2">
         {children}
         <Button variant="secondary" onClick={() => navigate('/takvim')}>

@@ -9,12 +9,14 @@ import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { MODUL_LABEL } from '@/lib/yetki';
 
 export default function PersonelListePage() {
   const navigate = useNavigate();
   const [kullanicilar, setKullanicilar] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [islemde, setIslemde] = useState(null);
 
@@ -24,7 +26,7 @@ export default function PersonelListePage() {
     kullaniciService
       .list()
       .then(setKullanicilar)
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
@@ -35,6 +37,7 @@ export default function PersonelListePage() {
     try {
       const yeniDurum = k.durum === 'AKTIF' ? 'PASIF' : 'AKTIF';
       await kullaniciService.durumGuncelle(k.id, yeniDurum);
+      toast.basari('Personel durumu güncellendi.');
       yukle();
     } catch (e) {
       setHata(apiHata(e));

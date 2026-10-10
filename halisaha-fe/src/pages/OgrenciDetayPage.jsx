@@ -8,6 +8,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 const BOS = {
   grupId: '',
@@ -35,7 +36,8 @@ export default function OgrenciDetayPage() {
   const navigate = useNavigate();
   const [gruplar, setGruplar] = useState([]);
   const [form, setForm] = useState(BOS);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
 
@@ -45,7 +47,7 @@ export default function OgrenciDetayPage() {
     grupService
       .list()
       .then(setGruplar)
-      .catch((e) => setHata(apiHata(e)));
+      .catch((e) => setHata(apiHata(e), { sessiz: true }));
   }, []);
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function OgrenciDetayPage() {
           not: o.not || '',
         }),
       )
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -98,6 +100,7 @@ export default function OgrenciDetayPage() {
         odemeSekli: form.odemeSekli,
         not: form.not.trim() || null,
       });
+      toast.basari('Öğrenci bilgileri güncellendi.');
       navigate('/ogrenciler', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

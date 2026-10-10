@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
@@ -7,6 +7,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata } from '@/context/ToastContext';
 import { hh, saatSayisi, sureSaat, tl, toIsoDate, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
@@ -16,11 +17,10 @@ const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => ACILIS + 
 export default function TakvimPage() {
   const navigate = useNavigate();
   const [gun, setGun] = useState(() => new Date());
-  const tarihRef = useRef(null);
   const [sahalar, setSahalar] = useState([]);
   const [rezervasyonlar, setRezervasyonlar] = useState([]);
   const [iptaller, setIptaller] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const yukle = useCallback(() => {
@@ -46,7 +46,7 @@ export default function TakvimPage() {
         setRezervasyonlar(r.filter((x) => x.durum === 'AKTIF'));
         setIptaller(r.filter((x) => x.durum === 'IPTAL'));
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [gun]);
 
@@ -64,11 +64,14 @@ export default function TakvimPage() {
     if (e.target.value) setGun(new Date(e.target.value + 'T00:00:00'));
   };
 
-  const tarihAc = () => {
-    const input = tarihRef.current;
-    if (!input) return;
-    if (typeof input.showPicker === 'function') input.showPicker();
-    else input.focus();
+  // Masaüstü tarayıcılar tıklamada tarih seçiciyi kendiliğinden açmaz; showPicker ile açılır.
+  // Mobilde (iOS Safari dahil) seçici, kullanıcının doğrudan input'a dokunmasıyla açılır.
+  const tarihAc = (e) => {
+    try {
+      e.currentTarget.showPicker?.();
+    } catch {
+      // showPicker desteklenmiyorsa/engellenmişse yerleşik davranış yeterli
+    }
   };
 
   const kapsar = (r, sahaId, saat) => {
@@ -88,24 +91,22 @@ export default function TakvimPage() {
           <SegOpt onClick={() => gunKaydir(-1)} aria-label="Önceki gün">
             <ChevronLeft size={16} strokeWidth={1.5} />
           </SegOpt>
-          <div className="relative flex min-w-[210px] border-l border-r border-divider">
-            <button
-              type="button"
-              onClick={tarihAc}
-              title="Tarih seç"
-              aria-label="Tarih seç"
-              className="flex w-full cursor-pointer items-center justify-center bg-transparent px-3.5 font-heading text-[15.5px] font-semibold hover:bg-ink/5"
+          <div className="relative flex min-w-[210px] border-l border-r border-divider hover:bg-ink/5">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none flex w-full items-center justify-center px-3.5 font-heading text-[15.5px] font-semibold"
             >
               {uzunTarih(gun)}
-            </button>
+            </span>
+            {/* Dokunmayı doğrudan input alır (iOS'ta tarih seçici ancak böyle açılır); yazı üstüne görünmez şekilde biner */}
             <input
-              ref={tarihRef}
               type="date"
               value={toIsoDate(gun)}
               onChange={tarihSec}
-              tabIndex={-1}
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+              onClick={tarihAc}
+              title="Tarih seç"
+              aria-label={'Tarih seç: ' + uzunTarih(gun)}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0 [font-size:16px]"
             />
           </div>
           <SegOpt onClick={() => gunKaydir(1)} aria-label="Sonraki gün">

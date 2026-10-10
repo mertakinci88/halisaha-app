@@ -10,6 +10,7 @@ import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata } from '@/context/ToastContext';
 import { ODEME_DURUMU_LABEL, kisaTarih, tl } from '@/lib/format';
 
 const BOYUT = 10;
@@ -21,7 +22,7 @@ export default function OgrenciListePage() {
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
   const [veri, setVeri] = useState(BOS_SAYFA);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const ara = (e) => {
@@ -47,7 +48,7 @@ export default function OgrenciListePage() {
     ogrenciService
       .list({ q: aramaAktif || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [aramaAktif, sayfa]);
 
@@ -64,13 +65,13 @@ export default function OgrenciListePage() {
 
       <Card className="gap-3.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <form onSubmit={ara} className="flex gap-2">
+          <form onSubmit={ara} className="flex w-full gap-2 sm:w-auto">
             <Input
               type="search"
               placeholder="Öğrenci, veli veya grup adıyla ara"
               value={arama}
               onChange={aramaDegisti}
-              className="w-[340px] max-w-full"
+              className="min-w-0 flex-1 sm:w-[340px] sm:flex-none"
             />
             <Button type="submit" variant="secondary">
               <Search size={16} strokeWidth={1.5} />

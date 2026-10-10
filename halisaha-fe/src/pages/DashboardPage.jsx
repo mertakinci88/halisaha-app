@@ -8,8 +8,9 @@ import { Tag } from '@/components/ui/tag';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
 import { ogrenciService, rezervasyonService, sahaService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
-import { hh, saatOf, tl, toIsoDate } from '@/lib/format';
+import { hh, saatOf, stokDurumu, tl, toIsoDate } from '@/lib/format';
 
 const ACILIS = 9;
 const KAPANIS = 23;
@@ -18,7 +19,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { yetkiVar } = useAuth();
   const [veri, setVeri] = useState(null);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const yukle = () => {
@@ -33,7 +34,7 @@ export default function DashboardPage() {
       .then(([rezervasyonlar, sahalar, ogrenciSayfasi, urunler]) =>
         setVeri({ rezervasyonlar, sahalar, ogrenciler: ogrenciSayfasi.icerik, urunler }),
       )
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
@@ -151,16 +152,20 @@ export default function DashboardPage() {
                 <h4 className="text-[22px]">Stoğu azalan ürünler</h4>
                 <Table>
                   <tbody>
-                    {veri.urunler.filter((u) => u.adet <= 10).length === 0 ? (
+                    {veri.urunler.filter((u) => stokDurumu(u)).length === 0 ? (
                       <Bos colSpan={2}>Stok seviyeleri yeterli.</Bos>
                     ) : (
                       veri.urunler
-                        .filter((u) => u.adet <= 10)
+                        .filter((u) => stokDurumu(u))
                         .map((u) => (
                           <Tr key={u.id}>
                             <Td>{u.ad}</Td>
                             <Td className="text-right">
-                              <Tag tone="neutral">{u.adet} adet kaldı</Tag>
+                              {stokDurumu(u) === 'TUKENDI' ? (
+                                <Tag tone="danger">Tükendi</Tag>
+                              ) : (
+                                <Tag tone="neutral">{u.adet} adet kaldı</Tag>
+                              )}
                             </Td>
                           </Tr>
                         ))

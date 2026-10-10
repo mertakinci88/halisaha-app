@@ -33,6 +33,11 @@ public class Urun {
     @Column(name = "adet", nullable = false)
     private Integer adet;
 
+    /** Stok bu adetten azsa "Stok az" uyarısı verilir. */
+    @Builder.Default
+    @Column(name = "stok_uyari_adedi", nullable = false)
+    private Integer stokUyariAdedi = 10;
+
     @Column(name = "fiyat", nullable = false, precision = 10, scale = 2)
     private BigDecimal fiyat;
 }

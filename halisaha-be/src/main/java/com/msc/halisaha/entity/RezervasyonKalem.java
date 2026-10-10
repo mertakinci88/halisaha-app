@@ -61,6 +61,10 @@ public class RezervasyonKalem {
     @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal tutar;
 
+    /** Ürün kalemi için stoktan düşüldü mü; iade sadece düşülmüş kalemlerde yapılır. */
+    @Column(name = "stok_dusuldu", nullable = false)
+    private boolean stokDusuldu;
+
     @Column(name = "olusturma_tarihi", nullable = false)
     private LocalDateTime olusturmaTarihi;
 

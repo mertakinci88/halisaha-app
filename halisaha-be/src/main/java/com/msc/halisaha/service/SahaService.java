@@ -1,5 +1,6 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.dto.SahaRequest;
 import com.msc.halisaha.dto.SahaResponse;
@@ -23,7 +24,10 @@ public class SahaService {
     private final RezervasyonRepository rezervasyonRepository;
 
     public List<SahaResponse> list() {
-        return sahaRepository.findAll().stream().map(SahaResponse::from).toList();
+        return sahaRepository.findAll().stream()
+                .sorted(TurkceSirala.<Saha>alfabetik(Saha::getAd).thenComparing(Saha::getId))
+                .map(SahaResponse::from)
+                .toList();
     }
 
     public SahaResponse getById(Long id) {

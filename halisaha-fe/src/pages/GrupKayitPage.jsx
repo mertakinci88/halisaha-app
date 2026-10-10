@@ -7,11 +7,13 @@ import { Field, Input } from '@/components/ui/input';
 import { Hata } from '@/components/ui/durum';
 import { grupService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function GrupKayitPage() {
   const navigate = useNavigate();
   const [ad, setAd] = useState('');
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
 
   const kaydet = async (e) => {
@@ -20,6 +22,7 @@ export default function GrupKayitPage() {
     setKaydediyor(true);
     try {
       await grupService.create({ ad: ad.trim() });
+      toast.basari('Grup oluşturuldu.');
       navigate('/gruplar', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

@@ -66,9 +66,29 @@ src/
 
 ## Notlar
 
-- Takvim ızgarası 09:00–23:00 arasını gösterir; `ACILIS` / `KAPANIS` sabitleri `TakvimPage.jsx` ve
-  `DashboardPage.jsx` içinde tanımlıdır.
+- Takvim ızgarası ve rezervasyon formu 12:00–02:00 arasını gösterir (`ACILIS = 12`, `KAPANIS = 26`; 24 ve üzeri
+  ertesi günün saatidir, 26 = 02:00). Sabitler `TakvimPage.jsx` ve `RezervasyonYeniPage.jsx` içinde tanımlıdır.
+  `DashboardPage.jsx` hâlâ eski 09:00–23:00 sabitlerini kullanıyor.
 - Rezervasyon saatleri backend'e `LocalDateTime` formatında (`2026-09-12T19:00:00`) gönderilir.
 - `odenecekTutar` backend tarafından hesaplanır; ürün ekleme/çıkarma sonrası dönen response doğrudan kullanılır.
 - UI bileşenleri shadcn/ui desenine (cva varyantları + `cn` yardımcısı) göre yazılmıştır; bağımlılık
   olarak shadcn CLI gerekmez, bileşenler `src/components/ui/` altında projeye aittir.
+
+## Mobil uyumluluk (zorunlu)
+
+Uygulama **hem bilgisayardan hem telefondan (iPhone / iOS Safari dahil)** kullanılır. Frontend'de yapılan her
+değişiklik telefonda da çalışmalı; bir değişikliği bitmiş saymadan önce şunlar kontrol edilir:
+
+- **390 px genişlikte** (iPhone) açıp bak: yatay kaydırma/taşma olmamalı, butonlar ve form alanları kartın içinde kalmalı.
+  Sabit genişlik (`w-[340px]` gibi) yerine `min-w-0`, `flex-1`, `max-w-full`, `sm:` kırılımları kullan.
+- **Input yazı boyutu en az 16 px** olmalı; daha küçükse iOS Safari alana odaklanınca sayfayı yakınlaştırır.
+- **Tarih/saat seçicilerde** `showPicker()` gibi programatik açmaya güvenme. iOS'ta seçici ancak kullanıcı
+  doğrudan `<input type="date">`'e dokununca açılır: input'u görünür alanın üstüne `opacity-0` ile bindir
+  (bkz. `TakvimPage.jsx`); `pointer-events-none` verme. `showPicker` sadece masaüstü için ek yardımcıdır.
+- **Hover'a bağlı etkileşim** olmamalı (dokunmatikte hover yok); dokunma hedefleri yaklaşık 40 px ve üzeri olmalı.
+- Bildirimler (toast) telefonda ekranın üstünde tam genişlikte açılır; yeni bildirim eklerken `useToast` / `useHata` kullan.
+
+Hızlı doğrulama: dev sunucu açıkken Playwright ile iPhone emülasyonu (`devices['iPhone 13']`, Chromium) kullanıp
+her sayfada `document.documentElement.scrollWidth > window.innerWidth` kontrolü ve ekran görüntüsü alınabilir.
+Not: emülasyon iOS Safari'nin yerleşik tarih/saat seçicisini ve klavye davranışını birebir göstermez; seçici,
+form ve ödeme gibi kritik akışlar yayına almadan önce **gerçek bir iPhone'da** da denenmelidir.
