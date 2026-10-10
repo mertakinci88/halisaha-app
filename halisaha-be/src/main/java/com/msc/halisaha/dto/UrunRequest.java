@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 public record UrunRequest(
         @NotBlank(message = "Ürün adı zorunludur") String ad,
         @NotNull(message = "Adet zorunludur") @PositiveOrZero(message = "Adet negatif olamaz") Integer adet,
-        @NotNull(message = "Fiyat zorunludur") @Positive(message = "Fiyat pozitif olmalıdır") BigDecimal fiyat
+        @NotNull(message = "Fiyat zorunludur") @Positive(message = "Fiyat pozitif olmalıdır") BigDecimal fiyat,
+        /** Boş bırakılırsa oluştururken 10, güncellerken mevcut değer korunur. */
+        @PositiveOrZero(message = "Stok uyarı adedi negatif olamaz") Integer stokUyariAdedi
 ) {
 }

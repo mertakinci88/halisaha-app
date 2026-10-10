@@ -8,6 +8,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { hh, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
@@ -38,7 +39,8 @@ export default function RezervasyonYeniPage() {
 
   const [sahalar, setSahalar] = useState([]);
   const [yukleniyor, setYukleniyor] = useState(true);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
 
   const [form, setForm] = useState(() => ({
@@ -69,7 +71,7 @@ export default function RezervasyonYeniPage() {
         setSahalar(aktif);
         setForm((p) => ({ ...p, sahaId: p.sahaId || (aktif[0] ? String(aktif[0].id) : '') }));
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, []);
 
@@ -112,6 +114,7 @@ export default function RezervasyonYeniPage() {
         kapora: kapora > 0 ? kapora : null,
       };
       const olusan = await rezervasyonService.create(body);
+      toast.basari('Rezervasyon oluşturuldu.');
       navigate('/rezervasyon/' + olusan.id, { replace: true });
     } catch (err) {
       setHata(apiHata(err));

@@ -9,12 +9,14 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function GrupListePage() {
   const navigate = useNavigate();
   const [gruplar, setGruplar] = useState([]);
   const [ogrenciler, setOgrenciler] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [silinecek, setSilinecek] = useState(null);
 
@@ -26,7 +28,7 @@ export default function GrupListePage() {
         setGruplar(g);
         setOgrenciler(o.icerik);
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
@@ -37,6 +39,7 @@ export default function GrupListePage() {
     setSilinecek(null);
     try {
       await grupService.remove(g.id);
+      toast.basari('Grup silindi.');
       yukle();
     } catch (e) {
       setHata(apiHata(e));

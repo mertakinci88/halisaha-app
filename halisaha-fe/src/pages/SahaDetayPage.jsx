@@ -9,13 +9,15 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function SahaDetayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({ ad: '', saatlikUcret: '', durum: 'AKTIF' });
   const [orijinalDurum, setOrijinalDurum] = useState('AKTIF');
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
   const [pasifUyariTuru, setPasifUyariTuru] = useState(null);
@@ -27,7 +29,7 @@ export default function SahaDetayPage() {
         setForm({ ad: s.ad, saatlikUcret: String(s.saatlikUcret), durum: s.durum });
         setOrijinalDurum(s.durum);
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -42,6 +44,7 @@ export default function SahaDetayPage() {
         durum: form.durum,
         saatlikUcret: Number(form.saatlikUcret),
       });
+      toast.basari('Saha güncellendi.');
       navigate('/sahalar', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

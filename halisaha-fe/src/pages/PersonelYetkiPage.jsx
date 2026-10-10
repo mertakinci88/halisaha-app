@@ -7,6 +7,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelYetkiPage() {
@@ -14,8 +15,8 @@ export default function PersonelYetkiPage() {
   const navigate = useNavigate();
   const [kullanici, setKullanici] = useState(null);
   const [yetkiler, setYetkiler] = useState([]);
-  const [hata, setHata] = useState('');
-  const [basari, setBasari] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
 
@@ -26,7 +27,7 @@ export default function PersonelYetkiPage() {
         setKullanici(k);
         setYetkiler(k.yetkiler);
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -35,13 +36,12 @@ export default function PersonelYetkiPage() {
 
   const yetkileriKaydet = async () => {
     setHata('');
-    setBasari('');
     setKaydediyor(true);
     try {
       const guncel = await kullaniciService.yetkileriGuncelle(id, yetkiler);
       setKullanici(guncel);
       setYetkiler(guncel.yetkiler);
-      setBasari('Menü yetkileri güncellendi.');
+      toast.basari('Menü yetkileri güncellendi.');
     } catch (err) {
       setHata(apiHata(err));
     } finally {
@@ -55,6 +55,7 @@ export default function PersonelYetkiPage() {
     try {
       const guncel = await kullaniciService.durumGuncelle(id, durum);
       setKullanici(guncel);
+      toast.basari('Personel durumu güncellendi.');
     } catch (err) {
       setHata(apiHata(err));
     } finally {
@@ -69,7 +70,6 @@ export default function PersonelYetkiPage() {
     <div>
       <PageHeader kicker="Yönetim" baslik={kullanici.adSoyad} />
       <Hata mesaj={hata} />
-      {basari ? <p className="mb-4 text-[14.5px] text-accent-700">{basari}</p> : null}
 
       <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
         <Card className="gap-3.5">

@@ -10,12 +10,14 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { urunService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { tl } from '@/lib/format';
+import { useHata, useToast } from '@/context/ToastContext';
+import { stokDurumu, tl } from '@/lib/format';
 
 export default function UrunListePage() {
   const navigate = useNavigate();
   const [urunler, setUrunler] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [silinecek, setSilinecek] = useState(null);
 
@@ -25,7 +27,7 @@ export default function UrunListePage() {
     urunService
       .list()
       .then(setUrunler)
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
@@ -36,6 +38,7 @@ export default function UrunListePage() {
     setSilinecek(null);
     try {
       await urunService.remove(u.id);
+      toast.basari('Ürün silindi.');
       yukle();
     } catch (e) {
       setHata(apiHata(e));
@@ -78,7 +81,13 @@ export default function UrunListePage() {
                     <Td>{u.ad}</Td>
                     <Td className="text-right tabular-nums">{tl(u.fiyat)}</Td>
                     <Td className="text-right tabular-nums">{u.adet}</Td>
-                    <Td>{u.adet <= 10 ? <Tag tone="outline">Stok az</Tag> : null}</Td>
+                    <Td>
+                      {stokDurumu(u) === 'TUKENDI' ? (
+                        <Tag tone="danger">Tükendi</Tag>
+                      ) : stokDurumu(u) === 'AZ' ? (
+                        <Tag tone="outline">Stok az</Tag>
+                      ) : null}
+                    </Td>
                     <Td className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
                         Güncelle

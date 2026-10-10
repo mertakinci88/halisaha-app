@@ -7,20 +7,27 @@ import { Field, Input } from '@/components/ui/input';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { urunService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function UrunDetayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ ad: '', fiyat: '', adet: '' });
-  const [hata, setHata] = useState('');
+  const [form, setForm] = useState({ ad: '', fiyat: '', adet: '', stokUyariAdedi: '10' });
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
 
   useEffect(() => {
     urunService
       .get(id)
-      .then((u) => setForm({ ad: u.ad, fiyat: String(u.fiyat), adet: String(u.adet) }))
-      .catch((e) => setHata(apiHata(e)))
+      .then((u) => setForm({
+          ad: u.ad,
+          fiyat: String(u.fiyat),
+          adet: String(u.adet),
+          stokUyariAdedi: String(u.stokUyariAdedi ?? 10),
+        }))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -34,8 +41,10 @@ export default function UrunDetayPage() {
       await urunService.update(id, {
         ad: form.ad.trim(),
         adet: Number(form.adet),
+        stokUyariAdedi: Number(form.stokUyariAdedi),
         fiyat: Number(form.fiyat),
       });
+      toast.basari('Ürün güncellendi.');
       navigate('/urunler', { replace: true });
     } catch (err) {
       setHata(apiHata(err));
@@ -89,6 +98,21 @@ export default function UrunDetayPage() {
               />
             </Field>
           </div>
+
+          <Field label="Stok uyarı adedi">
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="10"
+              value={form.stokUyariAdedi}
+              onChange={(e) => set('stokUyariAdedi', e.target.value)}
+              required
+            />
+            <p className="m-0 mt-1 text-[13px] text-ink/55">
+              Stok bu rakamdan azsa listede ve panelde "Stok az" uyarısı verilir.
+            </p>
+          </Field>
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>

@@ -8,11 +8,13 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata } from '@/components/ui/durum';
 import { sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function SahaKayitPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ ad: '', saatlikUcret: '', durum: 'AKTIF' });
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -27,6 +29,7 @@ export default function SahaKayitPage() {
         durum: form.durum,
         saatlikUcret: Number(form.saatlikUcret),
       });
+      toast.basari('Saha oluşturuldu.');
       navigate('/sahalar', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

@@ -7,12 +7,14 @@ import { Field, Input } from '@/components/ui/input';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 export default function GrupDetayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [ad, setAd] = useState('');
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
 
@@ -20,7 +22,7 @@ export default function GrupDetayPage() {
     grupService
       .get(id)
       .then((g) => setAd(g.ad))
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -30,6 +32,7 @@ export default function GrupDetayPage() {
     setKaydediyor(true);
     try {
       await grupService.update(id, { ad: ad.trim() });
+      toast.basari('Grup güncellendi.');
       navigate('/gruplar', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

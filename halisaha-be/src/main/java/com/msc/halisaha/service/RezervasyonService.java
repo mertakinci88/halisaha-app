@@ -1,8 +1,8 @@
 package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.AppZaman;
+import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
-import com.msc.halisaha.common.security.UserPrincipal;
 import com.msc.halisaha.dto.OdemeRequest;
 import com.msc.halisaha.dto.OdemeResponse;
 import com.msc.halisaha.dto.RezervasyonRequest;
@@ -10,7 +10,6 @@ import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.dto.RezervasyonUrunRequest;
 import com.msc.halisaha.dto.RezervasyonUrunResponse;
 import com.msc.halisaha.entity.KalemTip;
-import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.Odeme;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.OdemeTipi;
@@ -20,7 +19,6 @@ import com.msc.halisaha.entity.RezervasyonDurum;
 import com.msc.halisaha.entity.RezervasyonKalem;
 import com.msc.halisaha.entity.Saha;
 import com.msc.halisaha.entity.Urun;
-import com.msc.halisaha.repository.KullaniciRepository;
 import com.msc.halisaha.repository.OdemeRepository;
 import com.msc.halisaha.repository.RezervasyonKalemRepository;
 import com.msc.halisaha.repository.RezervasyonRepository;
@@ -28,8 +26,6 @@ import com.msc.halisaha.repository.SahaRepository;
 import com.msc.halisaha.repository.UrunRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +35,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,7 +52,8 @@ public class RezervasyonService {
     private final RezervasyonKalemRepository kalemRepository;
     private final OdemeRepository odemeRepository;
     private final UrunRepository urunRepository;
-    private final KullaniciRepository kullaniciRepository;
+    private final StokService stokService;
+    private final MevcutKullanici mevcutKullanici;
 
     public List<RezervasyonResponse> list(Long sahaId, LocalDate tarih) {
         List<Rezervasyon> rezervasyonlar;
@@ -70,7 +68,12 @@ public class RezervasyonService {
         } else {
             rezervasyonlar = rezervasyonRepository.findAll();
         }
-        return toResponses(rezervasyonlar);
+        // Alfabetik (Türkçe); aynı isimde saat sırasına göre
+        return toResponses(rezervasyonlar.stream()
+                .sorted(TurkceSirala.<Rezervasyon>alfabetik(Rezervasyon::getAdSoyad)
+                        .thenComparing(Rezervasyon::getBaslangicTarih)
+                        .thenComparing(Rezervasyon::getId))
+                .toList());
     }
 
     public RezervasyonResponse getById(Long id) {
@@ -148,19 +151,28 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse cancel(Long id) {
         Rezervasyon rezervasyon = getEntity(id);
+        if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
+            return toResponse(rezervasyon);
+        }
+        stokIadeEt(rezervasyon, kalemRepository.findByRezervasyonIdOrderByIdAsc(id), "rezervasyon iptali");
         rezervasyon.setDurum(RezervasyonDurum.IPTAL);
         return toResponse(rezervasyon);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!rezervasyonRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Rezervasyon bulunamadı: " + id);
-        }
+        Rezervasyon rezervasyon = getEntity(id);
         if (odemeRepository.existsByRezervasyonId(id)) {
             throw new ApiException(HttpStatus.CONFLICT, "Ödemesi alınmış rezervasyon silinemez, iptal edin");
         }
-        rezervasyonRepository.deleteById(id);
+        List<RezervasyonKalem> kalemler = kalemRepository.findByRezervasyonIdOrderByIdAsc(id);
+        if (rezervasyon.getDurum() == RezervasyonDurum.AKTIF) {
+            stokIadeEt(rezervasyon, kalemler, "rezervasyon silindi");
+        }
+        // Kalemler önce silinir; yoksa silinen rezervasyona referans veren yönetilen kalemler flush'ta hata verir
+        kalemRepository.deleteAll(kalemler);
+        kalemRepository.flush();
+        rezervasyonRepository.delete(rezervasyon);
     }
 
     @Transactional
@@ -172,11 +184,14 @@ public class RezervasyonService {
         Urun urun = urunRepository.findById(request.urunId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ürün bulunamadı: " + request.urunId()));
 
+        stokService.dus(urun, request.miktar(), rezervasyon);
+
         BigDecimal miktar = BigDecimal.valueOf(request.miktar());
         kalemRepository.save(RezervasyonKalem.builder()
                 .rezervasyon(rezervasyon)
                 .tip(KalemTip.URUN)
                 .urun(urun)
+                .stokDusuldu(true)
                 .aciklama(urun.getAd())
                 .miktar(miktar)
                 .birimFiyat(urun.getFiyat())
@@ -190,6 +205,9 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse urunCikar(Long rezervasyonId, Long kalemId) {
         Rezervasyon rezervasyon = getEntity(rezervasyonId);
+        if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyondan ürün çıkarılamaz");
+        }
         RezervasyonKalem kalem = kalemRepository.findById(kalemId)
                 .filter(k -> k.getTip() == KalemTip.URUN)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rezervasyon ürünü bulunamadı: " + kalemId));
@@ -198,10 +216,25 @@ public class RezervasyonService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bu ürün bu rezervasyona ait değil");
         }
 
+        if (kalem.isStokDusuldu()) {
+            stokService.iade(kalem.getUrun().getId(), kalem.getMiktar().intValueExact(), rezervasyon, "ürün çıkarıldı");
+        }
         kalemRepository.delete(kalem);
         kalemRepository.flush();
         recalculate(rezervasyon);
         return toResponse(rezervasyon);
+    }
+
+    /** Stoktan düşülmüş ürün kalemlerini ürün bazında toplayıp stoğa geri ekler. */
+    private void stokIadeEt(Rezervasyon rezervasyon, List<RezervasyonKalem> kalemler, String neden) {
+        Map<Long, Integer> iadeler = new LinkedHashMap<>();
+        for (RezervasyonKalem kalem : kalemler) {
+            if (kalem.getTip() == KalemTip.URUN && kalem.isStokDusuldu()) {
+                iadeler.merge(kalem.getUrun().getId(), kalem.getMiktar().intValueExact(), Integer::sum);
+                kalem.setStokDusuldu(false);
+            }
+        }
+        iadeler.forEach((urunId, miktar) -> stokService.iade(urunId, miktar, rezervasyon, neden));
     }
 
     @Transactional
@@ -244,7 +277,7 @@ public class RezervasyonService {
                 .tutar(tutar)
                 .yontem(yontem)
                 .odemeTarihi(AppZaman.simdi())
-                .kullanici(mevcutKullanici())
+                .kullanici(mevcutKullanici.getir())
                 .build());
         rezervasyon.setOdemeYontemi(yontem);
         recalculate(rezervasyon);
@@ -267,14 +300,6 @@ public class RezervasyonService {
 
     private BigDecimal odenenToplam(Collection<Odeme> odemeler) {
         return odemeler.stream().map(Odeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private Kullanici mevcutKullanici() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof UserPrincipal principal) {
-            return kullaniciRepository.getReferenceById(principal.getId());
-        }
-        return null;
     }
 
     private RezervasyonKalem sahaKalemi(Rezervasyon rezervasyon, Saha saha, LocalDateTime baslangic, LocalDateTime bitis) {

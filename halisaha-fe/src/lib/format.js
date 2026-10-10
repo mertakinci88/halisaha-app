@@ -70,6 +70,15 @@ export const ODEME_DURUMU_LABEL = {
   KISMI_ODENDI: 'Kısmi ödendi',
 };
 
+/**
+ * Ürün stok durumu: 0 ise TUKENDI, ürünün stok uyarı adedinden azsa AZ, değilse null.
+ * (Uyarı adedi tanımsızsa eski varsayılan olan 10 kullanılır.)
+ */
+export const stokDurumu = (urun) => {
+  if (Number(urun.adet) <= 0) return 'TUKENDI';
+  return Number(urun.adet) < Number(urun.stokUyariAdedi ?? 10) ? 'AZ' : null;
+};
+
 export const ODEME_TIPI_LABEL = {
   KAPORA: 'Kapora',
   KISMI: 'Kısmi ödeme',

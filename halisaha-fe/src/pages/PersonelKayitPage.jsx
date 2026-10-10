@@ -8,13 +8,15 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelKayitPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ adSoyad: '', kullaniciAdi: '', sifre: '', rol: 'PERSONEL' });
   const [yetkiler, setYetkiler] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -34,6 +36,7 @@ export default function PersonelKayitPage() {
         rol: form.rol,
         yetkiler: form.rol === 'PERSONEL' ? yetkiler : [],
       });
+      toast.basari('Personel oluşturuldu.');
       navigate('/personel', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

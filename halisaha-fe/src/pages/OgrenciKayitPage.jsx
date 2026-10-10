@@ -8,6 +8,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 
 const BOS = {
   grupId: '',
@@ -32,7 +33,8 @@ export default function OgrenciKayitPage() {
   const navigate = useNavigate();
   const [gruplar, setGruplar] = useState([]);
   const [form, setForm] = useState(BOS);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -41,7 +43,7 @@ export default function OgrenciKayitPage() {
     grupService
       .list()
       .then(setGruplar)
-      .catch((e) => setHata(apiHata(e)));
+      .catch((e) => setHata(apiHata(e), { sessiz: true }));
   }, []);
 
   const kaydet = async (e) => {
@@ -67,6 +69,7 @@ export default function OgrenciKayitPage() {
         odemeSekli: form.odemeSekli,
         not: form.not.trim() || null,
       });
+      toast.basari('Öğrenci kaydedildi.');
       navigate('/ogrenciler', { replace: true });
     } catch (err) {
       setHata(apiHata(err));

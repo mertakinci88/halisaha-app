@@ -10,12 +10,14 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { tl } from '@/lib/format';
 
 export default function SahaListePage() {
   const navigate = useNavigate();
   const [sahalar, setSahalar] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [silinecek, setSilinecek] = useState(null);
   const [pasifUyarisi, setPasifUyarisi] = useState(null);
@@ -28,7 +30,7 @@ export default function SahaListePage() {
     sahaService
       .list()
       .then(setSahalar)
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
@@ -59,6 +61,7 @@ export default function SahaListePage() {
     setGecmisUyarisi(null);
     try {
       await sahaService.remove(s.id);
+      toast.basari('Saha silindi.');
       yukle();
     } catch (e) {
       setHata(apiHata(e));

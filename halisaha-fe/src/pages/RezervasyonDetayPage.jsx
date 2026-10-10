@@ -11,6 +11,7 @@ import { Input, Select } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { rezervasyonService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useHata, useToast } from '@/context/ToastContext';
 import { cn } from '@/lib/utils';
 import {
   ODEME_DURUMU_LABEL,
@@ -45,7 +46,8 @@ export default function RezervasyonDetayPage() {
   const navigate = useNavigate();
   const [rez, setRez] = useState(null);
   const [urunler, setUrunler] = useState([]);
-  const [hata, setHata] = useState('');
+  const [hata, setHata] = useHata();
+  const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [islemde, setIslemde] = useState(false);
   const [iptalOnay, setIptalOnay] = useState(false);
@@ -60,7 +62,7 @@ export default function RezervasyonDetayPage() {
         setRez(r);
         setUrunler(u);
       })
-      .catch((e) => setHata(apiHata(e)))
+      .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
 
@@ -68,24 +70,37 @@ export default function RezervasyonDetayPage() {
     yukle();
   }, [yukle]);
 
+  // Ekleme/çıkarma stoğu değiştirir; stok sütunu güncel kalsın (hata olsa da, başka cihaz satmış olabilir)
+  const urunleriYenile = () =>
+    urunService
+      .list()
+      .then(setUrunler)
+      .catch(() => {});
+
   const urunEkle = async (urunId) => {
+    setHata('');
     setIslemde(true);
     try {
       setRez(await rezervasyonService.urunEkle(id, urunId, 1));
+      toast.basari((urunler.find((u) => u.id === urunId)?.ad || 'Ürün') + ' eklendi.');
     } catch (e) {
       setHata(apiHata(e));
     } finally {
+      await urunleriYenile();
       setIslemde(false);
     }
   };
 
   const urunCikar = async (rezervasyonUrunId) => {
+    setHata('');
     setIslemde(true);
     try {
       setRez(await rezervasyonService.urunCikar(id, rezervasyonUrunId));
+      toast.basari('Ürün çıkarıldı.');
     } catch (e) {
       setHata(apiHata(e));
     } finally {
+      await urunleriYenile();
       setIslemde(false);
     }
   };
@@ -95,6 +110,7 @@ export default function RezervasyonDetayPage() {
     setIslemde(true);
     try {
       await rezervasyonService.iptal(id);
+      toast.basari('Rezervasyon iptal edildi.');
       navigate('/takvim');
     } catch (e) {
       setHata(apiHata(e));
@@ -109,6 +125,7 @@ export default function RezervasyonDetayPage() {
     try {
       setRez(await rezervasyonService.odemeEkle(id, { tip, tutar, yontem: odemeYontemi }));
       if (tip !== 'ODEME') setKapora('');
+      toast.basari((ODEME_TIPI_LABEL[tip] || 'Ödeme') + ' alındı.');
     } catch (e) {
       setHata(apiHata(e));
     } finally {
@@ -214,10 +231,10 @@ export default function RezervasyonDetayPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        disabled={islemde || rez.durum !== 'AKTIF'}
+                        disabled={islemde || rez.durum !== 'AKTIF' || u.adet <= 0}
                         onClick={() => urunEkle(u.id)}
                       >
-                        + Ekle
+                        {u.adet <= 0 ? 'Tükendi' : '+ Ekle'}
                       </Button>
                     </Td>
                   </Tr>
@@ -241,7 +258,7 @@ export default function RezervasyonDetayPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    disabled={islemde}
+                    disabled={islemde || !aktif}
                     onClick={() => urunCikar(g.satirlar[g.satirlar.length - 1].id)}
                   >
                     <X size={14} strokeWidth={1.75} />
