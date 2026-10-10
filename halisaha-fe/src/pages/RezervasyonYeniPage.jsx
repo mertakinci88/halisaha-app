@@ -8,11 +8,26 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { hh, tl, toIsoDateTime, uzunTarih } from '@/lib/format';
+import { hh, tl, toIsoDate, toIsoDateTime, uzunTarih } from '@/lib/format';
 
-const ACILIS = 9;
-const KAPANIS = 23;
-const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => ACILIS + i);
+const ACILIS = 12;
+const KAPANIS = 26; // 26 = ertesi gün 02:00
+// Saatler gerçek saat olarak tutulur: 12..23, sonra 00, 01, 02 (ertesi gün)
+const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => (ACILIS + i) % 24);
+const gece = (saat) => saat < ACILIS;
+
+const gunEkle = (isoTarih, fark) => {
+  const d = new Date(isoTarih + 'T00:00:00');
+  d.setDate(d.getDate() + fark);
+  return toIsoDate(d);
+};
+
+// Takvimden gelen saat 24 ve üzeriyse ertesi güne taşar (örn. 25 -> ertesi gün 01:00)
+const baslangicOku = (params) => {
+  const tarih = params.get('tarih') || toIsoDate(new Date());
+  const saat = Number(params.get('saat') || 19);
+  return saat >= 24 ? { tarih: gunEkle(tarih, 1), saat: saat - 24 } : { tarih, saat };
+};
 
 export default function RezervasyonYeniPage() {
   const navigate = useNavigate();
@@ -25,8 +40,7 @@ export default function RezervasyonYeniPage() {
 
   const [form, setForm] = useState(() => ({
     sahaId: params.get('sahaId') || '',
-    tarih: params.get('tarih') || new Date().toISOString().slice(0, 10),
-    saat: Number(params.get('saat') || 19),
+    ...baslangicOku(params),
     sure: 1,
     adSoyad: '',
     telNo: '',
@@ -35,6 +49,13 @@ export default function RezervasyonYeniPage() {
   }));
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  // Gece 00:00'dan sonrası ertesi güne ait: saat gece dilimine geçince tarih +1, dönünce -1
+  const saatSec = (yeni) =>
+    setForm((p) => {
+      const fark = gece(yeni) === gece(p.saat) ? 0 : gece(yeni) ? 1 : -1;
+      return { ...p, saat: yeni, tarih: fark ? gunEkle(p.tarih, fark) : p.tarih };
+    });
 
   useEffect(() => {
     sahaService
@@ -107,7 +128,7 @@ export default function RezervasyonYeniPage() {
               <Input type="date" value={form.tarih} onChange={(e) => set('tarih', e.target.value)} required />
             </Field>
             <Field label="Başlangıç saati">
-              <Select value={form.saat} onChange={(e) => set('saat', Number(e.target.value))}>
+              <Select value={form.saat} onChange={(e) => saatSec(Number(e.target.value))}>
                 {SAATLER.map((h) => (
                   <option key={h} value={h}>
                     {hh(h)}

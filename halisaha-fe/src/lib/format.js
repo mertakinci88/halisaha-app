@@ -7,7 +7,8 @@ export const AYLAR = [
 export const tl = (n) =>
   '₺' + Number(n || 0).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
 
-export const hh = (h) => String(h).padStart(2, '0') + ':00';
+/** 24 ve üzeri saatler ertesi güne taşar (26 -> 02:00) */
+export const hh = (h) => String(h % 24).padStart(2, '0') + ':00';
 
 /** Date -> "2026-09-12" (backend @DateTimeFormat ISO.DATE) */
 export const toIsoDate = (date) => {
@@ -18,8 +19,11 @@ export const toIsoDate = (date) => {
 };
 
 /** Date + saat -> "2026-09-12T19:00:00" (backend LocalDateTime) */
-export const toIsoDateTime = (date, hour) =>
-  toIsoDate(date) + 'T' + String(hour).padStart(2, '0') + ':00:00';
+export const toIsoDateTime = (date, hour) => {
+  const gun = new Date(date);
+  gun.setDate(gun.getDate() + Math.floor(hour / 24));
+  return toIsoDate(gun) + 'T' + String(hour % 24).padStart(2, '0') + ':00:00';
+};
 
 export const uzunTarih = (date) =>
   date.getDate() + ' ' + AYLAR[date.getMonth()] + ' ' + date.getFullYear() + ', ' + GUNLER[date.getDay()];
@@ -38,7 +42,7 @@ export const saatSayisi = (isoDateTime) => {
 };
 
 export const sureSaat = (baslangic, bitis) =>
-  Math.max(1, saatSayisi(bitis) - saatSayisi(baslangic));
+  Math.max(1, Math.round((new Date(bitis) - new Date(baslangic)) / 3600000));
 
 export const ODEME_DURUMU_LABEL = {
   ODENDI: 'Ödendi',

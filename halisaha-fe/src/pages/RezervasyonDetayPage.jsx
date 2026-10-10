@@ -144,7 +144,9 @@ export default function RezervasyonDetayPage() {
           <Card>
             <h4 className="text-[22px]">Kafeterya · ürün ekle</h4>
             <p className="m-0 text-[13.5px] text-ink/55">
-              Seans sırasında satılan ürünleri ekleyin; tutar rezervasyona işlenir.
+              {rez.durum === 'AKTIF'
+                ? 'Seans sırasında satılan ürünleri ekleyin; tutar rezervasyona işlenir.'
+                : 'İptal edilen rezervasyona ürün eklenemez.'}
             </p>
             <Table>
               <thead>
@@ -162,7 +164,12 @@ export default function RezervasyonDetayPage() {
                     <Td className="text-right tabular-nums">{tl(u.fiyat)}</Td>
                     <Td className="text-right tabular-nums text-ink/55">{u.adet}</Td>
                     <Td className="text-right">
-                      <Button variant="secondary" size="sm" disabled={islemde} onClick={() => urunEkle(u.id)}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={islemde || rez.durum !== 'AKTIF'}
+                        onClick={() => urunEkle(u.id)}
+                      >
                         + Ekle
                       </Button>
                     </Td>
@@ -211,10 +218,14 @@ export default function RezervasyonDetayPage() {
           <div className="mt-1.5 grid gap-2">
             <Button
               variant="primary"
-              disabled={islemde || rez.odemeDurumu === 'ODENDI'}
+              disabled={islemde || rez.odemeDurumu === 'ODENDI' || rez.durum !== 'AKTIF'}
               onClick={odemeTamamla}
             >
-              {rez.odemeDurumu === 'ODENDI' ? 'Ödeme alındı' : 'Ödemeyi tamamla'}
+              {rez.odemeDurumu === 'ODENDI'
+                ? 'Ödeme alındı'
+                : rez.durum !== 'AKTIF'
+                  ? 'İptal edildi · ödeme alınamaz'
+                  : 'Ödemeyi tamamla'}
             </Button>
             <Button
               variant="secondary"
