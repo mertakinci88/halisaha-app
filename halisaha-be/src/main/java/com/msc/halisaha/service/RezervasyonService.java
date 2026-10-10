@@ -40,8 +40,11 @@ public class RezervasyonService {
     public List<RezervasyonResponse> list(Long sahaId, LocalDate tarih) {
         List<Rezervasyon> rezervasyonlar;
         if (sahaId != null && tarih != null) {
-            rezervasyonlar = rezervasyonRepository.findBySahaIdAndBaslangicTarihBetween(
+            rezervasyonlar = rezervasyonRepository.findBySahaIdAndBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
                     sahaId, tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
+        } else if (tarih != null) {
+            rezervasyonlar = rezervasyonRepository.findByBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
+                    tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
         } else if (sahaId != null) {
             rezervasyonlar = rezervasyonRepository.findBySahaId(sahaId);
         } else {
@@ -77,6 +80,11 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse update(Long id, RezervasyonRequest request) {
         Rezervasyon rezervasyon = getEntity(id);
+        if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL
+                && request.odemeDurumu() != null
+                && request.odemeDurumu() != rezervasyon.getOdemeDurumu()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyon için ödeme alınamaz");
+        }
         validateTarihAraligi(request.baslangicTarih(), request.bitisTarih());
         Saha saha = getSaha(request.sahaId());
         checkOverlap(request.sahaId(), request.baslangicTarih(), request.bitisTarih(), id);
@@ -113,6 +121,9 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse urunEkle(Long rezervasyonId, RezervasyonUrunRequest request) {
         Rezervasyon rezervasyon = getEntity(rezervasyonId);
+        if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyona ürün eklenemez");
+        }
         Urun urun = urunRepository.findById(request.urunId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ürün bulunamadı: " + request.urunId()));
 

@@ -14,7 +14,11 @@ public interface RezervasyonRepository extends JpaRepository<Rezervasyon, Long> 
 
     boolean existsBySahaId(Long sahaId);
 
-    List<Rezervasyon> findBySahaIdAndBaslangicTarihBetween(Long sahaId, LocalDateTime start, LocalDateTime end);
+    List<Rezervasyon> findBySahaIdAndBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
+            Long sahaId, LocalDateTime start, LocalDateTime end);
+
+    List<Rezervasyon> findByBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
+            LocalDateTime start, LocalDateTime end);
 
     @Query("""
             SELECT r FROM Rezervasyon r

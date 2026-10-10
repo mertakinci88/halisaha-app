@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
@@ -9,25 +9,42 @@ import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { hh, saatSayisi, sureSaat, tl, toIsoDate, uzunTarih } from '@/lib/format';
 
-const ACILIS = 9;
-const KAPANIS = 23;
+const ACILIS = 12;
+const KAPANIS = 26; // 26 = ertesi gün 02:00
 const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => ACILIS + i);
 
 export default function TakvimPage() {
   const navigate = useNavigate();
   const [gun, setGun] = useState(() => new Date());
+  const tarihRef = useRef(null);
   const [sahalar, setSahalar] = useState([]);
   const [rezervasyonlar, setRezervasyonlar] = useState([]);
+  const [iptaller, setIptaller] = useState([]);
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const yukle = useCallback(() => {
     setYukleniyor(true);
     setHata('');
-    Promise.all([sahaService.list(), rezervasyonService.list({ tarih: toIsoDate(gun) })])
-      .then(([s, r]) => {
+    const ertesi = new Date(gun);
+    ertesi.setDate(ertesi.getDate() + 1);
+    const gunIso = toIsoDate(gun);
+    // Takvim günü 12:00'dan ertesi gün 02:00'ye uzanır: iki günü çekip mutlak saate çeviriyoruz
+    Promise.all([
+      sahaService.list(),
+      rezervasyonService.list({ tarih: gunIso }),
+      rezervasyonService.list({ tarih: toIsoDate(ertesi) }),
+    ])
+      .then(([s, bugun, yarin]) => {
+        const r = [...bugun, ...yarin]
+          .map((x) => ({
+            ...x,
+            bas: (x.baslangicTarih.slice(0, 10) === gunIso ? 0 : 24) + saatSayisi(x.baslangicTarih),
+          }))
+          .filter((x) => x.bas >= ACILIS && x.bas <= KAPANIS);
         setSahalar(s.filter((x) => x.durum === 'AKTIF'));
         setRezervasyonlar(r.filter((x) => x.durum === 'AKTIF'));
+        setIptaller(r.filter((x) => x.durum === 'IPTAL'));
       })
       .catch((e) => setHata(apiHata(e)))
       .finally(() => setYukleniyor(false));
@@ -43,12 +60,24 @@ export default function TakvimPage() {
     setGun(d);
   };
 
-  const hucre = (sahaId, saat) =>
-    rezervasyonlar.find((r) => {
-      if (r.sahaId !== sahaId) return false;
-      const bas = saatSayisi(r.baslangicTarih);
-      return saat >= bas && saat < bas + sureSaat(r.baslangicTarih, r.bitisTarih);
-    });
+  const tarihSec = (e) => {
+    if (e.target.value) setGun(new Date(e.target.value + 'T00:00:00'));
+  };
+
+  const tarihAc = () => {
+    const input = tarihRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === 'function') input.showPicker();
+    else input.focus();
+  };
+
+  const kapsar = (r, sahaId, saat) => {
+    if (r.sahaId !== sahaId) return false;
+    return saat >= r.bas && saat < r.bas + sureSaat(r.baslangicTarih, r.bitisTarih);
+  };
+
+  const hucre = (sahaId, saat) => rezervasyonlar.find((r) => kapsar(r, sahaId, saat));
+  const hucreIptaller = (sahaId, saat) => iptaller.filter((r) => kapsar(r, sahaId, saat));
 
   return (
     <div>
@@ -59,8 +88,25 @@ export default function TakvimPage() {
           <SegOpt onClick={() => gunKaydir(-1)} aria-label="Önceki gün">
             <ChevronLeft size={16} strokeWidth={1.5} />
           </SegOpt>
-          <div className="flex min-w-[210px] items-center justify-center border-l border-r border-divider px-3.5 font-heading text-[15.5px] font-semibold">
-            {uzunTarih(gun)}
+          <div className="relative flex min-w-[210px] border-l border-r border-divider">
+            <button
+              type="button"
+              onClick={tarihAc}
+              title="Tarih seç"
+              aria-label="Tarih seç"
+              className="flex w-full cursor-pointer items-center justify-center bg-transparent px-3.5 font-heading text-[15.5px] font-semibold hover:bg-ink/5"
+            >
+              {uzunTarih(gun)}
+            </button>
+            <input
+              ref={tarihRef}
+              type="date"
+              value={toIsoDate(gun)}
+              onChange={tarihSec}
+              tabIndex={-1}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+            />
           </div>
           <SegOpt onClick={() => gunKaydir(1)} aria-label="Sonraki gün">
             <ChevronRight size={16} strokeWidth={1.5} />
@@ -78,6 +124,10 @@ export default function TakvimPage() {
           <div className="flex items-center gap-2">
             <span className="h-3.5 w-3.5 border border-divider" />
             <span>Boş</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 border border-dashed border-ink/30 bg-ink/5" />
+            <span>İptal</span>
           </div>
         </div>
       </div>
@@ -114,6 +164,7 @@ export default function TakvimPage() {
               <div className="shrink-0 basis-[82px] p-2 text-[13.5px] tabular-nums text-ink/60">{hh(saat)}</div>
               {sahalar.map((s) => {
                 const rez = hucre(s.id, saat);
+                const iptal = rez ? [] : hucreIptaller(s.id, saat);
                 return (
                   <div key={s.id} className="min-w-0 flex-1 border-l border-divider p-1">
                     {rez ? (
@@ -128,15 +179,29 @@ export default function TakvimPage() {
                         </span>
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate('/rezervasyon/yeni?sahaId=' + s.id + '&saat=' + saat + '&tarih=' + toIsoDate(gun))
-                        }
-                        className="grid h-[52px] w-full cursor-pointer place-items-center border border-dashed border-ink/15 bg-transparent font-heading text-[13.5px] font-semibold tracking-[0.04em] text-accent-700 opacity-40 hover:opacity-100 hover:bg-ink/4"
-                      >
-                        + EKLE
-                      </button>
+                      <div className="flex h-[52px] flex-col gap-0.5">
+                        {iptal.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/rezervasyon/' + iptal[0].id)}
+                            title={iptal.map((x) => x.adSoyad).join(', ') + ' · İptal edildi'}
+                            className="flex h-[22px] w-full shrink-0 cursor-pointer items-center gap-1.5 border border-dashed border-ink/25 bg-ink/5 px-2 text-left font-body text-[12px] text-ink/50 hover:bg-ink/10"
+                          >
+                            <span className="truncate line-through">{iptal[0].adSoyad}</span>
+                            {iptal.length > 1 && <span className="shrink-0">+{iptal.length - 1}</span>}
+                            <span className="ml-auto shrink-0 text-[10.5px] uppercase tracking-[0.08em]">İptal</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate('/rezervasyon/yeni?sahaId=' + s.id + '&saat=' + saat + '&tarih=' + toIsoDate(gun))
+                          }
+                          className="grid min-h-0 w-full flex-1 cursor-pointer place-items-center border border-dashed border-ink/15 bg-transparent font-heading text-[13.5px] font-semibold tracking-[0.04em] text-accent-700 opacity-40 hover:opacity-100 hover:bg-ink/4"
+                        >
+                          + EKLE
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
