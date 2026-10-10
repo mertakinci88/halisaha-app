@@ -1,5 +1,6 @@
 package com.msc.halisaha.controller;
 
+import com.msc.halisaha.dto.OdemeRequest;
 import com.msc.halisaha.dto.RezervasyonRequest;
 import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.dto.RezervasyonUrunRequest;
@@ -65,6 +66,11 @@ public class RezervasyonController {
     @PostMapping("/{id}/urunler")
     public RezervasyonResponse urunEkle(@PathVariable Long id, @Valid @RequestBody RezervasyonUrunRequest request) {
         return rezervasyonService.urunEkle(id, request);
+    }
+
+    @PostMapping("/{id}/odemeler")
+    public RezervasyonResponse odemeEkle(@PathVariable Long id, @Valid @RequestBody OdemeRequest request) {
+        return rezervasyonService.odemeEkle(id, request);
     }
 
     @DeleteMapping("/{id}/urunler/{rezervasyonUrunId}")

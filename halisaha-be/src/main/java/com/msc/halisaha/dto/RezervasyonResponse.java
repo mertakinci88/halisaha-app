@@ -17,9 +17,16 @@ public record RezervasyonResponse(
         LocalDateTime bitisTarih,
         RezervasyonDurum durum,
         String telNo,
+        /** Son alınan ödemenin yöntemi. */
         OdemeYontemi odemeYontemi,
         OdemeDurumu odemeDurumu,
+        /** Tüm kalemlerin toplamı. */
         BigDecimal odenecekTutar,
-        List<RezervasyonUrunResponse> urunler
+        BigDecimal sahaTutar,
+        BigDecimal odenenTutar,
+        BigDecimal kalanTutar,
+        BigDecimal kaporaTutar,
+        List<RezervasyonUrunResponse> urunler,
+        List<OdemeResponse> odemeler
 ) {
 }

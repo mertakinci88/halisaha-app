@@ -175,7 +175,12 @@ export default function TakvimPage() {
                       >
                         <span className="max-w-full truncate text-[14.5px] font-medium">{rez.adSoyad}</span>
                         <span className="text-[12.5px] tabular-nums opacity-75">
-                          {tl(rez.odenecekTutar)} · {rez.odemeDurumu === 'ODENDI' ? 'Ödendi' : 'Ödenmedi'}
+                          {tl(rez.odenecekTutar)} ·{' '}
+                          {rez.odemeDurumu === 'ODENDI'
+                            ? 'Ödendi'
+                            : rez.odemeDurumu === 'KISMI_ODENDI'
+                              ? 'Ödenen ' + tl(rez.odenenTutar)
+                              : 'Ödenmedi'}
                         </span>
                       </button>
                     ) : (
