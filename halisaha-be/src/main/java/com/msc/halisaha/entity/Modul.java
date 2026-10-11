@@ -6,5 +6,6 @@ public enum Modul {
     GRUP,
     SAHA,
     URUN,
-    YOKLAMA
+    YOKLAMA,
+    ENVANTER
 }

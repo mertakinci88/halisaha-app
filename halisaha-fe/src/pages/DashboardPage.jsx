@@ -6,20 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Tag } from '@/components/ui/tag';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
-import { ogrenciService, rezervasyonService, sahaService, urunService } from '@/services';
+import { envanterService, ogrenciService, rezervasyonService, sahaService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { hh, saatOf, stokDurumu, tl, toIsoDate } from '@/lib/format';
 
-const ACILIS = 9;
-const KAPANIS = 23;
+const ACILIS = 12;
+const KAPANIS = 26; // 26 = ertesi gün 02:00 (Takvim ile aynı çalışma saatleri)
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { yetkiVar } = useAuth();
   const ogrenciYetkisi = yetkiVar('OGRENCI');
   const urunYetkisi = yetkiVar('URUN');
+  const envanterYetkisi = yetkiVar('ENVANTER');
   const [veri, setVeri] = useState(null);
   const [hata, setHata] = useHata();
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -33,15 +34,20 @@ export default function DashboardPage() {
       // Yetkisi olmayan menünün verisi çekilmez; kartı da gösterilmez
       ogrenciYetkisi ? ogrenciService.list({ boyut: 1000 }) : Promise.resolve({ icerik: [] }),
       urunYetkisi ? urunService.list() : Promise.resolve([]),
+      envanterYetkisi ? envanterService.list() : Promise.resolve([]),
+      envanterYetkisi ? envanterService.teslimBekleyenler() : Promise.resolve({ kalemSayisi: 0, ogrenciler: [] }),
     ])
-      .then(([rezervasyonlar, sahalar, ogrenciSayfasi, urunler]) =>
-        setVeri({ rezervasyonlar, sahalar, ogrenciler: ogrenciSayfasi.icerik, urunler }),
+      .then(([rezervasyonlar, sahalar, ogrenciSayfasi, urunler, envanterler, teslimBekleyen]) =>
+        setVeri({ rezervasyonlar, sahalar, ogrenciler: ogrenciSayfasi.icerik, urunler, envanterler, teslimBekleyen }),
       )
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   };
 
   useEffect(yukle, []);
+
+  const envanterUyarilari = (veri?.envanterler || []).filter((e) => stokDurumu(e));
+  const envanterAd = (e) => (e.bedenli && e.beden ? e.turAd + ' (' + e.beden + ')' : e.turAd);
 
   const kpiler = useMemo(() => {
     if (!veri) return [];
@@ -156,6 +162,75 @@ export default function DashboardPage() {
                   Öğrenci listesi
                 </Button>
               </Card>
+              ) : null}
+
+              {envanterYetkisi ? (
+                <Card>
+                  <h4 className="text-[22px]">Envanter</h4>
+
+                  <div className="flex flex-col gap-2 border border-divider bg-surface/40 p-3.5">
+                    <h5 className="font-heading text-[18px] font-semibold">Stoğu azalan envanterler</h5>
+                    <Table>
+                      <tbody>
+                        {envanterUyarilari.length === 0 ? (
+                          <Bos colSpan={2}>Envanter stokları yeterli.</Bos>
+                        ) : (
+                          envanterUyarilari.slice(0, 5).map((e) => (
+                            <Tr key={e.id}>
+                              <Td>{envanterAd(e)}</Td>
+                              <Td className="text-right">
+                                {stokDurumu(e) === 'TUKENDI' ? (
+                                  <Tag tone="danger">Tükendi</Tag>
+                                ) : (
+                                  <Tag tone="neutral">{e.adet} adet kaldı</Tag>
+                                )}
+                              </Td>
+                            </Tr>
+                          ))
+                        )}
+                      </tbody>
+                    </Table>
+                    {envanterUyarilari.length > 5 ? (
+                      <div className="text-[13.5px] text-ink/55">+{envanterUyarilari.length - 5} envanter daha</div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-col gap-2 border border-divider bg-surface/40 p-3.5">
+                    <div className="flex items-baseline gap-2.5">
+                      <h5 className="font-heading text-[18px] font-semibold">Teslim bekleyen öğrenciler</h5>
+                      {veri.teslimBekleyen.kalemSayisi > 0 ? (
+                        <span className="ml-auto text-[13.5px] tabular-nums text-ink/60">{veri.teslimBekleyen.kalemSayisi} envanter</span>
+                      ) : null}
+                    </div>
+                    <Table>
+                      <tbody>
+                        {veri.teslimBekleyen.ogrenciler.length === 0 ? (
+                          <Bos colSpan={2}>Teslim bekleyen öğrenci yok.</Bos>
+                        ) : (
+                          veri.teslimBekleyen.ogrenciler.slice(0, 5).map((o) => (
+                            <Tr
+                              key={o.ogrenciId}
+                              className={ogrenciYetkisi ? 'cursor-pointer' : undefined}
+                              onClick={ogrenciYetkisi ? () => navigate('/ogrenciler/' + o.ogrenciId) : undefined}
+                            >
+                              <Td>{o.adSoyad}</Td>
+                              <Td className="text-right text-[13.5px] text-ink/70">
+                                {o.kalemler.map((k) => envanterAd(k)).join(', ')}
+                              </Td>
+                            </Tr>
+                          ))
+                        )}
+                      </tbody>
+                    </Table>
+                    {veri.teslimBekleyen.ogrenciler.length > 5 ? (
+                      <div className="text-[13.5px] text-ink/55">+{veri.teslimBekleyen.ogrenciler.length - 5} öğrenci daha</div>
+                    ) : null}
+                  </div>
+
+                  <Button variant="secondary" className="self-start" onClick={() => navigate('/envanter')}>
+                    Envantere git
+                  </Button>
+                </Card>
               ) : null}
 
               {urunYetkisi ? (

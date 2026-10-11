@@ -9,6 +9,8 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import EnvanterSatisKarti from '@/components/EnvanterSatisKarti';
 
 const BOS = {
   grupId: '',
@@ -32,6 +34,7 @@ const BOS = {
 const tarihGirdisi = (v) => (v ? String(v).slice(0, 10) : '');
 
 export default function OgrenciDetayPage() {
+  const { yetkiVar } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [gruplar, setGruplar] = useState([]);
@@ -289,6 +292,9 @@ export default function OgrenciDetayPage() {
           </div>
         </Card>
       </form>
+
+      {/* Envanter seti satışı: yalnızca ADMIN ya da Envanter yetkisi olanlar görür */}
+      {yetkiVar('ENVANTER') ? <EnvanterSatisKarti ogrenciId={id} /> : null}
     </div>
   );
 }

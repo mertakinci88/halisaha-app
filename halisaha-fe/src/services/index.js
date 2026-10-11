@@ -100,6 +100,42 @@ export const yoklamaService = {
     api.put('/api/yoklamalar', { kayitlar }, { params: { tarih, grupId } }).then((r) => r.data),
 };
 
+/* ── /api/envanterler (ADMIN ya da ENVANTER yetkisi) ───────────── */
+export const envanterService = {
+  /** [{ id, tur, turAd, bedenli, beden, adet, stokUyariAdedi, satisFiyati }] — tür (alfabetik) ve beden sırasıyla */
+  list: () => api.get('/api/envanterler').then((r) => r.data),
+  get: (id) => api.get('/api/envanterler/' + id).then((r) => r.data),
+  /** Panel kartı: { kalemSayisi, ogrenciler: [{ ogrenciId, adSoyad, kalemler: [{ turAd, beden, bedenli, stokYok }] }] } — ödemesi alınmış, teslim edilmemiş */
+  teslimBekleyenler: () => api.get('/api/envanterler/teslim-bekleyenler').then((r) => r.data),
+  /** body: { tur, beden (yalnızca bedenli türlerde), adet, satisFiyati, stokUyariAdedi } */
+  create: (body) => api.post('/api/envanterler', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/envanterler/' + id, body).then((r) => r.data),
+  remove: (id) => api.delete('/api/envanterler/' + id),
+};
+
+/* ── /api/envanter-setleri (ADMIN ya da ENVANTER yetkisi) ───────── */
+export const envanterSetService = {
+  /** [{ id, ad, toplamTutar, kayitTarihi, guncellemeTarihi, kaydeden, kalemler: [{ envanterId, tur, turAd, beden, adet, satisFiyati }] }] — ada göre */
+  list: () => api.get('/api/envanter-setleri').then((r) => r.data),
+  get: (id) => api.get('/api/envanter-setleri/' + id).then((r) => r.data),
+  /** body: { ad, envanterIdleri: [id] } — her türden en fazla bir envanter kaydı (tür + beden) */
+  create: (body) => api.post('/api/envanter-setleri', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/envanter-setleri/' + id, body).then((r) => r.data),
+  remove: (id) => api.delete('/api/envanter-setleri/' + id),
+};
+
+/* ── /api/ogrenciler/{id}/envanter-satislari (öğrenci detayındaki envanter seti satışı) ── */
+export const envanterSatisService = {
+  list: (ogrenciId) => api.get('/api/ogrenciler/' + ogrenciId + '/envanter-satislari').then((r) => r.data),
+  /** body: { kalemler: [{ tur, beden, odendi, teslim }] (her türden bir tane), odenenTutar, setId (isteğe bağlı; yalnızca oluştururken) } */
+  create: (ogrenciId, body) =>
+    api.post('/api/ogrenciler/' + ogrenciId + '/envanter-satislari', body).then((r) => r.data),
+  update: (ogrenciId, satisId, body) =>
+    api.put('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId, body).then((r) => r.data),
+  remove: (ogrenciId, satisId) =>
+    api.delete('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId),
+};
+
 /* ── /api/gruplar ──────────────────────────────────────────── */
 export const grupService = {
   list: () => api.get('/api/gruplar').then((r) => r.data),

@@ -9,6 +9,7 @@ import com.msc.halisaha.entity.Grup;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
+import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.GrupRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class OgrenciService {
     private final OgrenciRepository ogrenciRepository;
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
+    private final EnvanterSatisRepository envanterSatisRepository;
 
     public PageResponse<OgrenciResponse> list(Long grupId, String q, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
@@ -67,7 +69,12 @@ public class OgrenciService {
 
     @Transactional
     public void delete(Long id) {
-        ogrenciRepository.delete(getEntity(id));
+        Ogrenci ogrenci = getEntity(id);
+        if (envanterSatisRepository.existsByOgrenciId(id)) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Envanter satışı olan öğrenci silinemez; önce envanter satışlarını silin (teslim edilenlerin stoğu geri döner)");
+        }
+        ogrenciRepository.delete(ogrenci);
     }
 
     private void applyRequest(Ogrenci ogrenci, OgrenciRequest request) {

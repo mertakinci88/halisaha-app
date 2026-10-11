@@ -20,6 +20,11 @@ import SahaDetayPage from '@/pages/SahaDetayPage';
 import UrunListePage from '@/pages/UrunListePage';
 import UrunKayitPage from '@/pages/UrunKayitPage';
 import UrunDetayPage from '@/pages/UrunDetayPage';
+import EnvanterListePage from '@/pages/EnvanterListePage';
+import EnvanterKayitPage from '@/pages/EnvanterKayitPage';
+import EnvanterDetayPage from '@/pages/EnvanterDetayPage';
+import EnvanterSetKayitPage from '@/pages/EnvanterSetKayitPage';
+import EnvanterSetDetayPage from '@/pages/EnvanterSetDetayPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
 import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
@@ -117,6 +122,27 @@ export default function App() {
         <Route
           path="/urunler/:id"
           element={<YetkiliRota modul="URUN"><UrunDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/envanter"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/yeni"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/set/yeni"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterSetKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/set/:id"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterSetDetayPage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/:id"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterDetayPage /></YetkiliRota>}
         />
 
         <Route
