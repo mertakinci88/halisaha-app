@@ -25,5 +25,9 @@ app:
     secret: ${JWT_SECRET:bu-degeri-production-ortaminda-mutlaka-degistirin-en-az-256-bitlik-rastgele-bir-anahtar-kullanin}
     access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
     refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  super-admin:
+    username: ${SUPER_ADMIN_USERNAME:superadmin}
+    password: ${SUPER_ADMIN_PASSWORD:superadmin123}
+    ad-soyad: ${SUPER_ADMIN_AD_SOYAD:Platform Yöneticisi}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

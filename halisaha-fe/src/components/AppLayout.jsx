@@ -2,6 +2,7 @@ import { useBildirimAlani } from '@/context/ToastContext';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
+  Building2,
   CupSoda,
   LayoutDashboard,
   Layers,
@@ -26,10 +27,13 @@ const NAV = [
 ];
 
 export default function AppLayout() {
-  const { kullanici, logout, isAdmin, yetkiVar } = useAuth();
+  const { kullanici, logout, isAdmin, isSuperAdmin, yetkiVar } = useAuth();
   const navigate = useNavigate();
 
-  const nav = NAV.filter((m) => !m.modul || yetkiVar(m.modul));
+  // Süper admin işletmelere bağlı değildir; yalnızca işletme yönetimini görür
+  const nav = isSuperAdmin
+    ? [{ to: '/isletmeler', ad: 'İşletmeler', Icon: Building2, modul: null }]
+    : NAV.filter((m) => !m.modul || yetkiVar(m.modul));
   if (isAdmin) {
     nav.push({ to: '/personel', ad: 'Personel', Icon: ShieldCheck, modul: null });
   }
@@ -50,6 +54,9 @@ export default function AppLayout() {
           <div className="flex items-center gap-2 text-[13.5px] text-ink/55">
             <UserRound size={16} strokeWidth={1.5} />
             <span>{kullanici?.adSoyad || kullanici?.kullaniciAdi || 'Kullanıcı'}</span>
+            {kullanici?.isletmeAd ? (
+              <span className="border-l border-divider pl-2 text-ink/70">{kullanici.isletmeAd}</span>
+            ) : null}
           </div>
           <Button variant="secondary" onClick={cikis}>
             <LogOut size={16} strokeWidth={1.5} />
@@ -87,7 +94,8 @@ export default function AppLayout() {
   );
 }
 
-export function PageHeader({ kicker, baslik, children }) {
+/** sade: Takvim / Hızlı rezervasyon kısayollarını göstermez (işletme bağlamı olmayan sayfalar için). */
+export function PageHeader({ kicker, baslik, children, sade = false }) {
   const navigate = useNavigate();
   const bildirimAlani = useBildirimAlani();
   return (
@@ -100,14 +108,18 @@ export function PageHeader({ kicker, baslik, children }) {
       <div ref={bildirimAlani} className="relative min-w-0 grow basis-0 self-stretch" />
       <div className="ml-auto flex flex-wrap gap-2">
         {children}
-        <Button variant="secondary" onClick={() => navigate('/takvim')}>
-          <CalendarDays size={16} strokeWidth={1.5} />
-          <span>Takvim</span>
-        </Button>
-        <Button variant="primary" onClick={() => navigate('/rezervasyon/yeni')}>
-          <Plus size={16} strokeWidth={1.5} />
-          <span>Hızlı rezervasyon</span>
-        </Button>
+        {sade ? null : (
+          <>
+            <Button variant="secondary" onClick={() => navigate('/takvim')}>
+              <CalendarDays size={16} strokeWidth={1.5} />
+              <span>Takvim</span>
+            </Button>
+            <Button variant="primary" onClick={() => navigate('/rezervasyon/yeni')}>
+              <Plus size={16} strokeWidth={1.5} />
+              <span>Hızlı rezervasyon</span>
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

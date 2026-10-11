@@ -11,6 +11,12 @@ import com.msc.halisaha.entity.Urun;
 import com.msc.halisaha.repository.SahaRepository;
 import com.msc.halisaha.repository.StokHareketRepository;
 import com.msc.halisaha.repository.UrunRepository;
+import com.msc.halisaha.TestOturum;
+import com.msc.halisaha.entity.Isletme;
+import com.msc.halisaha.entity.Rol;
+import com.msc.halisaha.repository.IsletmeRepository;
+import com.msc.halisaha.repository.KullaniciRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +40,24 @@ class RezervasyonStokTest {
     @Autowired StokHareketRepository stokHareketRepository;
     @Autowired UrunService urunService;
 
+    @Autowired IsletmeRepository isletmeRepository;
+    @Autowired KullaniciRepository kullaniciRepository;
+
     private Saha saha;
     private Urun cips;
 
     @BeforeEach
     void hazirla() {
-        saha = sahaRepository.save(Saha.builder().ad("Test Sahası").durum(SahaDurum.AKTIF)
+        Isletme isletme = TestOturum.isletme(isletmeRepository, "Test İşletmesi");
+        TestOturum.girisYap(TestOturum.kullanici(kullaniciRepository, isletme, Rol.ADMIN));
+        saha = sahaRepository.save(Saha.builder().isletme(isletme).ad("Test Sahası").durum(SahaDurum.AKTIF)
                 .saatlikUcret(new BigDecimal("1000.00")).build());
-        cips = urunRepository.save(Urun.builder().ad("Test Cips").adet(5).fiyat(new BigDecimal("80.00")).build());
+        cips = urunRepository.save(Urun.builder().isletme(isletme).ad("Test Cips").adet(5).fiyat(new BigDecimal("80.00")).build());
+    }
+
+    @AfterEach
+    void temizle() {
+        TestOturum.temizle();
     }
 
     private RezervasyonResponse rezervasyonAc(int gun) {
@@ -52,6 +68,15 @@ class RezervasyonStokTest {
 
     private int stok() {
         return urunRepository.mevcutAdet(cips.getId());
+    }
+
+    @Test
+    void yeniRezervasyonaKayitTarihiYazilir() {
+        RezervasyonResponse r = rezervasyonAc(9);
+        org.junit.jupiter.api.Assertions.assertNotNull(r.kayitTarih());
+        assertEquals("Test Kullanıcı", r.kaydedenAd());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                java.time.Duration.between(r.kayitTarih(), com.msc.halisaha.common.AppZaman.simdi()).abs().toMinutes() < 1);
     }
 
     @Test
@@ -126,8 +151,8 @@ class RezervasyonStokTest {
 
     @Test
     void stokDegisinceUrunListesiSirasiDegismezVeAlfabetiktir() {
-        Urun ikinci = urunRepository.save(Urun.builder().ad("Test Su").adet(9).fiyat(new BigDecimal("20.00")).build());
-        Urun ucuncu = urunRepository.save(Urun.builder().ad("Test Kola").adet(9).fiyat(new BigDecimal("60.00")).build());
+        Urun ikinci = urunRepository.save(Urun.builder().isletme(saha.getIsletme()).ad("Test Su").adet(9).fiyat(new BigDecimal("20.00")).build());
+        Urun ucuncu = urunRepository.save(Urun.builder().isletme(saha.getIsletme()).ad("Test Kola").adet(9).fiyat(new BigDecimal("60.00")).build());
         java.util.function.Supplier<java.util.List<Long>> siralama = () -> urunService.list().stream()
                 .map(UrunResponse::id)
                 .filter(id -> id.equals(cips.getId()) || id.equals(ikinci.getId()) || id.equals(ucuncu.getId()))

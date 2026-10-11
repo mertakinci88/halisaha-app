@@ -2,6 +2,7 @@ package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.UrunRequest;
 import com.msc.halisaha.dto.UrunResponse;
 import com.msc.halisaha.entity.Urun;
@@ -20,10 +21,11 @@ public class UrunService {
 
     private final UrunRepository urunRepository;
     private final StokService stokService;
+    private final IsletmeContext isletmeContext;
 
     public List<UrunResponse> list() {
         // Sıra sabit ve alfabetik olmalı: sıralamasız sorguda Postgres, güncellenen (stoğu değişen) satırı farklı yerde döndürebilir
-        return urunRepository.findAll().stream()
+        return urunRepository.findByIsletmeId(isletmeContext.id()).stream()
                 .sorted(TurkceSirala.<Urun>alfabetik(Urun::getAd).thenComparing(Urun::getId))
                 .map(UrunResponse::from)
                 .toList();
@@ -36,6 +38,7 @@ public class UrunService {
     @Transactional
     public UrunResponse create(UrunRequest request) {
         Urun urun = Urun.builder()
+                .isletme(isletmeContext.getir())
                 .ad(request.ad())
                 .adet(request.adet())
                 .stokUyariAdedi(request.stokUyariAdedi() != null ? request.stokUyariAdedi() : 10)
@@ -60,14 +63,11 @@ public class UrunService {
 
     @Transactional
     public void delete(Long id) {
-        if (!urunRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Ürün bulunamadı: " + id);
-        }
-        urunRepository.deleteById(id);
+        urunRepository.delete(getEntity(id));
     }
 
     private Urun getEntity(Long id) {
-        return urunRepository.findById(id)
+        return urunRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ürün bulunamadı: " + id));
     }
 }

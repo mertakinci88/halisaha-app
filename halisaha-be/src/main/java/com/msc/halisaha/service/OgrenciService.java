@@ -1,6 +1,7 @@
 package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.OgrenciRequest;
 import com.msc.halisaha.dto.OgrenciResponse;
 import com.msc.halisaha.dto.PageResponse;
@@ -25,10 +26,11 @@ public class OgrenciService {
 
     private final OgrenciRepository ogrenciRepository;
     private final GrupRepository grupRepository;
+    private final IsletmeContext isletmeContext;
 
     public PageResponse<OgrenciResponse> list(Long grupId, String q, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(grupId, q, pageRequest);
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, pageRequest);
         return PageResponse.from(sonuc, OgrenciResponse::from);
     }
 
@@ -39,6 +41,7 @@ public class OgrenciService {
     @Transactional
     public OgrenciResponse create(OgrenciRequest request) {
         Ogrenci ogrenci = Ogrenci.builder()
+                .isletme(isletmeContext.getir())
                 .grup(resolveGrup(request.grupId()))
                 .adSoyad(request.adSoyad())
                 .durum(request.durum() != null ? request.durum() : OgrenciDurum.AKTIF)
@@ -64,10 +67,7 @@ public class OgrenciService {
 
     @Transactional
     public void delete(Long id) {
-        if (!ogrenciRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + id);
-        }
-        ogrenciRepository.deleteById(id);
+        ogrenciRepository.delete(getEntity(id));
     }
 
     private void applyRequest(Ogrenci ogrenci, OgrenciRequest request) {
@@ -90,12 +90,12 @@ public class OgrenciService {
         if (grupId == null) {
             return null;
         }
-        return grupRepository.findById(grupId)
+        return grupRepository.findByIdAndIsletmeId(grupId, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grup bulunamadı: " + grupId));
     }
 
     private Ogrenci getEntity(Long id) {
-        return ogrenciRepository.findById(id)
+        return ogrenciRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + id));
     }
 }

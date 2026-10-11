@@ -3,6 +3,7 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.OdemeRequest;
 import com.msc.halisaha.dto.OdemeResponse;
 import com.msc.halisaha.dto.RezervasyonRequest;
@@ -54,19 +55,21 @@ public class RezervasyonService {
     private final UrunRepository urunRepository;
     private final StokService stokService;
     private final MevcutKullanici mevcutKullanici;
+    private final IsletmeContext isletmeContext;
 
     public List<RezervasyonResponse> list(Long sahaId, LocalDate tarih) {
+        Long isletmeId = isletmeContext.id();
         List<Rezervasyon> rezervasyonlar;
         if (sahaId != null && tarih != null) {
-            rezervasyonlar = rezervasyonRepository.findBySahaIdAndBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
-                    sahaId, tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
+            rezervasyonlar = rezervasyonRepository.findByIsletmeIdAndSahaIdAndBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
+                    isletmeId, sahaId, tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
         } else if (tarih != null) {
-            rezervasyonlar = rezervasyonRepository.findByBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
-                    tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
+            rezervasyonlar = rezervasyonRepository.findByIsletmeIdAndBaslangicTarihGreaterThanEqualAndBaslangicTarihLessThan(
+                    isletmeId, tarih.atStartOfDay(), tarih.plusDays(1).atStartOfDay());
         } else if (sahaId != null) {
-            rezervasyonlar = rezervasyonRepository.findBySahaId(sahaId);
+            rezervasyonlar = rezervasyonRepository.findByIsletmeIdAndSahaId(isletmeId, sahaId);
         } else {
-            rezervasyonlar = rezervasyonRepository.findAll();
+            rezervasyonlar = rezervasyonRepository.findByIsletmeId(isletmeId);
         }
         // Alfabetik (Türkçe); aynı isimde saat sırasına göre
         return toResponses(rezervasyonlar.stream()
@@ -93,11 +96,14 @@ public class RezervasyonService {
         }
 
         Rezervasyon rezervasyon = rezervasyonRepository.save(Rezervasyon.builder()
+                .isletme(isletmeContext.getir())
                 .saha(saha)
                 .adSoyad(request.adSoyad())
                 .baslangicTarih(request.baslangicTarih())
                 .bitisTarih(request.bitisTarih())
                 .telNo(request.telNo())
+                .kayitTarih(AppZaman.simdi())
+                .kullanici(mevcutKullanici.getir())
                 .odemeDurumu(OdemeDurumu.ODENMEDI)
                 .odenecekTutar(BigDecimal.ZERO)
                 .build());
@@ -181,7 +187,7 @@ public class RezervasyonService {
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyona ürün eklenemez");
         }
-        Urun urun = urunRepository.findById(request.urunId())
+        Urun urun = urunRepository.findByIdAndIsletmeId(request.urunId(), isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ürün bulunamadı: " + request.urunId()));
 
         stokService.dus(urun, request.miktar(), rezervasyon);
@@ -343,12 +349,12 @@ public class RezervasyonService {
     }
 
     private Saha getSaha(Long sahaId) {
-        return sahaRepository.findById(sahaId)
+        return sahaRepository.findByIdAndIsletmeId(sahaId, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Saha bulunamadı: " + sahaId));
     }
 
     private Rezervasyon getEntity(Long id) {
-        return rezervasyonRepository.findById(id)
+        return rezervasyonRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rezervasyon bulunamadı: " + id));
     }
 
@@ -409,6 +415,8 @@ public class RezervasyonService {
                 r.getTelNo(),
                 r.getOdemeYontemi(),
                 r.getOdemeDurumu(),
+                r.getKayitTarih(),
+                r.getKullanici() != null ? r.getKullanici().getAdSoyad() : null,
                 r.getOdenecekTutar(),
                 sahaTutar,
                 odenen,

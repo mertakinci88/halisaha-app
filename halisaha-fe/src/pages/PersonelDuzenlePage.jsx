@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Field, Input } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
@@ -10,11 +11,12 @@ import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
-export default function PersonelYetkiPage() {
+export default function PersonelDuzenlePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [kullanici, setKullanici] = useState(null);
   const [yetkiler, setYetkiler] = useState([]);
+  const [bilgi, setBilgi] = useState({ kullaniciAdi: '', adSoyad: '', sifre: '' });
   const [hata, setHata] = useHata();
   const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -26,6 +28,7 @@ export default function PersonelYetkiPage() {
       .then((k) => {
         setKullanici(k);
         setYetkiler(k.yetkiler);
+        setBilgi({ kullaniciAdi: k.kullaniciAdi, adSoyad: k.adSoyad, sifre: '' });
       })
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
@@ -33,6 +36,31 @@ export default function PersonelYetkiPage() {
 
   const yetkiSecTogla = (modul) =>
     setYetkiler((p) => (p.includes(modul) ? p.filter((m) => m !== modul) : [...p, modul]));
+
+  const bilgiKaydet = async (e) => {
+    e.preventDefault();
+    setHata('');
+    setKaydediyor(true);
+    try {
+      const kullaniciAdiDegisti = bilgi.kullaniciAdi.trim() !== kullanici.kullaniciAdi;
+      const guncel = await kullaniciService.guncelle(id, {
+        kullaniciAdi: bilgi.kullaniciAdi.trim(),
+        adSoyad: bilgi.adSoyad.trim(),
+        ...(bilgi.sifre ? { sifre: bilgi.sifre } : {}),
+      });
+      setKullanici(guncel);
+      setBilgi({ kullaniciAdi: guncel.kullaniciAdi, adSoyad: guncel.adSoyad, sifre: '' });
+      toast.basari(
+        kullaniciAdiDegisti || bilgi.sifre
+          ? 'Bilgiler güncellendi; kullanıcının yeniden giriş yapması gerekecek.'
+          : 'Bilgiler güncellendi.',
+      );
+    } catch (err) {
+      setHata(apiHata(err));
+    } finally {
+      setKaydediyor(false);
+    }
+  };
 
   const yetkileriKaydet = async () => {
     setHata('');
@@ -72,6 +100,48 @@ export default function PersonelYetkiPage() {
       <Hata mesaj={hata} />
 
       <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+        <form onSubmit={bilgiKaydet}>
+          <Card className="gap-3.5">
+            <h4 className="text-[22px]">Kullanıcı bilgileri</h4>
+            <Field label="Kullanıcı adı">
+              <Input
+                type="text"
+                autoComplete="off"
+                value={bilgi.kullaniciAdi}
+                onChange={(e) => setBilgi((p) => ({ ...p, kullaniciAdi: e.target.value }))}
+                required
+              />
+            </Field>
+            <Field label="Ad soyad">
+              <Input
+                type="text"
+                value={bilgi.adSoyad}
+                onChange={(e) => setBilgi((p) => ({ ...p, adSoyad: e.target.value }))}
+                required
+              />
+            </Field>
+            <Field label="Yeni şifre">
+              <Input
+                type="password"
+                autoComplete="new-password"
+                minLength={6}
+                placeholder="Değiştirmek istemiyorsanız boş bırakın"
+                value={bilgi.sifre}
+                onChange={(e) => setBilgi((p) => ({ ...p, sifre: e.target.value }))}
+              />
+            </Field>
+            <div className="mt-1 flex gap-2">
+              <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || !bilgi.adSoyad.trim() || !bilgi.kullaniciAdi.trim()}>
+                {kaydediyor ? 'Kaydediliyor…' : 'Bilgileri kaydet'}
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/personel')}>
+                Listeye dön
+              </Button>
+            </div>
+          </Card>
+        </form>
+
+        {kullanici.rol === 'PERSONEL' ? (
         <Card className="gap-3.5">
           <h4 className="text-[22px]">Menü yetkileri</h4>
           <p className="m-0 text-[13.5px] text-ink/55">
@@ -85,7 +155,7 @@ export default function PersonelYetkiPage() {
                 key={m}
                 active={yetkiler.includes(m)}
                 onClick={() => yetkiSecTogla(m)}
-                className="border border-divider"
+                className="border border-divider border-l!"
               >
                 {MODUL_LABEL[m]}
               </SegOpt>
@@ -96,11 +166,9 @@ export default function PersonelYetkiPage() {
             <Button type="button" variant="primary" className="flex-1" disabled={kaydediyor} onClick={yetkileriKaydet}>
               {kaydediyor ? 'Kaydediliyor…' : 'Yetkileri kaydet'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/personel')}>
-              Listeye dön
-            </Button>
           </div>
         </Card>
+        ) : null}
 
         <Card className="gap-3.5">
           <h4 className="text-[22px]">Hesap durumu</h4>

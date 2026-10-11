@@ -20,6 +20,7 @@ import {
   kisaTarih,
   saatOf,
   sureSaat,
+  tarihSaat,
   telGoster,
   tl,
   tutarSinirla,
@@ -179,6 +180,8 @@ export default function RezervasyonDetayPage() {
     { etiket: 'Telefon', deger: telGoster(rez.telNo) },
     { etiket: 'Son ödeme yöntemi', deger: ODEME_YONTEMI_LABEL[rez.odemeYontemi] || '—' },
     { etiket: 'Ödeme durumu', deger: ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
+    { etiket: 'Kayıt tarihi', deger: tarihSaat(rez.kayitTarih) },
+    { etiket: 'Kaydeden', deger: rez.kaydedenAd || '—' },
   ];
 
   return (

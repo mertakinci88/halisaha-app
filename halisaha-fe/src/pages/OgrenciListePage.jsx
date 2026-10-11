@@ -11,7 +11,7 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
-import { ODEME_DURUMU_LABEL, kisaTarih, tl } from '@/lib/format';
+import { ODEME_DURUMU_LABEL, tl } from '@/lib/format';
 
 const BOYUT = 10;
 const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSayfa: 0 };
@@ -98,7 +98,7 @@ export default function OgrenciListePage() {
                   <Th>Telefon</Th>
                   <Th className="text-right">Aidat</Th>
                   <Th>Ödeme</Th>
-                  <Th>Sonraki ödeme</Th>
+                  <Th>Durum</Th>
                   <Th>Not</Th>
                   <Th />
                 </tr>
@@ -129,7 +129,11 @@ export default function OgrenciListePage() {
                           {ODEME_DURUMU_LABEL[o.odemeDurumu] || '—'}
                         </Tag>
                       </Td>
-                      <Td className="tabular-nums text-ink/55">{kisaTarih(o.sonrakiOdemeTarih)}</Td>
+                      <Td>
+                        <Tag tone={o.durum === 'AKTIF' ? 'accent' : 'outline'}>
+                          {o.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
+                        </Tag>
+                      </Td>
                       <Td className="max-w-[220px] truncate text-[13.5px] text-ink/70" title={o.not || ''}>
                         {o.not || '—'}
                       </Td>
