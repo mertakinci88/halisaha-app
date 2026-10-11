@@ -5,5 +5,6 @@ public enum Modul {
     OGRENCI,
     GRUP,
     SAHA,
-    URUN
+    URUN,
+    YOKLAMA
 }

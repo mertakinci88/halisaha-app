@@ -91,6 +91,15 @@ export const ogrenciService = {
   remove: (id) => api.delete('/api/ogrenciler/' + id),
 };
 
+/* ── /api/yoklamalar (ADMIN ya da YOKLAMA yetkisi) ───────────── */
+export const yoklamaService = {
+  /** Grubun aktif öğrencileri ve seçili günkü yoklamaları: [{ ogrenciId, adSoyad, durum: GELDI|GELMEDI|IZINLI|null, not }] */
+  list: (tarih, grupId) => api.get('/api/yoklamalar', { params: { tarih, grupId } }).then((r) => r.data),
+  /** Tüm satırları tek seferde kaydeder; durum null olan öğrencinin kaydı silinir. Güncel listeyi döner. */
+  kaydet: (tarih, grupId, kayitlar) =>
+    api.put('/api/yoklamalar', { kayitlar }, { params: { tarih, grupId } }).then((r) => r.data),
+};
+
 /* ── /api/gruplar ──────────────────────────────────────────── */
 export const grupService = {
   list: () => api.get('/api/gruplar').then((r) => r.data),
