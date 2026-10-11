@@ -21,8 +21,10 @@ npm run dev              # http://localhost:5173
 
 Backend'in `app.cors.allowed-origins` değeri `http://localhost:5173` içerdiği için ek CORS ayarı gerekmez.
 
-Varsayılan kullanıcılar: **admin / admin123** (V2__seed_admin.sql, "Varsayılan İşletme"nin yöneticisi) ve
-**superadmin / superadmin123** (ilk açılışta backend oluşturur; üretimde `SUPER_ADMIN_PASSWORD` ile verilir).
+Giriş bilgileri: ilk açılışta backend bir süper admin oluşturur (kullanıcı adı ve şifre `SUPER_ADMIN_USERNAME` /
+`SUPER_ADMIN_PASSWORD` ortam değişkenlerinden gelir; şifre verilmezse süper admin oluşturulmaz. Yerelde backend'i
+`SUPER_ADMIN_PASSWORD=<şifre>` ile başlatın). İşletmeler ve işletme admin kullanıcıları süper admin
+ekranından oluşturulur. Hiçbir ortamda ortak/varsayılan bir şifre kullanmayın.
 
 ## Çoklu işletme
 

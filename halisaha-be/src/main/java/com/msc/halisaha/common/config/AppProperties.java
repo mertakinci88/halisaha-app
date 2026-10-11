@@ -10,7 +10,7 @@ public record AppProperties(Jwt jwt, Cors cors, SuperAdmin superAdmin) {
     public record Jwt(String secret, long accessTokenExpirationMs, long refreshTokenExpirationMs) {
     }
 
-    /** İlk açılışta süper admin yoksa bu bilgilerle oluşturulur. Üretimde şifre ortam değişkeniyle verilmelidir. */
+    /** İlk açılışta süper admin yoksa bu bilgilerle oluşturulur. Şifre varsayılan olarak boştur; boşsa süper admin oluşturulmaz. */
     public record SuperAdmin(String username, String password, String adSoyad) {
     }
 

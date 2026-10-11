@@ -1,3 +1,6 @@
 .DS_Store
 vps
 Halısaha.xlsx
+# Sunucu yedek kılavuzu ve scriptleri: repoda tutulmaz (herkese açık depoda sunucu düzenini ifşa eder)
+halisaha-be/deploy/YEDEK.md
+halisaha-be/deploy/backup/
