@@ -28,9 +28,15 @@ await page.waitForSelector('text=Giriş yap');
 await page.screenshot({ path: path.join(outDir, '01-login.png') });
 console.log(`[driver] screenshot -> ${path.join(outDir, '01-login.png')}`);
 
-console.log('[driver] fill credentials + submit (admin/admin123)');
-await page.fill('input[autocomplete="username"]', 'admin');
-await page.fill('input[autocomplete="current-password"]', 'admin123');
+const HS_USER = process.env.HS_USER;
+const HS_PASS = process.env.HS_PASS;
+if (!HS_USER || !HS_PASS) {
+  console.error('[driver] HS_USER ve HS_PASS ortam değişkenleri gerekli (örn. HS_USER=kullanici HS_PASS=sifre node driver.mjs)');
+  process.exit(1);
+}
+console.log('[driver] fill credentials + submit');
+await page.fill('input[autocomplete="username"]', HS_USER);
+await page.fill('input[autocomplete="current-password"]', HS_PASS);
 await page.click('button:has-text("Giriş yap")');
 await page.waitForTimeout(1500);
 await page.screenshot({ path: path.join(outDir, '02-after-submit.png') });

@@ -35,11 +35,11 @@ the backend**, but submitting the login form needs the backend up on
 npm run dev &
 for i in $(seq 1 30); do curl -sf http://localhost:5173 >/dev/null && break; sleep 1; done
 
-node .claude/skills/run-halisaha-fe/driver.mjs
+HS_USER=<kullanici-adi> HS_PASS=<sifre> node .claude/skills/run-halisaha-fe/driver.mjs
 ```
 
 The driver navigates to `/giris`, screenshots the login form, fills
-`admin` / `admin123`, submits, waits, and screenshots the result. It
+the credentials from the `HS_USER` / `HS_PASS` environment variables, submits, waits, and screenshots the result. It
 prints the page title, final URL, and any console/page errors it saw.
 
 Screenshots land in `.claude/skills/run-halisaha-fe/screenshots/`:

@@ -12,6 +12,8 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "kullaniciAdi", "value": "", "type": "string" },
+    { "key": "sifre", "value": "", "type": "string" },
     { "key": "accessToken", "value": "", "type": "string" },
     { "key": "refreshToken", "value": "", "type": "string" },
     { "key": "sahaId", "value": "1", "type": "string" },
@@ -48,7 +50,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"kullaniciAdi\": \"admin\",\n  \"sifre\": \"admin123\"\n}"
+              "raw": "{\n  \"kullaniciAdi\": \"{{kullaniciAdi}}\",\n  \"sifre\": \"{{sifre}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
