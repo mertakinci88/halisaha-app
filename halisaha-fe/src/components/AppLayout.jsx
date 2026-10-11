@@ -2,6 +2,7 @@ import { useBildirimAlani } from '@/context/ToastContext';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
+  ClipboardCheck,
   Building2,
   CupSoda,
   LayoutDashboard,
@@ -22,6 +23,7 @@ const NAV = [
   { to: '/takvim', ad: 'Takvim', Icon: CalendarDays, modul: null },
   { to: '/ogrenciler', ad: 'Öğrenciler', Icon: Users, modul: 'OGRENCI' },
   { to: '/gruplar', ad: 'Gruplar', Icon: Layers, modul: 'GRUP' },
+  { to: '/yoklama', ad: 'Yoklama', Icon: ClipboardCheck, modul: 'YOKLAMA' },
   { to: '/sahalar', ad: 'Sahalar', Icon: Square, modul: 'SAHA' },
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
 ];

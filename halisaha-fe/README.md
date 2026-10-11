@@ -46,6 +46,7 @@ işletmesinin verisini görür (backend `isletme_id` ile filtreler, frontend'de 
 | `/ogrenciler/yeni` | Öğrenci kaydı | `GET /api/gruplar`, `POST /api/ogrenciler` |
 | `/gruplar` | Grup listesi | `GET /api/gruplar`, `DELETE /api/gruplar/{id}` |
 | `/gruplar/yeni` | Grup kaydı | `POST /api/gruplar` |
+| `/yoklama` | Öğrenci yoklaması: tarih + grup seç, her öğrenci için Geldi / Gelmedi / İzinli ve not (yalnızca ADMIN ya da `YOKLAMA` yetkisi) | `GET /api/gruplar`, `GET /api/yoklamalar?tarih=&grupId=`, `PUT /api/yoklamalar?tarih=&grupId=` |
 | `/sahalar` | Saha listesi | `GET /api/sahalar`, `DELETE /api/sahalar/{id}` |
 | `/sahalar/yeni` | Saha kaydı | `POST /api/sahalar` |
 | `/urunler` | Kafeterya ürünleri (stok ±) | `GET /api/urunler`, `PUT /api/urunler/{id}`, `DELETE /api/urunler/{id}` |

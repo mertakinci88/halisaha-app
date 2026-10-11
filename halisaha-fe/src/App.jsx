@@ -13,6 +13,7 @@ import OgrenciDetayPage from '@/pages/OgrenciDetayPage';
 import GrupListePage from '@/pages/GrupListePage';
 import GrupKayitPage from '@/pages/GrupKayitPage';
 import GrupDetayPage from '@/pages/GrupDetayPage';
+import YoklamaPage from '@/pages/YoklamaPage';
 import SahaListePage from '@/pages/SahaListePage';
 import SahaKayitPage from '@/pages/SahaKayitPage';
 import SahaDetayPage from '@/pages/SahaDetayPage';
@@ -85,6 +86,11 @@ export default function App() {
         <Route
           path="/gruplar/:id"
           element={<YetkiliRota modul="GRUP"><GrupDetayPage /></YetkiliRota>}
+        />
+
+        <Route
+          path="/yoklama"
+          element={<YetkiliRota modul="YOKLAMA"><YoklamaPage /></YetkiliRota>}
         />
 
         <Route
