@@ -47,6 +47,11 @@ işletmesinin verisini görür (backend `isletme_id` ile filtreler, frontend'de 
 | `/gruplar` | Grup listesi | `GET /api/gruplar`, `DELETE /api/gruplar/{id}` |
 | `/gruplar/yeni` | Grup kaydı | `POST /api/gruplar` |
 | `/yoklama` | Öğrenci yoklaması: tarih + grup seç, her öğrenci için Geldi / Gelmedi / İzinli ve not (yalnızca ADMIN ya da `YOKLAMA` yetkisi) | `GET /api/gruplar`, `GET /api/yoklamalar?tarih=&grupId=`, `PUT /api/yoklamalar?tarih=&grupId=` |
+| `/envanter` | Envanter listesi (tür alfabetik, beden sırasıyla; Stok az / Tükendi etiketleri) ve **Setler** sekmesi (`?sekme=setler`: ad, içerdiği envanterler, toplam tutar). Yalnızca ADMIN ya da `ENVANTER` yetkisi | `GET /api/envanterler`, `DELETE /api/envanterler/{id}`, `GET /api/envanter-setleri`, `DELETE /api/envanter-setleri/{id}` |
+| `/envanter/set/yeni`, `/envanter/set/:id` | Set ekle / güncelle: ad + kayıtlı envanterler (tür + beden, her türden en fazla bir), seçildikçe toplam tutar | `POST /api/envanter-setleri`, `GET/PUT /api/envanter-setleri/{id}` |
+| `/envanter/yeni` | Yeni envanter: tür, beden (yalnızca Kışlık Eşofman / Yazlık Forma / Yağmurluk için: 128, 140, 152, 164, 176, Small, Medium), satış fiyatı, adet, stok uyarı adedi | `POST /api/envanterler` |
+| `/envanter/:id` | Envanter güncelle (tür ve beden de değişebilir; satışta kullanılıyorsa değişemez) | `GET/PUT /api/envanterler/{id}` |
+| `/ogrenciler/:id` | (Envanter yetkisi olanlar için) **Envanter bilgileri** kartı: öğrenciye envanter seti satışı; **Set** combobox'ından set seçilince tablo setin envanterleriyle dolar (bedenler değiştirilebilir; seçilmezse kayıtlı envanterlerden özel satış). Her envanter için Ödendi / Teslim; Ödendi işaretlenenlerin fiyatları ödenen tutara eklenir; stok yalnızca teslimde düşer | `GET/POST /api/ogrenciler/{id}/envanter-satislari`, `PUT/DELETE .../{satisId}` |
 | `/sahalar` | Saha listesi | `GET /api/sahalar`, `DELETE /api/sahalar/{id}` |
 | `/sahalar/yeni` | Saha kaydı | `POST /api/sahalar` |
 | `/urunler` | Kafeterya ürünleri (stok ±) | `GET /api/urunler`, `PUT /api/urunler/{id}`, `DELETE /api/urunler/{id}` |

@@ -6,6 +6,7 @@ import {
   Building2,
   CupSoda,
   LayoutDashboard,
+  Package,
   Layers,
   LogOut,
   Plus,
@@ -26,6 +27,7 @@ const NAV = [
   { to: '/yoklama', ad: 'Yoklama', Icon: ClipboardCheck, modul: 'YOKLAMA' },
   { to: '/sahalar', ad: 'Sahalar', Icon: Square, modul: 'SAHA' },
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
+  { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
 ];
 
 export default function AppLayout() {

@@ -56,6 +56,7 @@ class YoklamaServiceTest {
     private Ogrenci ali;
     private Ogrenci sule;
     private Ogrenci pasif;
+    private long onceki;   // testten önceki yoklama sayısı (veritabanında başka kayıtlar olabilir)
 
     @BeforeEach
     void hazirla() {
@@ -69,6 +70,7 @@ class YoklamaServiceTest {
         sule = ogrenci(isletmeA, grupA, "Şule Aydın", OgrenciDurum.AKTIF);
         pasif = ogrenci(isletmeA, grupA, "Pasif Öğrenci", OgrenciDurum.PASIF);
         TestOturum.girisYap(a);
+        onceki = yoklamaRepository.count();
     }
 
     @AfterEach
@@ -111,7 +113,7 @@ class YoklamaServiceTest {
 
         // Başka bir günde kayıt görünmez
         assertNull(yoklamaService.listele(GUN.plusDays(1), grupA.getId()).get(0).durum());
-        assertEquals(2, yoklamaRepository.count());
+        assertEquals(onceki + 2, yoklamaRepository.count());
     }
 
     @Test
@@ -127,7 +129,7 @@ class YoklamaServiceTest {
         assertEquals(YoklamaDurum.IZINLI, liste.get(0).durum());
         assertEquals("hasta", liste.get(0).not());
         assertNull(liste.get(1).durum());
-        assertEquals(1, yoklamaRepository.count());   // çiğdem'in kaydı silindi, ali güncellendi (yeni kayıt açılmadı)
+        assertEquals(onceki + 1, yoklamaRepository.count());   // çiğdem'in kaydı silindi, ali güncellendi (yeni kayıt açılmadı)
     }
 
     @Test
@@ -135,7 +137,7 @@ class YoklamaServiceTest {
         ApiException e = hata(() -> yoklamaService.kaydet(GUN, grupA.getId(),
                 istek(new Kayit(ali.getId(), null, "not var ama durum yok"))));
         assertEquals(400, e.getStatus().value());
-        assertEquals(0, yoklamaRepository.count());
+        assertEquals(onceki + 0, yoklamaRepository.count());
     }
 
     @Test
@@ -158,7 +160,7 @@ class YoklamaServiceTest {
                 istek(new Kayit(digerGrup.getId(), YoklamaDurum.GELDI, null)))).getStatus().value());
         assertEquals(400, hata(() -> yoklamaService.kaydet(GUN, grupA.getId(), istek(
                 new Kayit(ali.getId(), YoklamaDurum.GELDI, null), new Kayit(ali.getId(), YoklamaDurum.GELMEDI, null)))).getStatus().value());
-        assertEquals(0, yoklamaRepository.count());
+        assertEquals(onceki + 0, yoklamaRepository.count());
     }
 
     @Test
@@ -177,13 +179,13 @@ class YoklamaServiceTest {
     @Test
     void ogrenciSilinirseYoklamaKayitlariDaSilinir() {
         yoklamaService.kaydet(GUN, grupA.getId(), istek(new Kayit(ali.getId(), YoklamaDurum.GELDI, null)));
-        assertEquals(1, yoklamaRepository.count());
+        assertEquals(onceki + 1, yoklamaRepository.count());
 
         // Gerçek silme ayrı bir istekte çalışır; yoklama kaydı o oturumda yüklü değildir
         entityManager.flush();
         entityManager.clear();
         ogrenciRepository.deleteById(ali.getId());
         ogrenciRepository.flush();
-        assertEquals(0, yoklamaRepository.count());
+        assertEquals(onceki + 0, yoklamaRepository.count());
     }
 }
