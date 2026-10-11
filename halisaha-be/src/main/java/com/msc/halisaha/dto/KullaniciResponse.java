@@ -15,7 +15,9 @@ public record KullaniciResponse(
         Rol rol,
         KullaniciDurum durum,
         Set<Modul> yetkiler,
-        LocalDateTime kayitTarih
+        LocalDateTime kayitTarih,
+        Long isletmeId,
+        String isletmeAd
 ) {
 
     public static KullaniciResponse from(Kullanici kullanici) {
@@ -25,8 +27,11 @@ public record KullaniciResponse(
                 kullanici.getAdSoyad(),
                 kullanici.getRol(),
                 kullanici.getDurum(),
-                kullanici.getRol() == Rol.ADMIN ? Set.of(Modul.values()) : kullanici.getYetkiler(),
-                kullanici.getKayitTarih()
+                kullanici.getRol() == Rol.ADMIN ? Set.of(Modul.values())
+                        : kullanici.getRol() == Rol.SUPER_ADMIN ? Set.of() : kullanici.getYetkiler(),
+                kullanici.getKayitTarih(),
+                kullanici.getIsletme() != null ? kullanici.getIsletme().getId() : null,
+                kullanici.getIsletme() != null ? kullanici.getIsletme().getAd() : null
         );
     }
 }

@@ -155,7 +155,7 @@ export default function OgrenciDetayPage() {
                 value={form.antrenmanGunSayisi}
                 onChange={(e) => set('antrenmanGunSayisi', Number(e.target.value))}
               >
-                {[1, 2, 3, 4, 5].map((n) => (
+                {[...new Set([2, 3, 4, Number(form.antrenmanGunSayisi)])].sort().map((n) => (
                   <option key={n} value={n}>
                     {n} gün
                   </option>

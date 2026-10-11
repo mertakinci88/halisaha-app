@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
 
@@ -21,17 +21,24 @@ import UrunKayitPage from '@/pages/UrunKayitPage';
 import UrunDetayPage from '@/pages/UrunDetayPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
-import PersonelYetkiPage from '@/pages/PersonelYetkiPage';
+import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
+import IsletmeListePage from '@/pages/IsletmeListePage';
+import IsletmeKayitPage from '@/pages/IsletmeKayitPage';
+import IsletmeDetayPage from '@/pages/IsletmeDetayPage';
 
 function KorumaliAlan({ children }) {
-  const { girisli } = useAuth();
-  return girisli ? children : <Navigate to="/giris" replace />;
+  const { girisli, isSuperAdmin } = useAuth();
+  const { pathname } = useLocation();
+  if (!girisli) return <Navigate to="/giris" replace />;
+  // Süper admin işletme verisine bağlı değildir; yalnızca /isletmeler altındaki sayfaları kullanır
+  if (isSuperAdmin && !pathname.startsWith('/isletmeler')) return <Navigate to="/isletmeler" replace />;
+  return children;
 }
 
 /** Bir menü modülü (ör. "OGRENCI") ya da admin yetkisi gerektiren rotaları korur. */
-function YetkiliRota({ modul, sadeceAdmin, children }) {
-  const { isAdmin, yetkiVar } = useAuth();
-  const yetkili = sadeceAdmin ? isAdmin : yetkiVar(modul);
+function YetkiliRota({ modul, sadeceAdmin, sadeceSuperAdmin, children }) {
+  const { isAdmin, isSuperAdmin, yetkiVar } = useAuth();
+  const yetkili = sadeceSuperAdmin ? isSuperAdmin : sadeceAdmin ? isAdmin : yetkiVar(modul);
   return yetkili ? children : <Navigate to="/panel" replace />;
 }
 
@@ -107,6 +114,19 @@ export default function App() {
         />
 
         <Route
+          path="/isletmeler"
+          element={<YetkiliRota sadeceSuperAdmin><IsletmeListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/isletmeler/yeni"
+          element={<YetkiliRota sadeceSuperAdmin><IsletmeKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/isletmeler/:id"
+          element={<YetkiliRota sadeceSuperAdmin><IsletmeDetayPage /></YetkiliRota>}
+        />
+
+        <Route
           path="/personel"
           element={<YetkiliRota sadeceAdmin><PersonelListePage /></YetkiliRota>}
         />
@@ -116,7 +136,7 @@ export default function App() {
         />
         <Route
           path="/personel/:id"
-          element={<YetkiliRota sadeceAdmin><PersonelYetkiPage /></YetkiliRota>}
+          element={<YetkiliRota sadeceAdmin><PersonelDuzenlePage /></YetkiliRota>}
         />
       </Route>
 

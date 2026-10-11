@@ -35,6 +35,10 @@ public class Rezervasyon {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "isletme_id", nullable = false)
+    private Isletme isletme;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "saha_id", nullable = false)
     private Saha saha;
 
@@ -61,6 +65,15 @@ public class Rezervasyon {
     @Enumerated(EnumType.STRING)
     @Column(name = "odeme_durumu", nullable = false, length = 20)
     private OdemeDurumu odemeDurumu;
+
+    /** Rezervasyonu sisteme giren kullanıcı; bu alan eklenmeden önceki kayıtlarda null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kullanici_id")
+    private Kullanici kullanici;
+
+    /** Rezervasyonun sisteme girildiği an; bu alan eklenmeden önceki kayıtlarda null. */
+    @Column(name = "kayit_tarih", updatable = false)
+    private LocalDateTime kayitTarih;
 
     @Column(name = "odenecek_tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal odenecekTutar;

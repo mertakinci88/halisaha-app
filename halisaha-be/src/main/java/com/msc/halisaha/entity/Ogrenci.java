@@ -35,6 +35,10 @@ public class Ogrenci {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "isletme_id", nullable = false)
+    private Isletme isletme;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "grup_id")
     private Grup grup;

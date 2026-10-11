@@ -1,6 +1,8 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.GrupRequest;
 import com.msc.halisaha.dto.GrupResponse;
 import com.msc.halisaha.entity.Grup;
@@ -18,9 +20,13 @@ import java.util.List;
 public class GrupService {
 
     private final GrupRepository grupRepository;
+    private final IsletmeContext isletmeContext;
 
     public List<GrupResponse> list() {
-        return grupRepository.findAll().stream().map(GrupResponse::from).toList();
+        return grupRepository.findByIsletmeId(isletmeContext.id()).stream()
+                .sorted(TurkceSirala.<Grup>alfabetik(Grup::getAd).thenComparing(Grup::getId))
+                .map(GrupResponse::from)
+                .toList();
     }
 
     public GrupResponse getById(Long id) {
@@ -29,7 +35,7 @@ public class GrupService {
 
     @Transactional
     public GrupResponse create(GrupRequest request) {
-        Grup grup = Grup.builder().ad(request.ad()).build();
+        Grup grup = Grup.builder().isletme(isletmeContext.getir()).ad(request.ad()).build();
         return GrupResponse.from(grupRepository.save(grup));
     }
 
@@ -42,14 +48,11 @@ public class GrupService {
 
     @Transactional
     public void delete(Long id) {
-        if (!grupRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Grup bulunamadı: " + id);
-        }
-        grupRepository.deleteById(id);
+        grupRepository.delete(getEntity(id));
     }
 
     private Grup getEntity(Long id) {
-        return grupRepository.findById(id)
+        return grupRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grup bulunamadı: " + id));
     }
 }

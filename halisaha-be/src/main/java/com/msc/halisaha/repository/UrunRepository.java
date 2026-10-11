@@ -6,7 +6,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Optional;
+
 public interface UrunRepository extends JpaRepository<Urun, Long> {
+
+    List<Urun> findByIsletmeId(Long isletmeId);
+
+    Optional<Urun> findByIdAndIsletmeId(Long id, Long isletmeId);
 
     /**
      * Stoğu tek SQL ile atomik düşer; stok yetersizse 0 satır etkilenir. İki kişi aynı anda son ürünü

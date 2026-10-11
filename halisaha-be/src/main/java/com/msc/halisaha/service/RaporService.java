@@ -2,6 +2,7 @@ package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.CiroRaporu;
 import com.msc.halisaha.dto.CiroSatir;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class RaporService {
     private static final String ISLETME_GUNU = "interval '2 hours'";
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final IsletmeContext isletmeContext;
 
     public CiroRaporu ciro(LocalDate baslangic, LocalDate bitis, Long sahaId, Grupla grupla, Esas esas) {
         LocalDate son = bitis != null ? bitis : AppZaman.bugun();
@@ -62,7 +64,8 @@ public class RaporService {
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("bas", ilk.atStartOfDay())
-                .addValue("bit", son.plusDays(1).atStartOfDay());
+                .addValue("bit", son.plusDays(1).atStartOfDay())
+                .addValue("isletmeId", isletmeContext.id());
         String sahaFiltre = "";
         if (sahaId != null) {
             sahaFiltre = " AND r.saha_id = :sahaId";
@@ -88,7 +91,8 @@ public class RaporService {
                        COUNT(*) AS adet
                 FROM odeme o
                 JOIN rezervasyon r ON r.id = o.rezervasyon_id
-                WHERE o.odeme_tarihi - %s >= :bas AND o.odeme_tarihi - %s < :bit%s
+                WHERE r.isletme_id = :isletmeId
+                  AND o.odeme_tarihi - %s >= :bas AND o.odeme_tarihi - %s < :bit%s
                 GROUP BY 1
                 ORDER BY 1
                 """.formatted(grupla.sqlBirim, ISLETME_GUNU, ISLETME_GUNU, ISLETME_GUNU, sahaFiltre);
@@ -112,7 +116,8 @@ public class RaporService {
                        COUNT(DISTINCT r.id) AS adet
                 FROM rezervasyon r
                 JOIN rezervasyon_kalem k ON k.rezervasyon_id = r.id
-                WHERE r.durum = 'AKTIF'
+                WHERE r.isletme_id = :isletmeId
+                  AND r.durum = 'AKTIF'
                   AND r.baslangic_tarih - %s >= :bas AND r.baslangic_tarih - %s < :bit%s
                 GROUP BY 1
                 ORDER BY 1

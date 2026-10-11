@@ -7,19 +7,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import java.util.Optional;
 
 public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
 
-    List<Ogrenci> findByGrupId(Long grupId);
+    Optional<Ogrenci> findByIdAndIsletmeId(Long id, Long isletmeId);
 
     @Query("""
             SELECT o FROM Ogrenci o LEFT JOIN o.grup g
-            WHERE (:grupId IS NULL OR g.id = :grupId)
+            WHERE o.isletme.id = :isletmeId
+              AND (:grupId IS NULL OR g.id = :grupId)
               AND (:q IS NULL OR :q = ''
                    OR LOWER(o.adSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(o.veliAdSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(g.ad) LIKE LOWER(CONCAT('%', :q, '%')))
             """)
-    Page<Ogrenci> ara(@Param("grupId") Long grupId, @Param("q") String q, Pageable pageable);
+    Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q, Pageable pageable);
 }

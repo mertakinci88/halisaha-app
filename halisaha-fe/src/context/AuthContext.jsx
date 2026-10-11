@@ -42,14 +42,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const isAdmin = kullanici?.rol === 'ADMIN';
+  const isSuperAdmin = kullanici?.rol === 'SUPER_ADMIN';
   const yetkiVar = useCallback(
     (modul) => isAdmin || Boolean(kullanici?.yetkiler?.includes(modul)),
     [isAdmin, kullanici],
   );
 
   const value = useMemo(
-    () => ({ kullanici, girisli, yukleniyor, isAdmin, yetkiVar, login, logout }),
-    [kullanici, girisli, yukleniyor, isAdmin, yetkiVar, login, logout],
+    () => ({ kullanici, girisli, yukleniyor, isAdmin, isSuperAdmin, yetkiVar, login, logout }),
+    [kullanici, girisli, yukleniyor, isAdmin, isSuperAdmin, yetkiVar, login, logout],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

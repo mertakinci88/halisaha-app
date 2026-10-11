@@ -2,6 +2,7 @@ package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.SahaRequest;
 import com.msc.halisaha.dto.SahaResponse;
 import com.msc.halisaha.entity.Saha;
@@ -22,9 +23,10 @@ public class SahaService {
 
     private final SahaRepository sahaRepository;
     private final RezervasyonRepository rezervasyonRepository;
+    private final IsletmeContext isletmeContext;
 
     public List<SahaResponse> list() {
-        return sahaRepository.findAll().stream()
+        return sahaRepository.findByIsletmeId(isletmeContext.id()).stream()
                 .sorted(TurkceSirala.<Saha>alfabetik(Saha::getAd).thenComparing(Saha::getId))
                 .map(SahaResponse::from)
                 .toList();
@@ -37,6 +39,7 @@ public class SahaService {
     @Transactional
     public SahaResponse create(SahaRequest request) {
         Saha saha = Saha.builder()
+                .isletme(isletmeContext.getir())
                 .ad(request.ad())
                 .durum(request.durum() != null ? request.durum() : SahaDurum.AKTIF)
                 .saatlikUcret(request.saatlikUcret())
@@ -66,7 +69,7 @@ public class SahaService {
     }
 
     private Saha getEntity(Long id) {
-        return sahaRepository.findById(id)
+        return sahaRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Saha bulunamadı: " + id));
     }
 }

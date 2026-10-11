@@ -1,14 +1,20 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.common.security.IsletmeContext;
+import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
 import com.msc.halisaha.dto.YetkiGuncelleRequest;
+import com.msc.halisaha.entity.Isletme;
 import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.KullaniciDurum;
 import com.msc.halisaha.entity.Modul;
 import com.msc.halisaha.entity.Rol;
+import com.msc.halisaha.repository.IsletmeRepository;
 import com.msc.halisaha.repository.KullaniciRepository;
+import com.msc.halisaha.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,25 +25,54 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Kullanıcı yönetimi her zaman tek bir işletme kapsamındadır. ADMIN kendi işletmesini
+ * ({@code ...Mevcut} metodları), SUPER_ADMIN ise path'ten verdiği işletmeyi yönetir.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class KullaniciService {
 
     private final KullaniciRepository kullaniciRepository;
+    private final IsletmeRepository isletmeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final IsletmeContext isletmeContext;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public List<KullaniciResponse> list() {
-        return kullaniciRepository.findAll().stream().map(KullaniciResponse::from).toList();
+        return list(isletmeContext.id());
+    }
+
+    public List<KullaniciResponse> list(Long isletmeId) {
+        // Sıra sabit ve alfabetik olmalı: sıralamasız sorguda Postgres, güncellenen (ör. durumu değişen) satırı farklı yerde döndürebilir
+        return kullaniciRepository.findByIsletmeId(isletmeId).stream()
+                .sorted(TurkceSirala.<Kullanici>alfabetik(Kullanici::getAdSoyad).thenComparing(Kullanici::getId))
+                .map(KullaniciResponse::from)
+                .toList();
     }
 
     public KullaniciResponse getById(Long id) {
-        return KullaniciResponse.from(getEntity(id));
+        return KullaniciResponse.from(getEntity(isletmeContext.id(), id));
     }
 
     @Transactional
     public KullaniciResponse create(KullaniciOlusturRequest request) {
+        return create(isletmeContext.id(), request);
+    }
+
+    @Transactional
+    public KullaniciResponse create(Long isletmeId, KullaniciOlusturRequest request) {
+        if (request.rol() == Rol.SUPER_ADMIN) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu rolde kullanıcı oluşturulamaz");
+        }
+        if (kullaniciRepository.findByKullaniciAdi(request.kullaniciAdi()).isPresent()) {
+            throw new ApiException(HttpStatus.CONFLICT, "Bu kullanıcı adı zaten kullanılıyor");
+        }
+        Isletme isletme = isletmeRepository.findById(isletmeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "İşletme bulunamadı: " + isletmeId));
         Kullanici kullanici = Kullanici.builder()
+                .isletme(isletme)
                 .kullaniciAdi(request.kullaniciAdi())
                 .sifre(passwordEncoder.encode(request.sifre()))
                 .adSoyad(request.adSoyad())
@@ -50,9 +85,36 @@ public class KullaniciService {
         return KullaniciResponse.from(kullaniciRepository.save(kullanici));
     }
 
+    /** Yalnızca oturumdaki kullanıcının kendi işletmesindeki bir kullanıcıyı günceller (başkasınınki 404). */
+    @Transactional
+    public KullaniciResponse guncelle(Long id, KullaniciGuncelleRequest request) {
+        Kullanici kullanici = getEntity(isletmeContext.id(), id);
+        kullanici.setAdSoyad(request.adSoyad().trim());
+
+        String yeniKullaniciAdi = request.kullaniciAdi().trim();
+        boolean kullaniciAdiDegisti = !yeniKullaniciAdi.equals(kullanici.getKullaniciAdi());
+        if (kullaniciAdiDegisti) {
+            // Kullanıcı adı tüm işletmeler genelinde benzersizdir
+            if (kullaniciRepository.findByKullaniciAdi(yeniKullaniciAdi).isPresent()) {
+                throw new ApiException(HttpStatus.CONFLICT, "Bu kullanıcı adı zaten kullanılıyor");
+            }
+            kullanici.setKullaniciAdi(yeniKullaniciAdi);
+        }
+
+        boolean sifreDegisti = request.sifre() != null && !request.sifre().isBlank();
+        if (sifreDegisti) {
+            kullanici.setSifre(passwordEncoder.encode(request.sifre()));
+        }
+        // Eski kullanıcı adıyla/şifreyle açılmış oturumlar yenilenemesin; kullanıcı yeniden giriş yapar
+        if (kullaniciAdiDegisti || sifreDegisti) {
+            refreshTokenRepository.tumunuIptalEt(kullanici.getId());
+        }
+        return KullaniciResponse.from(kullanici);
+    }
+
     @Transactional
     public KullaniciResponse yetkileriGuncelle(Long id, YetkiGuncelleRequest request) {
-        Kullanici kullanici = getEntity(id);
+        Kullanici kullanici = getEntity(isletmeContext.id(), id);
         if (kullanici.getRol() == Rol.ADMIN) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Admin kullanıcısının yetkileri sınırlandırılamaz");
         }
@@ -64,19 +126,34 @@ public class KullaniciService {
 
     @Transactional
     public KullaniciResponse durumGuncelle(Long id, KullaniciDurum durum) {
-        Kullanici kullanici = getEntity(id);
+        return durumGuncelle(isletmeContext.id(), id, durum);
+    }
+
+    @Transactional
+    public KullaniciResponse durumGuncelle(Long isletmeId, Long id, KullaniciDurum durum) {
+        Kullanici kullanici = getEntity(isletmeId, id);
         boolean sonAktifAdmin = kullanici.getRol() == Rol.ADMIN
                 && durum == KullaniciDurum.PASIF
-                && kullaniciRepository.countByRolAndDurum(Rol.ADMIN, KullaniciDurum.AKTIF) <= 1;
+                && kullaniciRepository.countByIsletmeIdAndRolAndDurum(isletmeId, Rol.ADMIN, KullaniciDurum.AKTIF) <= 1;
         if (sonAktifAdmin) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Sistemdeki son aktif admin pasif hale getirilemez");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İşletmedeki son aktif admin pasif hale getirilemez");
         }
         kullanici.setDurum(durum);
         return KullaniciResponse.from(kullanici);
     }
 
-    private Kullanici getEntity(Long id) {
-        return kullaniciRepository.findById(id)
+    @Transactional
+    public void sifreSifirla(Long isletmeId, Long id, String yeniSifre) {
+        sifreDegistir(getEntity(isletmeId, id), yeniSifre);
+    }
+
+    private void sifreDegistir(Kullanici kullanici, String yeniSifre) {
+        kullanici.setSifre(passwordEncoder.encode(yeniSifre));
+        refreshTokenRepository.tumunuIptalEt(kullanici.getId());
+    }
+
+    private Kullanici getEntity(Long isletmeId, Long id) {
+        return kullaniciRepository.findByIdAndIsletmeId(id, isletmeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Kullanıcı bulunamadı: " + id));
     }
 }

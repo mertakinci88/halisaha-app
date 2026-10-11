@@ -21,7 +21,15 @@ npm run dev              # http://localhost:5173
 
 Backend'in `app.cors.allowed-origins` değeri `http://localhost:5173` içerdiği için ek CORS ayarı gerekmez.
 
-Varsayılan kullanıcı (V2__seed_admin.sql): **admin / admin123**
+Varsayılan kullanıcılar: **admin / admin123** (V2__seed_admin.sql, "Varsayılan İşletme"nin yöneticisi) ve
+**superadmin / superadmin123** (ilk açılışta backend oluşturur; üretimde `SUPER_ADMIN_PASSWORD` ile verilir).
+
+## Çoklu işletme
+
+Her işletmenin sahası, ürünü, öğrencisi, grubu, rezervasyonu ve kullanıcıları ayrıdır; kullanıcı yalnızca kendi
+işletmesinin verisini görür (backend `isletme_id` ile filtreler, frontend'de ayrıca bir şey gerekmez).
+`SUPER_ADMIN` bir işletmeye bağlı değildir: menüde yalnızca **İşletmeler** görünür, işletme verisine erişemez.
+Üst bardaki kullanıcı adının yanında işletme adı gösterilir.
 
 ## Sayfalar (her biri ayrı route)
 
@@ -40,6 +48,9 @@ Varsayılan kullanıcı (V2__seed_admin.sql): **admin / admin123**
 | `/sahalar/yeni` | Saha kaydı | `POST /api/sahalar` |
 | `/urunler` | Kafeterya ürünleri (stok ±) | `GET /api/urunler`, `PUT /api/urunler/{id}`, `DELETE /api/urunler/{id}` |
 | `/urunler/yeni` | Ürün kaydı | `POST /api/urunler` |
+| `/isletmeler` | İşletme listesi, pasife alma (yalnızca SUPER_ADMIN) | `GET /api/isletmeler`, `PATCH /api/isletmeler/{id}/durum` |
+| `/isletmeler/yeni` | İşletme + ilk admini oluşturma | `POST /api/isletmeler` |
+| `/isletmeler/:id` | İşletme adı, kullanıcılar, şifre sıfırlama | `GET/PUT /api/isletmeler/{id}`, `GET/POST /api/isletmeler/{id}/kullanicilar`, `PATCH .../kullanicilar/{kid}/durum`, `PUT .../kullanicilar/{kid}/sifre` |
 
 ## Kimlik doğrulama
 

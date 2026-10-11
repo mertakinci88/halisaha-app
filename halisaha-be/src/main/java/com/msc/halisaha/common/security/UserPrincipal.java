@@ -1,5 +1,6 @@
 package com.msc.halisaha.common.security;
 
+import com.msc.halisaha.entity.IsletmeDurum;
 import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.KullaniciDurum;
 import com.msc.halisaha.entity.Modul;
@@ -27,8 +28,16 @@ public class UserPrincipal implements UserDetails {
         return kullanici.getId();
     }
 
+    /** SUPER_ADMIN için null. */
+    public Long getIsletmeId() {
+        return kullanici.getIsletme() != null ? kullanici.getIsletme().getId() : null;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (kullanici.getRol() == Rol.SUPER_ADMIN) {
+            return List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+        }
         Set<Modul> etkinYetkiler = kullanici.getRol() == Rol.ADMIN
                 ? Set.of(Modul.values())
                 : kullanici.getYetkiler();
@@ -57,7 +66,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return kullanici.getDurum() == KullaniciDurum.AKTIF;
+        return aktif();
     }
 
     @Override
@@ -67,6 +76,12 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return kullanici.getDurum() == KullaniciDurum.AKTIF;
+        return aktif();
+    }
+
+    /** Kullanıcı aktif olmalı; bağlı olduğu işletme de pasifse giriş yapılamaz. */
+    private boolean aktif() {
+        return kullanici.getDurum() == KullaniciDurum.AKTIF
+                && (kullanici.getIsletme() == null || kullanici.getIsletme().getDurum() == IsletmeDurum.AKTIF);
     }
 }

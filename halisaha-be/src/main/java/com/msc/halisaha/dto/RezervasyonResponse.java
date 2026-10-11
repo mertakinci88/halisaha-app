@@ -20,6 +20,10 @@ public record RezervasyonResponse(
         /** Son alınan ödemenin yöntemi. */
         OdemeYontemi odemeYontemi,
         OdemeDurumu odemeDurumu,
+        /** Rezervasyonun sisteme girildiği tarih-saat; eski kayıtlarda null. */
+        LocalDateTime kayitTarih,
+        /** Rezervasyonu giren kullanıcının adı; eski kayıtlarda null. */
+        String kaydedenAd,
         /** Tüm kalemlerin toplamı. */
         BigDecimal odenecekTutar,
         BigDecimal sahaTutar,

@@ -113,11 +113,9 @@ export default function PersonelListePage() {
                       </Tag>
                     </Td>
                     <Td className="whitespace-nowrap text-right">
-                      {k.rol !== 'ADMIN' ? (
-                        <Button variant="secondary" size="sm" onClick={() => navigate('/personel/' + k.id)}>
-                          Yetkileri düzenle
-                        </Button>
-                      ) : null}
+                      <Button variant="secondary" size="sm" onClick={() => navigate('/personel/' + k.id)}>
+                        Düzenle
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

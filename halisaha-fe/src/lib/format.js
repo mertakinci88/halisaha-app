@@ -54,6 +54,10 @@ export const kisaTarih = (isoDate) => {
   return d + '.' + m + '.' + y;
 };
 
+/** 2026-10-11T12:30:00 -> "11.10.2026 12:30" */
+export const tarihSaat = (isoDateTime) =>
+  isoDateTime ? kisaTarih(isoDateTime) + ' ' + String(isoDateTime).slice(11, 16) : '—';
+
 export const saatOf = (isoDateTime) => String(isoDateTime || '').slice(11, 16) || '—';
 
 export const saatSayisi = (isoDateTime) => {

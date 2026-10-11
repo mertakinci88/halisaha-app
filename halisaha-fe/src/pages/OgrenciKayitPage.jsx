@@ -122,7 +122,7 @@ export default function OgrenciKayitPage() {
                 value={form.antrenmanGunSayisi}
                 onChange={(e) => set('antrenmanGunSayisi', Number(e.target.value))}
               >
-                {[1, 2, 3, 4, 5].map((n) => (
+                {[2, 3, 4].map((n) => (
                   <option key={n} value={n}>
                     {n} gün
                   </option>

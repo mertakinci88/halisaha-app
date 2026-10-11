@@ -19,10 +19,32 @@ export const kullaniciService = {
   list: () => api.get('/api/kullanicilar').then((r) => r.data),
   get: (id) => api.get('/api/kullanicilar/' + id).then((r) => r.data),
   create: (body) => api.post('/api/kullanicilar', body).then((r) => r.data),
+  /** body: { adSoyad, sifre? } — sifre boş/yok ise değişmez */
+  guncelle: (id, body) => api.put('/api/kullanicilar/' + id, body).then((r) => r.data),
   yetkileriGuncelle: (id, yetkiler) =>
     api.put('/api/kullanicilar/' + id + '/yetkiler', { yetkiler }).then((r) => r.data),
   durumGuncelle: (id, durum) =>
     api.patch('/api/kullanicilar/' + id + '/durum', null, { params: { durum } }).then((r) => r.data),
+};
+
+/* ── /api/isletmeler (yalnızca SUPER_ADMIN) ───────────────────── */
+export const isletmeService = {
+  list: () => api.get('/api/isletmeler').then((r) => r.data),
+  get: (id) => api.get('/api/isletmeler/' + id).then((r) => r.data),
+  /** body: { ad, yonetici: { adSoyad, kullaniciAdi, sifre } } — işletme ve ilk admini birlikte oluşturulur */
+  create: (body) => api.post('/api/isletmeler', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/isletmeler/' + id, body).then((r) => r.data),
+  durumGuncelle: (id, durum) =>
+    api.patch('/api/isletmeler/' + id + '/durum', null, { params: { durum } }).then((r) => r.data),
+  kullanicilar: (id) => api.get('/api/isletmeler/' + id + '/kullanicilar').then((r) => r.data),
+  kullaniciOlustur: (id, body) =>
+    api.post('/api/isletmeler/' + id + '/kullanicilar', body).then((r) => r.data),
+  kullaniciDurum: (id, kullaniciId, durum) =>
+    api
+      .patch('/api/isletmeler/' + id + '/kullanicilar/' + kullaniciId + '/durum', null, { params: { durum } })
+      .then((r) => r.data),
+  sifreSifirla: (id, kullaniciId, sifre) =>
+    api.put('/api/isletmeler/' + id + '/kullanicilar/' + kullaniciId + '/sifre', { sifre }),
 };
 
 /* ── /api/sahalar ──────────────────────────────────────────── */

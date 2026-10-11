@@ -110,7 +110,7 @@ export default function PersonelKayitPage() {
                     key={m}
                     active={yetkiler.includes(m)}
                     onClick={() => yetkiSecTogla(m)}
-                    className="border border-divider"
+                    className="border border-divider border-l!"
                   >
                     {MODUL_LABEL[m]}
                   </SegOpt>

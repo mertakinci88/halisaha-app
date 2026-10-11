@@ -1,5 +1,6 @@
 package com.msc.halisaha.controller;
 
+import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
 import com.msc.halisaha.dto.YetkiGuncelleRequest;
@@ -43,6 +44,11 @@ public class KullaniciController {
     @PostMapping
     public ResponseEntity<KullaniciResponse> create(@Valid @RequestBody KullaniciOlusturRequest request) {
         return ResponseEntity.status(201).body(kullaniciService.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public KullaniciResponse guncelle(@PathVariable Long id, @Valid @RequestBody KullaniciGuncelleRequest request) {
+        return kullaniciService.guncelle(id, request);
     }
 
     @PutMapping("/{id}/yetkiler")

@@ -18,6 +18,8 @@ const KAPANIS = 23;
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { yetkiVar } = useAuth();
+  const ogrenciYetkisi = yetkiVar('OGRENCI');
+  const urunYetkisi = yetkiVar('URUN');
   const [veri, setVeri] = useState(null);
   const [hata, setHata] = useHata();
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -28,8 +30,9 @@ export default function DashboardPage() {
     Promise.all([
       rezervasyonService.list({ tarih: toIsoDate(new Date()) }),
       sahaService.list(),
-      ogrenciService.list({ boyut: 1000 }),
-      urunService.list(),
+      // Yetkisi olmayan menünün verisi çekilmez; kartı da gösterilmez
+      ogrenciYetkisi ? ogrenciService.list({ boyut: 1000 }) : Promise.resolve({ icerik: [] }),
+      urunYetkisi ? urunService.list() : Promise.resolve([]),
     ])
       .then(([rezervasyonlar, sahalar, ogrenciSayfasi, urunler]) =>
         setVeri({ rezervasyonlar, sahalar, ogrenciler: ogrenciSayfasi.icerik, urunler }),
@@ -47,7 +50,7 @@ export default function DashboardPage() {
     const kapasite = Math.max(1, aktifSaha.length * (KAPANIS - ACILIS + 1));
     const ciro = aktifRez.reduce((t, r) => t + Number(r.odenecekTutar || 0), 0);
     const bekleyen = veri.ogrenciler.filter((o) => o.odemeDurumu !== 'ODENDI');
-    return [
+    const liste = [
       { etiket: 'Bugünkü rezervasyon', deger: String(aktifRez.length), alt: aktifSaha.length + ' aktif saha' },
       {
         etiket: 'Doluluk',
@@ -55,9 +58,16 @@ export default function DashboardPage() {
         alt: hh(ACILIS) + ' – ' + hh(KAPANIS) + ' arası',
       },
       { etiket: 'Bugünkü ciro', deger: tl(ciro), alt: 'Saha + kafeterya' },
-      { etiket: 'Aidat bekleyen', deger: String(bekleyen.length), alt: veri.ogrenciler.length + ' kayıtlı öğrenci' },
     ];
-  }, [veri]);
+    if (ogrenciYetkisi) {
+      liste.push({
+        etiket: 'Aidat bekleyen',
+        deger: String(bekleyen.length),
+        alt: veri.ogrenciler.length + ' kayıtlı öğrenci',
+      });
+    }
+    return liste;
+  }, [veri, ogrenciYetkisi]);
 
   return (
     <div>
@@ -121,6 +131,7 @@ export default function DashboardPage() {
             </Card>
 
             <div className="grid content-start gap-5">
+              {ogrenciYetkisi ? (
               <Card>
                 <h4 className="text-[22px]">Aidat bekleyen öğrenciler</h4>
                 <Table>
@@ -141,13 +152,13 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                {yetkiVar('OGRENCI') ? (
-                  <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler')}>
-                    Öğrenci listesi
-                  </Button>
-                ) : null}
+                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler')}>
+                  Öğrenci listesi
+                </Button>
               </Card>
+              ) : null}
 
+              {urunYetkisi ? (
               <Card>
                 <h4 className="text-[22px]">Stoğu azalan ürünler</h4>
                 <Table>
@@ -172,12 +183,11 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                {yetkiVar('URUN') ? (
-                  <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
-                    Kafeteryaya git
-                  </Button>
-                ) : null}
+                <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
+                  Kafeteryaya git
+                </Button>
               </Card>
+              ) : null}
             </div>
           </div>
         </>
