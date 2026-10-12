@@ -8,12 +8,29 @@ import { Tag } from '@/components/ui/tag';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
 import { envanterService, ogrenciService, rezervasyonService, sahaService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { useHata } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
-import { hh, saatOf, stokDurumu, tl, toIsoDate } from '@/lib/format';
+import { hh, saatOf, stokDurumu, sureSaat, tl, toIsoDate } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00 (Takvim ile aynı çalışma saatleri)
+
+/** Doluluk oranını (0–100) gösteren ilerleme çubuğu. */
+function DolulukCubugu({ oran, etiket, ince = false }) {
+  return (
+    <div
+      role="progressbar"
+      aria-label={etiket}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={oran}
+      className={cn('w-full overflow-hidden bg-ink/10', ince ? 'h-1.5' : 'h-2')}
+    >
+      <div className="h-full bg-accent transition-[width] duration-500" style={{ width: oran + '%' }} />
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -54,14 +71,29 @@ export default function DashboardPage() {
     const aktifRez = veri.rezervasyonlar.filter((r) => r.durum === 'AKTIF');
     const aktifSaha = veri.sahalar.filter((s) => s.durum === 'AKTIF');
     const kapasite = Math.max(1, aktifSaha.length * (KAPANIS - ACILIS + 1));
+    // Doluluk rezervasyon sayısına değil dolu saat sayısına göre hesaplanır (3 saatlik kayıt 3 saat sayılır)
+    const aktifSahaIdleri = new Set(aktifSaha.map((s) => s.id));
+    const doluSaat = aktifRez
+      .filter((r) => aktifSahaIdleri.has(r.sahaId))
+      .reduce((t, r) => t + sureSaat(r.baslangicTarih, r.bitisTarih), 0);
+    const dolulukOrani = Math.min(100, Math.round((doluSaat / kapasite) * 100));
+    const sahaKapasitesi = KAPANIS - ACILIS + 1;
+    const sahaDoluluklari = aktifSaha.map((sh) => {
+      const saat = aktifRez
+        .filter((r) => r.sahaId === sh.id)
+        .reduce((t, r) => t + sureSaat(r.baslangicTarih, r.bitisTarih), 0);
+      return { id: sh.id, ad: sh.ad, saat, kapasite: sahaKapasitesi, oran: Math.min(100, Math.round((saat / sahaKapasitesi) * 100)) };
+    });
     const ciro = aktifRez.reduce((t, r) => t + Number(r.odenecekTutar || 0), 0);
     const bekleyen = veri.ogrenciler.filter((o) => o.odemeDurumu !== 'ODENDI');
     const liste = [
       { etiket: 'Bugünkü rezervasyon', deger: String(aktifRez.length), alt: aktifSaha.length + ' aktif saha' },
       {
-        etiket: 'Doluluk',
-        deger: Math.round((aktifRez.length / kapasite) * 100) + '%',
-        alt: hh(ACILIS) + ' – ' + hh(KAPANIS) + ' arası',
+        etiket: 'Bugünkü doluluk',
+        deger: dolulukOrani + '%',
+        oran: dolulukOrani,
+        sahalar: sahaDoluluklari,
+        alt: doluSaat + ' / ' + kapasite + ' saat · ' + hh(ACILIS) + ' – ' + hh(KAPANIS),
       },
       { etiket: 'Bugünkü ciro', deger: tl(ciro), alt: 'Saha + kafeterya' },
     ];
@@ -85,10 +117,29 @@ export default function DashboardPage() {
         <>
           <div className="mb-7 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
             {kpiler.map((k) => (
-              <Card key={k.etiket} className="gap-1.5 px-[18px] py-4">
-                <CardKicker>{k.etiket}</CardKicker>
-                <div className="font-heading text-[38px] font-semibold leading-none">{k.deger}</div>
-                <div className="text-[13.5px] text-ink/55">{k.alt}</div>
+              <Card
+                key={k.etiket}
+                className={cn('gap-1.5 px-[18px] py-4', k.sahalar?.length > 0 && 'sm:col-span-2 sm:flex-row sm:gap-6')}
+              >
+                <div className="grid content-start gap-1.5 sm:w-[190px] sm:shrink-0">
+                  <CardKicker>{k.etiket}</CardKicker>
+                  <div className="font-heading text-[38px] font-semibold leading-none">{k.deger}</div>
+                  {k.oran != null ? <DolulukCubugu oran={k.oran} etiket={k.etiket} /> : null}
+                  <div className="text-[13.5px] text-ink/55">{k.alt}</div>
+                </div>
+                {k.sahalar?.length > 0 ? (
+                  <div className="mt-2 grid min-w-0 flex-1 content-center gap-2 border-t border-hairline pt-3 sm:mt-0 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                    {k.sahalar.map((sh) => (
+                      <div key={sh.id} className="grid items-center gap-x-3 text-[14px] [grid-template-columns:minmax(0,7rem)_1fr_auto]">
+                        <span className="truncate">{sh.ad}</span>
+                        <DolulukCubugu oran={sh.oran} etiket={sh.ad + ' doluluk'} ince />
+                        <span className="tabular-nums text-ink/55">
+                          {sh.saat}/{sh.kapasite} · %{sh.oran}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </Card>
             ))}
           </div>
@@ -149,7 +200,7 @@ export default function DashboardPage() {
                         .filter((o) => o.odemeDurumu !== 'ODENDI')
                         .slice(0, 5)
                         .map((o) => (
-                          <Tr key={o.id}>
+                          <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>
                             <Td>{o.adSoyad}</Td>
                             <Td className="text-[13.5px] text-ink/55">{o.grupAd || '—'}</Td>
                             <Td className="text-right tabular-nums">{tl(o.aylikAidat)}</Td>
@@ -158,8 +209,8 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler')}>
-                  Öğrenci listesi
+                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?aidat=bekleyen')}>
+                  Tüm aidat bekleyenler
                 </Button>
               </Card>
               ) : null}
@@ -176,7 +227,7 @@ export default function DashboardPage() {
                           <Bos colSpan={2}>Envanter stokları yeterli.</Bos>
                         ) : (
                           envanterUyarilari.slice(0, 5).map((e) => (
-                            <Tr key={e.id}>
+                            <Tr key={e.id} className="cursor-pointer" onClick={() => navigate('/envanter/' + e.id)}>
                               <Td>{envanterAd(e)}</Td>
                               <Td className="text-right">
                                 {stokDurumu(e) === 'TUKENDI' ? (
@@ -244,7 +295,7 @@ export default function DashboardPage() {
                       veri.urunler
                         .filter((u) => stokDurumu(u))
                         .map((u) => (
-                          <Tr key={u.id}>
+                          <Tr key={u.id} className="cursor-pointer" onClick={() => navigate('/urunler/' + u.id)}>
                             <Td>{u.ad}</Td>
                             <Td className="text-right">
                               {stokDurumu(u) === 'TUKENDI' ? (

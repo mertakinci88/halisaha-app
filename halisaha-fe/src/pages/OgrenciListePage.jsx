@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Seg, SegOpt } from '@/components/ui/seg';
 import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
@@ -18,6 +19,9 @@ const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSa
 
 export default function OgrenciListePage() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  // Panelden gelen /ogrenciler?aidat=bekleyen bağlantısı yalnızca aidat bekleyenleri listeler
+  const aidatBekleyen = params.get('aidat') === 'bekleyen';
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
@@ -46,15 +50,20 @@ export default function OgrenciListePage() {
     setYukleniyor(true);
     setHata('');
     ogrenciService
-      .list({ q: aramaAktif || undefined, sayfa, boyut: BOYUT })
+      .list({ q: aramaAktif || undefined, aidatBekleyen: aidatBekleyen || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [aramaAktif, sayfa]);
+  }, [aramaAktif, aidatBekleyen, sayfa]);
 
   useEffect(() => {
     yukle();
   }, [yukle]);
+
+  const filtreSec = (bekleyen) => {
+    setSayfa(0);
+    setParams(bekleyen ? { aidat: 'bekleyen' } : {}, { replace: true });
+  };
 
   const toplamSayfa = Math.max(1, veri.toplamSayfa);
 
@@ -78,6 +87,14 @@ export default function OgrenciListePage() {
               <span>Ara</span>
             </Button>
           </form>
+          <Seg>
+            <SegOpt active={!aidatBekleyen} onClick={() => filtreSec(false)}>
+              Tümü
+            </SegOpt>
+            <SegOpt active={aidatBekleyen} onClick={() => filtreSec(true)}>
+              Aidat bekleyen
+            </SegOpt>
+          </Seg>
           <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
           <Button variant="primary" className="ml-auto" onClick={() => navigate('/ogrenciler/yeni')}>
             <Plus size={16} strokeWidth={1.5} />
@@ -105,7 +122,7 @@ export default function OgrenciListePage() {
               </thead>
               <tbody>
                 {veri.icerik.length === 0 ? (
-                  <Bos colSpan={9}>Öğrenci kaydı bulunamadı.</Bos>
+                  <Bos colSpan={9}>{aidatBekleyen ? 'Aidat bekleyen öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
                 ) : (
                   veri.icerik.map((o) => (
                     <Tr key={o.id}>
