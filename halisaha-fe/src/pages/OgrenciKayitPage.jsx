@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select, Textarea } from '@/components/ui/input';
+import HesapSecimi from '@/components/HesapSecimi';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
@@ -26,6 +27,7 @@ const BOS = {
   sonrakiOdemeTarih: '',
   odenenTutar: '',
   odemeSekli: 'NAKIT',
+  hesapId: '',
   not: '',
 };
 
@@ -67,6 +69,7 @@ export default function OgrenciKayitPage() {
         sonrakiOdemeTarih: form.sonrakiOdemeTarih || null,
         odenenTutar: form.odenenTutar ? Number(form.odenenTutar) : null,
         odemeSekli: form.odemeSekli,
+        hesapId: form.odemeSekli === 'HAVALE_EFT' && form.hesapId ? Number(form.hesapId) : null,
         not: form.not.trim() || null,
       });
       toast.basari('Öğrenci kaydedildi.');
@@ -211,6 +214,10 @@ export default function OgrenciKayitPage() {
               </Select>
             </Field>
           </div>
+
+          {form.odemeSekli === 'HAVALE_EFT' && (
+            <HesapSecimi value={form.hesapId} onChange={(v) => set('hesapId', v)} />
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ödenen dönem">

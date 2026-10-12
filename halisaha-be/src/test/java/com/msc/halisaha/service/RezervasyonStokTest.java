@@ -63,7 +63,7 @@ class RezervasyonStokTest {
     private RezervasyonResponse rezervasyonAc(int gun) {
         LocalDateTime bas = LocalDateTime.of(2030, 1, gun, 14, 0);
         return rezervasyonService.create(new RezervasyonRequest(
-                saha.getId(), "Test Müşteri", bas, bas.plusHours(1), "05551112233", null, null));
+                saha.getId(), "Test Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null));
     }
 
     private int stok() {

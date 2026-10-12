@@ -1,9 +1,9 @@
 package com.msc.halisaha.entity;
 
 public enum OdemeTipi {
-    /** Rezervasyon için alınan ilk kısmi ödeme; rezervasyon başına yalnızca bir kez alınır. */
+    /** Yalnızca rezervasyon kaydı sırasında peşin alınan tutar; sonradan KAPORA tipinde ödeme alınamaz. */
     KAPORA,
-    /** Kaporadan sonra alınan kısmi ödemeler. */
+    /** Rezervasyon kaydından sonra alınan kısmi ödemeler (kapora alınmış olması gerekmez). */
     KISMI,
     /** Kalan tutarın tamamını kapatan ödeme. */
     ODEME

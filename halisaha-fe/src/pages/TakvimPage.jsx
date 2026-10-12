@@ -165,39 +165,45 @@ export default function TakvimPage() {
               <div className="shrink-0 basis-[82px] p-2 text-[13.5px] tabular-nums text-ink/60">{hh(saat)}</div>
               {sahalar.map((s) => {
                 const rez = hucre(s.id, saat);
-                const iptal = rez ? [] : hucreIptaller(s.id, saat);
+                const iptal = hucreIptaller(s.id, saat);
+                // Aynı saate sonradan yeni kayıt girilse de iptal edilen rezervasyon görünmeye devam eder
+                const iptalSeridi =
+                  iptal.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/rezervasyon/' + iptal[0].id)}
+                      title={iptal.map((x) => x.adSoyad).join(', ') + ' · İptal edildi'}
+                      className="flex h-[22px] w-full shrink-0 cursor-pointer items-center gap-1.5 border border-dashed border-ink/25 bg-ink/5 px-2 text-left font-body text-[12px] text-ink/50 hover:bg-ink/10"
+                    >
+                      <span className="truncate line-through">{iptal[0].adSoyad}</span>
+                      {iptal.length > 1 && <span className="shrink-0">+{iptal.length - 1}</span>}
+                      <span className="ml-auto shrink-0 text-[10.5px] uppercase tracking-[0.08em]">İptal</span>
+                    </button>
+                  ) : null;
                 return (
-                  <div key={s.id} className="min-w-0 flex-1 border-l border-divider p-1">
+                  <div key={s.id} className="flex min-w-0 flex-1 flex-col border-l border-divider p-1">
                     {rez ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/rezervasyon/' + rez.id)}
-                        className="flex h-[52px] w-full cursor-pointer flex-col justify-center gap-0.5 border border-accent-400 bg-accent-200 px-2.5 py-1 text-left font-body text-accent-900"
-                      >
-                        <span className="max-w-full truncate text-[14.5px] font-medium">{rez.adSoyad}</span>
-                        <span className="text-[12.5px] tabular-nums opacity-75">
-                          {tl(rez.odenecekTutar)} ·{' '}
-                          {rez.odemeDurumu === 'ODENDI'
-                            ? 'Ödendi'
-                            : rez.odemeDurumu === 'KISMI_ODENDI'
-                              ? 'Ödenen ' + tl(rez.odenenTutar)
-                              : 'Ödenmedi'}
-                        </span>
-                      </button>
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        {iptalSeridi}
+                        <button
+                          type="button"
+                          onClick={() => navigate('/rezervasyon/' + rez.id)}
+                          className="flex min-h-[52px] w-full flex-1 cursor-pointer flex-col justify-center gap-0.5 border border-accent-400 bg-accent-200 px-2.5 py-1 text-left font-body text-accent-900"
+                        >
+                          <span className="max-w-full truncate text-[14.5px] font-medium">{rez.adSoyad}</span>
+                          <span className="text-[12.5px] tabular-nums opacity-75">
+                            {tl(rez.odenecekTutar)} ·{' '}
+                            {rez.odemeDurumu === 'ODENDI'
+                              ? 'Ödendi'
+                              : rez.odemeDurumu === 'KISMI_ODENDI'
+                                ? 'Ödenen ' + tl(rez.odenenTutar)
+                                : 'Ödenmedi'}
+                          </span>
+                        </button>
+                      </div>
                     ) : (
-                      <div className="flex h-[52px] flex-col gap-0.5">
-                        {iptal.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => navigate('/rezervasyon/' + iptal[0].id)}
-                            title={iptal.map((x) => x.adSoyad).join(', ') + ' · İptal edildi'}
-                            className="flex h-[22px] w-full shrink-0 cursor-pointer items-center gap-1.5 border border-dashed border-ink/25 bg-ink/5 px-2 text-left font-body text-[12px] text-ink/50 hover:bg-ink/10"
-                          >
-                            <span className="truncate line-through">{iptal[0].adSoyad}</span>
-                            {iptal.length > 1 && <span className="shrink-0">+{iptal.length - 1}</span>}
-                            <span className="ml-auto shrink-0 text-[10.5px] uppercase tracking-[0.08em]">İptal</span>
-                          </button>
-                        )}
+                      <div className="flex min-h-[52px] flex-1 flex-col gap-0.5">
+                        {iptalSeridi}
                         <button
                           type="button"
                           onClick={() =>

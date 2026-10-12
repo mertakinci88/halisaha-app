@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Building2,
   KeyRound,
+  Landmark,
   CupSoda,
   LayoutDashboard,
   Package,
@@ -29,6 +30,7 @@ const NAV = [
   { to: '/sahalar', ad: 'Sahalar', Icon: Square, modul: 'SAHA' },
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
   { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
+  { to: '/hesaplar', ad: 'Hesaplar', Icon: Landmark, modul: 'HESAP' },
 ];
 
 export default function AppLayout() {

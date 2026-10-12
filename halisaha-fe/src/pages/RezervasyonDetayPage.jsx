@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { Input, Select } from '@/components/ui/input';
+import HesapSecimi, { HESAP_SECIM_UYARISI, HESAP_TANIMSIZ_UYARISI } from '@/components/HesapSecimi';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { rezervasyonService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
@@ -52,8 +53,11 @@ export default function RezervasyonDetayPage() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [islemde, setIslemde] = useState(false);
   const [iptalOnay, setIptalOnay] = useState(false);
-  const [odemeYontemi, setOdemeYontemi] = useState('NAKIT');
+  const [odemeYontemi, setOdemeYontemi] = useState('');
+  const [hesapId, setHesapId] = useState('');
+  const [hesapSecenekSayisi, setHesapSecenekSayisi] = useState(0);
   const [kapora, setKapora] = useState('');
+  const [kismiAcik, setKismiAcik] = useState(false);
 
   const yukle = useCallback(() => {
     setYukleniyor(true);
@@ -121,11 +125,30 @@ export default function RezervasyonDetayPage() {
   };
 
   const odemeAl = async (tip, tutar) => {
+    if (!odemeYontemi) {
+      setHata('Lütfen ödeme yöntemini seçiniz');
+      return;
+    }
+    if (odemeYontemi === 'HAVALE_EFT' && !hesapId) {
+      setHata(hesapSecenekSayisi > 0 ? HESAP_SECIM_UYARISI : HESAP_TANIMSIZ_UYARISI);
+      return;
+    }
     setHata('');
     setIslemde(true);
     try {
-      setRez(await rezervasyonService.odemeEkle(id, { tip, tutar, yontem: odemeYontemi }));
-      if (tip !== 'ODEME') setKapora('');
+      setRez(await rezervasyonService.odemeEkle(id, {
+          tip,
+          tutar,
+          yontem: odemeYontemi,
+          hesapId: odemeYontemi === 'HAVALE_EFT' && hesapId ? Number(hesapId) : null,
+        }));
+      if (tip !== 'ODEME') {
+        setKapora('');
+        setKismiAcik(false);
+      }
+      // Her ödemede yöntem yeniden bilinçli seçilsin
+      setOdemeYontemi('');
+      setHesapId('');
       toast.basari((ODEME_TIPI_LABEL[tip] || 'Ödeme') + ' alındı.');
     } catch (e) {
       setHata(apiHata(e));
@@ -134,9 +157,8 @@ export default function RezervasyonDetayPage() {
     }
   };
 
-  // Kapora rezervasyon başına bir kez alınır; sonrakiler kısmi ödeme olarak girilir
-  const kaporaAlindi = (rez?.odemeler || []).some((o) => o.tip === 'KAPORA');
-  const kismiTip = kaporaAlindi ? 'KISMI' : 'KAPORA';
+  // Kapora yalnızca rezervasyon kaydı sırasında alınır; kayıttan sonra alınan ödemeler kısmi ödemedir
+  const kismiTip = 'KISMI';
   const kismiEtiket = ODEME_TIPI_LABEL[kismiTip];
 
   const kismiAl = () => {
@@ -286,7 +308,7 @@ export default function RezervasyonDetayPage() {
               {odemeler.map((o) => (
                 <OzetSatir
                   key={o.id}
-                  etiket={(ODEME_TIPI_LABEL[o.tip] || o.tip) + ' · ' + (ODEME_YONTEMI_LABEL[o.yontem] || o.yontem)}
+                  etiket={(ODEME_TIPI_LABEL[o.tip] || o.tip) + ' · ' + (ODEME_YONTEMI_LABEL[o.yontem] || o.yontem) + (o.hesapAd ? ' (' + o.hesapAd + ')' : '')}
                   alt={
                     kisaTarih(o.odemeTarihi) +
                     ' ' +
@@ -305,26 +327,65 @@ export default function RezervasyonDetayPage() {
 
           {aktif && kalan > 0 && (
             <div className="grid gap-2 border-t border-hairline pt-2.5">
-              <Select value={odemeYontemi} onChange={(e) => setOdemeYontemi(e.target.value)} aria-label="Ödeme yöntemi">
+              <Select
+                value={odemeYontemi}
+                onChange={(e) => {
+                  setOdemeYontemi(e.target.value);
+                  setHesapId('');
+                }}
+                aria-label="Ödeme yöntemi"
+              >
+                <option value="">Ödeme yöntemi seçiniz</option>
                 <option value="NAKIT">Nakit</option>
                 <option value="KART">Kart</option>
                 <option value="HAVALE_EFT">Havale / EFT</option>
               </Select>
-              <div className="grid gap-2 [grid-template-columns:1fr_auto]">
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  max={kalan}
-                  step="0.01"
-                  placeholder={kismiEtiket + ' tutarı (₺)'}
-                  value={kapora}
-                  onChange={(e) => setKapora(tutarSinirla(e.target.value, kalan))}
+              {odemeYontemi === 'HAVALE_EFT' && (
+                <HesapSecimi value={hesapId} onChange={setHesapId} onSecenekler={setHesapSecenekSayisi} />
+              )}
+              <label
+                className={cn(
+                  'relative inline-flex min-h-10 w-fit cursor-pointer items-center gap-2 border px-3 text-[15px]',
+                  kismiAcik ? 'border-accent bg-accent-100' : 'border-divider bg-bg',
+                )}
+              >
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={kismiAcik}
+                  onChange={(e) => {
+                    setKismiAcik(e.target.checked);
+                    if (!e.target.checked) setKapora('');
+                  }}
                 />
-                <Button variant="secondary" disabled={islemde || !kapora} onClick={kismiAl}>
-                  {kismiEtiket} al
-                </Button>
-              </div>
+                <span
+                  className={cn(
+                    'grid size-[18px] place-items-center border-[1.5px] border-ink/50 bg-bg text-white',
+                    'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
+                    kismiAcik && 'border-accent bg-accent',
+                  )}
+                >
+                  {kismiAcik ? <Check size={13} strokeWidth={3} /> : null}
+                </span>
+                <span>{kismiEtiket} al</span>
+              </label>
+              {kismiAcik && (
+                <div className="grid gap-2 [grid-template-columns:1fr_auto]">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    max={kalan}
+                    step="0.01"
+                    placeholder={kismiEtiket + ' tutarı (₺)'}
+                    value={kapora}
+                    onChange={(e) => setKapora(tutarSinirla(e.target.value, kalan))}
+                  />
+                  <Button variant="secondary" disabled={islemde || !kapora} onClick={kismiAl}>
+                    {kismiEtiket} al
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

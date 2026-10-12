@@ -22,6 +22,10 @@ public record RezervasyonRequest(
         @Pattern(regexp = "^05\\d{9}$", message = "Telefon numarası 11 haneli olmalı ve 05 ile başlamalıdır (örn. 05469764613)")
         String telNo,
         OdemeYontemi odemeYontemi,
-        @DecimalMin(value = "0.00", message = "Kapora negatif olamaz") BigDecimal kapora
+        @DecimalMin(value = "0.00", message = "Kapora negatif olamaz") BigDecimal kapora,
+        /** Kapora Havale / EFT ile alınıyorsa paranın yattığı hesap. */
+        Long hesapId,
+        /** true ise kapora yerine rezervasyon tutarının tamamı peşin tahsil edilir (tip ODEME); {@code kapora} yok sayılır. */
+        Boolean tamOdeme
 ) {
 }

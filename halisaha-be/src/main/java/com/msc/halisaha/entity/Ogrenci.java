@@ -88,6 +88,11 @@ public class Ogrenci {
     @Column(name = "odeme_sekli", length = 20)
     private OdemeYontemi odemeSekli;
 
+    /** Havale / EFT ile alınan ödeme şeklinde paranın yattığı hesap (diğer yöntemlerde null). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hesap_id")
+    private Hesap hesap;
+
     @Column(name = "kayit_tarih", nullable = false, updatable = false)
     private LocalDateTime kayitTarih;
 

@@ -102,13 +102,13 @@ class IsletmeIzolasyonTest {
 
         TestOturum.girisYap(b);
         assertEquals(404, assertThrows(ApiException.class, () -> rezervasyonService.create(
-                new RezervasyonRequest(sahaA, "Müşteri", bas, bas.plusHours(1), "05551112233", null, null)))
+                new RezervasyonRequest(sahaA, "Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null)))
                 .getStatus().value());
 
         // B kendi sahasında rezervasyon açar; A'nın ürününü ekleyemez ve A rezervasyonu göremez
         Long sahaB = sahaService.create(new SahaRequest("B Sahası", null, new BigDecimal("500"))).id();
         Long rezB = rezervasyonService.create(
-                new RezervasyonRequest(sahaB, "Müşteri", bas, bas.plusHours(1), "05551112233", null, null)).id();
+                new RezervasyonRequest(sahaB, "Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null)).id();
         assertEquals(404, assertThrows(ApiException.class,
                 () -> rezervasyonService.urunEkle(rezB, new RezervasyonUrunRequest(urunA, 1))).getStatus().value());
 
@@ -122,12 +122,12 @@ class IsletmeIzolasyonTest {
         TestOturum.girisYap(a);
         Long sahaA = sahaService.create(new SahaRequest("Saha", null, new BigDecimal("500"))).id();
         LocalDateTime bas = LocalDateTime.of(2031, 2, 5, 14, 0);
-        rezervasyonService.create(new RezervasyonRequest(sahaA, "A Müşteri", bas, bas.plusHours(1), "05551112233", null, null));
+        rezervasyonService.create(new RezervasyonRequest(sahaA, "A Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null));
 
         TestOturum.girisYap(b);
         Long sahaB = sahaService.create(new SahaRequest("Saha", null, new BigDecimal("500"))).id();
         // Aynı saat diliminde B'nin çakışma hatası almaması gerekir
-        rezervasyonService.create(new RezervasyonRequest(sahaB, "B Müşteri", bas, bas.plusHours(1), "05551112233", null, null));
+        rezervasyonService.create(new RezervasyonRequest(sahaB, "B Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null));
         assertEquals(1, rezervasyonService.list(null, bas.toLocalDate()).size());
     }
 
@@ -136,7 +136,7 @@ class IsletmeIzolasyonTest {
         TestOturum.girisYap(a);
         Long sahaA = sahaService.create(new SahaRequest("A Sahası", null, new BigDecimal("1000"))).id();
         LocalDateTime bas = LocalDateTime.of(2031, 3, 5, 14, 0);
-        rezervasyonService.create(new RezervasyonRequest(sahaA, "A Müşteri", bas, bas.plusHours(1), "05551112233", null, null));
+        rezervasyonService.create(new RezervasyonRequest(sahaA, "A Müşteri", bas, bas.plusHours(1), "05551112233", null, null, null, null));
         LocalDate gun = bas.toLocalDate();
 
         var raporA = raporService.ciro(gun, gun, null, RaporService.Grupla.GUN, RaporService.Esas.SEANS);

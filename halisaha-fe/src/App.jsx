@@ -26,6 +26,9 @@ import EnvanterKayitPage from '@/pages/EnvanterKayitPage';
 import EnvanterDetayPage from '@/pages/EnvanterDetayPage';
 import EnvanterSetKayitPage from '@/pages/EnvanterSetKayitPage';
 import EnvanterSetDetayPage from '@/pages/EnvanterSetDetayPage';
+import HesapListePage from '@/pages/HesapListePage';
+import HesapKayitPage from '@/pages/HesapKayitPage';
+import HesapDetayPage from '@/pages/HesapDetayPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
 import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
@@ -64,6 +67,9 @@ export default function App() {
         }
       >
         <Route path="/panel" element={<DashboardPage />} />
+        <Route path="/hesaplar" element={<YetkiliRota modul="HESAP"><HesapListePage /></YetkiliRota>} />
+        <Route path="/hesaplar/yeni" element={<YetkiliRota modul="HESAP"><HesapKayitPage /></YetkiliRota>} />
+        <Route path="/hesaplar/:id" element={<YetkiliRota modul="HESAP"><HesapDetayPage /></YetkiliRota>} />
         <Route path="/sifre-degistir" element={<SifreDegistirPage />} />
         <Route path="/takvim" element={<TakvimPage />} />
         <Route path="/rezervasyon/yeni" element={<RezervasyonYeniPage />} />
