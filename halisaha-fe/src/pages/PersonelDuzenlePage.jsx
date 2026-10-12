@@ -8,12 +8,14 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { useHata, useToast } from '@/context/ToastContext';
 import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelDuzenlePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { kullanici: ben } = useAuth();
   const [kullanici, setKullanici] = useState(null);
   const [yetkiler, setYetkiler] = useState([]);
   const [bilgi, setBilgi] = useState({ kullaniciAdi: '', adSoyad: '', sifre: '' });
@@ -77,6 +79,22 @@ export default function PersonelDuzenlePage() {
     }
   };
 
+  const rolDegistir = async (rol) => {
+    if (rol === kullanici.rol) return;
+    setHata('');
+    setKaydediyor(true);
+    try {
+      const guncel = await kullaniciService.rolGuncelle(id, rol);
+      setKullanici(guncel);
+      setYetkiler(guncel.yetkiler);
+      toast.basari('Rol güncellendi; kullanıcının yeniden giriş yapması gerekecek.');
+    } catch (err) {
+      setHata(apiHata(err));
+    } finally {
+      setKaydediyor(false);
+    }
+  };
+
   const durumDegistir = async (durum) => {
     setHata('');
     setKaydediyor(true);
@@ -92,6 +110,8 @@ export default function PersonelDuzenlePage() {
   };
 
   if (yukleniyor) return <Yukleniyor />;
+  const kendisi = ben?.id === kullanici?.id;
+
   if (!kullanici) return <Hata mesaj={hata || 'Kullanıcı bulunamadı.'} />;
 
   return (
@@ -140,6 +160,31 @@ export default function PersonelDuzenlePage() {
             </div>
           </Card>
         </form>
+
+        <Card className="gap-3.5">
+          <h4 className="text-[22px]">Rol</h4>
+          <Seg className="w-full">
+            <SegOpt
+              active={kullanici.rol === 'PERSONEL'}
+              onClick={() => !kendisi && rolDegistir('PERSONEL')}
+              className="flex-1"
+            >
+              Personel
+            </SegOpt>
+            <SegOpt
+              active={kullanici.rol === 'ADMIN'}
+              onClick={() => !kendisi && rolDegistir('ADMIN')}
+              className="flex-1"
+            >
+              Admin
+            </SegOpt>
+          </Seg>
+          <p className="m-0 text-[13.5px] text-ink/55">
+            {kendisi
+              ? 'Kendi rolünüzü değiştiremezsiniz.'
+              : 'Admin tüm menülere erişir. Rol değişince menü yetkileri sıfırlanır ve kullanıcı yeniden giriş yapar.'}
+          </p>
+        </Card>
 
         {kullanici.rol === 'PERSONEL' ? (
         <Card className="gap-3.5">

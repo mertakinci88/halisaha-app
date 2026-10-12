@@ -3,6 +3,7 @@ import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
 
 import LoginPage from '@/pages/LoginPage';
+import SifreDegistirPage from '@/pages/SifreDegistirPage';
 import DashboardPage from '@/pages/DashboardPage';
 import TakvimPage from '@/pages/TakvimPage';
 import RezervasyonYeniPage from '@/pages/RezervasyonYeniPage';
@@ -37,7 +38,7 @@ function KorumaliAlan({ children }) {
   const { pathname } = useLocation();
   if (!girisli) return <Navigate to="/giris" replace />;
   // Süper admin işletme verisine bağlı değildir; yalnızca /isletmeler altındaki sayfaları kullanır
-  if (isSuperAdmin && !pathname.startsWith('/isletmeler')) return <Navigate to="/isletmeler" replace />;
+  if (isSuperAdmin && !pathname.startsWith('/isletmeler') && pathname !== '/sifre-degistir') return <Navigate to="/isletmeler" replace />;
   return children;
 }
 
@@ -63,6 +64,7 @@ export default function App() {
         }
       >
         <Route path="/panel" element={<DashboardPage />} />
+        <Route path="/sifre-degistir" element={<SifreDegistirPage />} />
         <Route path="/takvim" element={<TakvimPage />} />
         <Route path="/rezervasyon/yeni" element={<RezervasyonYeniPage />} />
         <Route path="/rezervasyon/:id" element={<RezervasyonDetayPage />} />

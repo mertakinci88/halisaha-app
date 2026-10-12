@@ -3,6 +3,7 @@ package com.msc.halisaha.controller;
 import com.msc.halisaha.dto.KullaniciResponse;
 import com.msc.halisaha.dto.LoginRequest;
 import com.msc.halisaha.dto.RefreshRequest;
+import com.msc.halisaha.dto.SifreDegistirRequest;
 import com.msc.halisaha.dto.TokenResponse;
 import com.msc.halisaha.common.security.UserPrincipal;
 import com.msc.halisaha.service.AuthService;
@@ -41,6 +42,13 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
         authService.logout(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/sifre-degistir")
+    public ResponseEntity<Void> sifreDegistir(@AuthenticationPrincipal UserPrincipal principal,
+                                              @Valid @RequestBody SifreDegistirRequest request) {
+        authService.sifreDegistir(principal.getId(), request);
         return ResponseEntity.noContent().build();
     }
 }
