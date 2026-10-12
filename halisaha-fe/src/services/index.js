@@ -95,12 +95,21 @@ export const raporService = {
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
 export const ogrenciService = {
-  /** params: { grupId, q, aidatBekleyen, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  /** params: { grupId, q, odemeBekleyen, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/ogrenciler', { params }).then((r) => r.data),
   get: (id) => api.get('/api/ogrenciler/' + id).then((r) => r.data),
   create: (body) => api.post('/api/ogrenciler', body).then((r) => r.data),
   update: (id, body) => api.put('/api/ogrenciler/' + id, body).then((r) => r.data),
   remove: (id) => api.delete('/api/ogrenciler/' + id),
+};
+
+/* ── /api/ogrenciler/{id}/odemeler (öğrenci detayındaki aylık ödemeleri) ── */
+export const ogrenciOdemeService = {
+  /** { yil, bugun (sunucu tarihi), aylar: [{ yil, ay, odenenTutar, durum (ODENDI | ODENMEDI), odemeSekli, hesapId, hesapAd, odemeTarihi, not }] (12 ay), toplamOdenen, yillar } */
+  getir: (ogrenciId, yil) => api.get('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil).then((r) => r.data),
+  /** body: { aylar: [{ ay, odenenTutar, odemeSekli, hesapId, odemeTarihi }] } — yalnızca gönderilen aylar kaydedilir; tutar 0/boş ise o ayın kaydı silinir */
+  kaydet: (ogrenciId, yil, body) =>
+    api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil, body).then((r) => r.data),
 };
 
 /* ── /api/yoklamalar (ADMIN ya da YOKLAMA yetkisi) ───────────── */

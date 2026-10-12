@@ -99,7 +99,7 @@ export default function DashboardPage() {
     ];
     if (ogrenciYetkisi) {
       liste.push({
-        etiket: 'Aidat bekleyen',
+        etiket: 'Ödeme bekleyen',
         deger: String(bekleyen.length),
         alt: veri.ogrenciler.length + ' kayıtlı öğrenci',
       });
@@ -190,11 +190,11 @@ export default function DashboardPage() {
             <div className="grid content-start gap-5">
               {ogrenciYetkisi ? (
               <Card>
-                <h4 className="text-[22px]">Aidat bekleyen öğrenciler</h4>
+                <h4 className="text-[22px]">Ödeme bekleyen öğrenciler</h4>
                 <Table>
                   <tbody>
                     {veri.ogrenciler.filter((o) => o.odemeDurumu !== 'ODENDI').length === 0 ? (
-                      <Bos colSpan={3}>Bekleyen aidat yok.</Bos>
+                      <Bos colSpan={2}>Bekleyen ödeme yok.</Bos>
                     ) : (
                       veri.ogrenciler
                         .filter((o) => o.odemeDurumu !== 'ODENDI')
@@ -203,14 +203,13 @@ export default function DashboardPage() {
                           <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>
                             <Td>{o.adSoyad}</Td>
                             <Td className="text-[13.5px] text-ink/55">{o.grupAd || '—'}</Td>
-                            <Td className="text-right tabular-nums">{tl(o.aylikAidat)}</Td>
                           </Tr>
                         ))
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?aidat=bekleyen')}>
-                  Tüm aidat bekleyenler
+                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
+                  Tüm ödeme bekleyenler
                 </Button>
               </Card>
               ) : null}

@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -62,37 +61,6 @@ public class Ogrenci {
     @Column(name = "antrenman_gun_sayisi")
     private Integer antrenmanGunSayisi;
 
-    @Column(name = "aylik_aidat", precision = 10, scale = 2)
-    private BigDecimal aylikAidat;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "odeme_durumu", nullable = false, length = 20)
-    private OdemeDurumu odemeDurumu;
-
-    @Column(name = "odeme_plani")
-    private String odemePlani;
-
-    @Column(name = "odenen_donem")
-    private String odenenDonem;
-
-    @Column(name = "odeme_tarihi")
-    private LocalDate odemeTarihi;
-
-    @Column(name = "sonraki_odeme_tarih")
-    private LocalDate sonrakiOdemeTarih;
-
-    @Column(name = "odenen_tutar", precision = 10, scale = 2)
-    private BigDecimal odenenTutar;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "odeme_sekli", length = 20)
-    private OdemeYontemi odemeSekli;
-
-    /** Havale / EFT ile alınan ödeme şeklinde paranın yattığı hesap (diğer yöntemlerde null). */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hesap_id")
-    private Hesap hesap;
-
     @Column(name = "kayit_tarih", nullable = false, updatable = false)
     private LocalDateTime kayitTarih;
 
@@ -103,9 +71,6 @@ public class Ogrenci {
     void prePersist() {
         if (durum == null) {
             durum = OgrenciDurum.AKTIF;
-        }
-        if (odemeDurumu == null) {
-            odemeDurumu = OdemeDurumu.ODENMEDI;
         }
         if (kayitTarih == null) {
             kayitTarih = LocalDateTime.now();

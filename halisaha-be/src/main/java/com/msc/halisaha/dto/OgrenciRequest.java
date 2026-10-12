@@ -1,11 +1,8 @@
 package com.msc.halisaha.dto;
 
-import com.msc.halisaha.entity.OdemeDurumu;
-import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.entity.OgrenciDurum;
 import jakarta.validation.constraints.NotBlank;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record OgrenciRequest(
@@ -16,16 +13,6 @@ public record OgrenciRequest(
         String veliTelNo,
         OgrenciDurum durum,
         Integer antrenmanGunSayisi,
-        BigDecimal aylikAidat,
-        OdemeDurumu odemeDurumu,
-        String odemePlani,
-        String odenenDonem,
-        LocalDate odemeTarihi,
-        LocalDate sonrakiOdemeTarih,
-        BigDecimal odenenTutar,
-        OdemeYontemi odemeSekli,
-        /** Ödeme şekli Havale / EFT ise paranın yattığı hesap. */
-        Long hesapId,
         String not
 ) {
 }

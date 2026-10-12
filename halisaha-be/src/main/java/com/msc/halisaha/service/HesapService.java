@@ -10,7 +10,7 @@ import com.msc.halisaha.entity.HesapDurum;
 import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.repository.HesapRepository;
 import com.msc.halisaha.repository.OdemeRepository;
-import com.msc.halisaha.repository.OgrenciRepository;
+import com.msc.halisaha.repository.OgrenciOdemeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class HesapService {
 
     private final HesapRepository hesapRepository;
     private final OdemeRepository odemeRepository;
-    private final OgrenciRepository ogrenciRepository;
+    private final OgrenciOdemeRepository ogrenciOdemeRepository;
     private final IsletmeContext isletmeContext;
 
     public List<HesapResponse> list() {
@@ -69,7 +69,7 @@ public class HesapService {
     @Transactional
     public void delete(Long id) {
         Hesap hesap = getEntity(id);
-        if (odemeRepository.existsByHesapId(id) || ogrenciRepository.existsByHesapId(id)) {
+        if (odemeRepository.existsByHesapId(id) || ogrenciOdemeRepository.existsByHesapId(id)) {
             hesap.setDurum(HesapDurum.PASIF);
             return;
         }

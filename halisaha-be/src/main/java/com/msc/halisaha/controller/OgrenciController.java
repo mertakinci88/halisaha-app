@@ -29,10 +29,10 @@ public class OgrenciController {
     public PageResponse<OgrenciResponse> list(
             @RequestParam(required = false) Long grupId,
             @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "false") boolean aidatBekleyen,
+            @RequestParam(defaultValue = "false") boolean odemeBekleyen,
             @RequestParam(defaultValue = "0") int sayfa,
             @RequestParam(defaultValue = "10") int boyut) {
-        return ogrenciService.list(grupId, q, aidatBekleyen, sayfa, boyut);
+        return ogrenciService.list(grupId, q, odemeBekleyen, sayfa, boyut);
     }
 
     @GetMapping("/{id}")
