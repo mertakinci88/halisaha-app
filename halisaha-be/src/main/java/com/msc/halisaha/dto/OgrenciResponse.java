@@ -1,11 +1,9 @@
 package com.msc.halisaha.dto;
 
-import com.msc.halisaha.entity.OdemeDurumu;
-import com.msc.halisaha.entity.OdemeYontemi;
+import com.msc.halisaha.entity.OgrenciOdemeDurumu;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -19,20 +17,12 @@ public record OgrenciResponse(
         String veliTelNo,
         OgrenciDurum durum,
         Integer antrenmanGunSayisi,
-        BigDecimal aylikAidat,
-        OdemeDurumu odemeDurumu,
-        String odemePlani,
-        String odenenDonem,
-        LocalDate odemeTarihi,
-        LocalDate sonrakiOdemeTarih,
-        BigDecimal odenenTutar,
-        OdemeYontemi odemeSekli,
-        Long hesapId,
-        String hesapAd,
+        /** İçinde bulunulan ayın durumu: ödeme girilmişse ODENDI; girilmemişse ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */
+        OgrenciOdemeDurumu odemeDurumu,
         LocalDateTime kayitTarih,
         String not
 ) {
-    public static OgrenciResponse from(Ogrenci ogrenci) {
+    public static OgrenciResponse from(Ogrenci ogrenci, OgrenciOdemeDurumu odemeDurumu) {
         return new OgrenciResponse(
                 ogrenci.getId(),
                 ogrenci.getGrup() != null ? ogrenci.getGrup().getId() : null,
@@ -43,16 +33,7 @@ public record OgrenciResponse(
                 ogrenci.getVeliTelNo(),
                 ogrenci.getDurum(),
                 ogrenci.getAntrenmanGunSayisi(),
-                ogrenci.getAylikAidat(),
-                ogrenci.getOdemeDurumu(),
-                ogrenci.getOdemePlani(),
-                ogrenci.getOdenenDonem(),
-                ogrenci.getOdemeTarihi(),
-                ogrenci.getSonrakiOdemeTarih(),
-                ogrenci.getOdenenTutar(),
-                ogrenci.getOdemeSekli(),
-                ogrenci.getHesap() != null ? ogrenci.getHesap().getId() : null,
-                ogrenci.getHesap() != null ? ogrenci.getHesap().getAd() : null,
+                odemeDurumu,
                 ogrenci.getKayitTarih(),
                 ogrenci.getNot()
         );

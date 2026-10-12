@@ -5,8 +5,6 @@ import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.dto.HesapRequest;
 import com.msc.halisaha.dto.HesapResponse;
 import com.msc.halisaha.dto.OdemeRequest;
-import com.msc.halisaha.dto.OgrenciRequest;
-import com.msc.halisaha.dto.OgrenciResponse;
 import com.msc.halisaha.dto.RezervasyonRequest;
 import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.entity.HesapDurum;
@@ -46,7 +44,6 @@ class HesapServiceTest {
 
     @Autowired HesapService hesapService;
     @Autowired RezervasyonService rezervasyonService;
-    @Autowired OgrenciService ogrenciService;
     @Autowired HesapRepository hesapRepository;
     @Autowired SahaRepository sahaRepository;
     @Autowired IsletmeRepository isletmeRepository;
@@ -149,7 +146,6 @@ class HesapServiceTest {
     @Test
     void havaleOdemesindeHesapSecimiZorunludur() {
         assertEquals(400, durum(() -> rezervasyon(9, OdemeYontemi.HAVALE_EFT, null)));
-        assertEquals(400, durum(() -> ogrenciService.create(ogrenci(OdemeYontemi.HAVALE_EFT, null))));
     }
 
     @Test
@@ -190,21 +186,5 @@ class HesapServiceTest {
         rezervasyon(8, OdemeYontemi.HAVALE_EFT, kullanilan.id());
         hesapService.delete(kullanilan.id());
         assertEquals(HesapDurum.PASIF, hesapService.getById(kullanilan.id()).durum());
-    }
-
-    @Test
-    void ogrenciHavaleOdemesindeHesapTutulurDegisinceTemizlenir() {
-        HesapResponse h = hesapAc();
-        OgrenciResponse o = ogrenciService.create(ogrenci(OdemeYontemi.HAVALE_EFT, h.id()));
-        assertEquals(h.id(), o.hesapId());
-        assertEquals("Garanti X Şubesi", o.hesapAd());
-
-        OgrenciResponse nakit = ogrenciService.update(o.id(), ogrenci(OdemeYontemi.NAKIT, h.id()));
-        assertNull(nakit.hesapId());
-    }
-
-    private OgrenciRequest ogrenci(OdemeYontemi sekil, Long hesapId) {
-        return new OgrenciRequest(null, "Öğrenci", null, null, null, null, null, null, null, null, null,
-                null, null, null, sekil, hesapId, null);
     }
 }

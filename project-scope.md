@@ -57,16 +57,21 @@ Rezervasyon:
     - veli_tel_no
     - durum
     - antrenman_gun_sayisi
-    - aylik_aidat
-    - odeme_durumu
-    - odeme_plani
-    - odenen_donem
-    - odeme_tarihi
-    - sonraki_odeme_tarih
-    - odenen_tutar
-    - odeme_sekli
     - kayit_tarih
     - not
+
+Öğrenci ödeme (ogrenci_odeme; ay başına bir kayıt, yalnızca ödeme ya da not girilen aylar için):
+    - id
+    - ogrenci_id
+    - yil
+    - ay
+    - odenen_tutar
+    - odeme_sekli
+    - hesap_id
+    - odeme_tarihi
+    - not
+    - kullanici_id
+    - kayit_tarih
 
 Grup
     - id

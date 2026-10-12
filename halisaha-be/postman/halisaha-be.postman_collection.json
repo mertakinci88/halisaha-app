@@ -380,7 +380,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"aylikAidat\": 1500.00,\n  \"odemeDurumu\": \"ODENMEDI\",\n  \"odemePlani\": \"Aylık\",\n  \"odenenDonem\": null,\n  \"odemeTarihi\": null,\n  \"sonrakiOdemeTarih\": \"2026-10-01\",\n  \"odenenTutar\": 0,\n  \"odemeSekli\": \"NAKIT\",\n  \"not\": \"\"\n}"
+              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"not\": \"\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ogrenciler",
@@ -398,7 +398,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"aylikAidat\": 1500.00,\n  \"odemeDurumu\": \"ODENDI\",\n  \"odemePlani\": \"Aylık\",\n  \"odenenDonem\": \"2026-09\",\n  \"odemeTarihi\": \"2026-09-05\",\n  \"sonrakiOdemeTarih\": \"2026-10-01\",\n  \"odenenTutar\": 1500.00,\n  \"odemeSekli\": \"HAVALE_EFT\",\n  \"not\": \"\"\n}"
+              "raw": "{\n  \"grupId\": {{grupId}},\n  \"adSoyad\": \"Ahmet Yılmaz\",\n  \"dogumTarih\": \"2013-05-10\",\n  \"veliAdSoyad\": \"Mehmet Yılmaz\",\n  \"veliTelNo\": \"05551112233\",\n  \"durum\": \"AKTIF\",\n  \"antrenmanGunSayisi\": 3,\n  \"not\": \"\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ogrenciler/{{ogrenciId}}",

@@ -3,14 +3,16 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.OgrenciRequest;
+import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.dto.OgrenciResponse;
 import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.entity.Grup;
-import com.msc.halisaha.entity.OdemeDurumu;
+import com.msc.halisaha.entity.OgrenciOdemeDurumu;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
 import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.GrupRepository;
+import com.msc.halisaha.repository.OgrenciOdemeRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +39,21 @@ public class OgrenciService {
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
     private final EnvanterSatisRepository envanterSatisRepository;
-    private final HesapService hesapService;
+    private final OgrenciOdemeRepository ogrenciOdemeRepository;
 
-    /** aidatBekleyen: yalnızca ödemesi tamamlanmamış (Ödenmedi / Kısmi ödendi) öğrenciler. */
-    public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean aidatBekleyen, int sayfa, int boyut) {
+    /** odemeBekleyen: yalnızca içinde bulunulan ayda ödemesi girilmemiş (Ödeme bekliyor / Ödenmedi) öğrenciler. */
+    public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean odemeBekleyen, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, aidatBekleyen, pageRequest);
-        return PageResponse.from(sonuc, OgrenciResponse::from);
+        LocalDate bugun = AppZaman.bugun();
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, odemeBekleyen,
+                bugun.getYear(), bugun.getMonthValue(), pageRequest);
+        Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
+        return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));
     }
 
     public OgrenciResponse getById(Long id) {
-        return OgrenciResponse.from(getEntity(id));
+        Ogrenci ogrenci = getEntity(id);
+        return yanit(ogrenci);
     }
 
     @Transactional
@@ -49,10 +63,9 @@ public class OgrenciService {
                 .grup(resolveGrup(request.grupId()))
                 .adSoyad(request.adSoyad())
                 .durum(request.durum() != null ? request.durum() : OgrenciDurum.AKTIF)
-                .odemeDurumu(request.odemeDurumu() != null ? request.odemeDurumu() : OdemeDurumu.ODENMEDI)
                 .build();
         applyRequest(ogrenci, request);
-        return OgrenciResponse.from(ogrenciRepository.save(ogrenci));
+        return yanit(ogrenciRepository.save(ogrenci));
     }
 
     @Transactional
@@ -63,10 +76,7 @@ public class OgrenciService {
         if (request.durum() != null) {
             ogrenci.setDurum(request.durum());
         }
-        if (request.odemeDurumu() != null) {
-            ogrenci.setOdemeDurumu(request.odemeDurumu());
-        }
-        return OgrenciResponse.from(ogrenci);
+        return yanit(ogrenci);
     }
 
     @Transactional
@@ -85,16 +95,28 @@ public class OgrenciService {
         ogrenci.setVeliAdSoyad(request.veliAdSoyad());
         ogrenci.setVeliTelNo(request.veliTelNo());
         ogrenci.setAntrenmanGunSayisi(request.antrenmanGunSayisi());
-        ogrenci.setAylikAidat(request.aylikAidat());
-        ogrenci.setOdemePlani(request.odemePlani());
-        ogrenci.setOdenenDonem(request.odenenDonem());
-        ogrenci.setOdemeTarihi(request.odemeTarihi());
-        ogrenci.setSonrakiOdemeTarih(request.sonrakiOdemeTarih());
-        ogrenci.setOdenenTutar(request.odenenTutar());
-        ogrenci.setOdemeSekli(request.odemeSekli());
-        Long mevcutHesapId = ogrenci.getHesap() != null ? ogrenci.getHesap().getId() : null;
-        ogrenci.setHesap(hesapService.coz(request.hesapId(), request.odemeSekli(), mevcutHesapId));
         ogrenci.setNot(request.not());
+    }
+
+    private OgrenciResponse yanit(Ogrenci ogrenci) {
+        return OgrenciResponse.from(ogrenci, buAyDurumlari(List.of(ogrenci)).get(ogrenci.getId()));
+    }
+
+    /** İçinde bulunulan ayın durumu: ödeme kaydı varsa ODENDI; yoksa ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */
+    private Map<Long, OgrenciOdemeDurumu> buAyDurumlari(Collection<Ogrenci> ogrenciler) {
+        if (ogrenciler.isEmpty()) {
+            return Map.of();
+        }
+        LocalDate bugun = AppZaman.bugun();
+        Set<Long> odeyenler = ogrenciOdemeRepository
+                .findDonem(ogrenciler.stream().map(Ogrenci::getId).toList(), bugun.getYear(), bugun.getMonthValue()).stream()
+                .map(k -> k.getOgrenci().getId())
+                .collect(Collectors.toSet());
+        Map<Long, OgrenciOdemeDurumu> sonuc = new HashMap<>();
+        for (Ogrenci o : ogrenciler) {
+            sonuc.put(o.getId(), OgrenciOdemeDurumu.hesapla(odeyenler.contains(o.getId()), bugun.getYear(), bugun.getMonthValue(), bugun));
+        }
+        return sonuc;
     }
 
     private Grup resolveGrup(Long grupId) {

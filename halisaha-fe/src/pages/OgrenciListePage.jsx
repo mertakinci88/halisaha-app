@@ -6,13 +6,14 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
+import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
 import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
-import { ODEME_DURUMU_LABEL, tl } from '@/lib/format';
+import { tl } from '@/lib/format';
 
 const BOYUT = 10;
 const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSayfa: 0 };
@@ -20,8 +21,8 @@ const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSa
 export default function OgrenciListePage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  // Panelden gelen /ogrenciler?aidat=bekleyen bağlantısı yalnızca aidat bekleyenleri listeler
-  const aidatBekleyen = params.get('aidat') === 'bekleyen';
+  // Panelden gelen /ogrenciler?odeme=bekleyen bağlantısı yalnızca ödeme bekleyenleri listeler
+  const odemeBekleyen = params.get('odeme') === 'bekleyen';
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
@@ -50,11 +51,11 @@ export default function OgrenciListePage() {
     setYukleniyor(true);
     setHata('');
     ogrenciService
-      .list({ q: aramaAktif || undefined, aidatBekleyen: aidatBekleyen || undefined, sayfa, boyut: BOYUT })
+      .list({ q: aramaAktif || undefined, odemeBekleyen: odemeBekleyen || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [aramaAktif, aidatBekleyen, sayfa]);
+  }, [aramaAktif, odemeBekleyen, sayfa]);
 
   useEffect(() => {
     yukle();
@@ -62,7 +63,7 @@ export default function OgrenciListePage() {
 
   const filtreSec = (bekleyen) => {
     setSayfa(0);
-    setParams(bekleyen ? { aidat: 'bekleyen' } : {}, { replace: true });
+    setParams(bekleyen ? { odeme: 'bekleyen' } : {}, { replace: true });
   };
 
   const toplamSayfa = Math.max(1, veri.toplamSayfa);
@@ -88,11 +89,11 @@ export default function OgrenciListePage() {
             </Button>
           </form>
           <Seg>
-            <SegOpt active={!aidatBekleyen} onClick={() => filtreSec(false)}>
+            <SegOpt active={!odemeBekleyen} onClick={() => filtreSec(false)}>
               Tümü
             </SegOpt>
-            <SegOpt active={aidatBekleyen} onClick={() => filtreSec(true)}>
-              Aidat bekleyen
+            <SegOpt active={odemeBekleyen} onClick={() => filtreSec(true)}>
+              Ödeme bekleyen
             </SegOpt>
           </Seg>
           <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
@@ -113,8 +114,7 @@ export default function OgrenciListePage() {
                   <Th>Grup</Th>
                   <Th>Veli</Th>
                   <Th>Telefon</Th>
-                  <Th className="text-right">Aidat</Th>
-                  <Th>Ödeme</Th>
+                  <Th>Bu ayki ödeme</Th>
                   <Th>Durum</Th>
                   <Th>Not</Th>
                   <Th />
@@ -122,29 +122,16 @@ export default function OgrenciListePage() {
               </thead>
               <tbody>
                 {veri.icerik.length === 0 ? (
-                  <Bos colSpan={9}>{aidatBekleyen ? 'Aidat bekleyen öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
+                  <Bos colSpan={8}>{odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
                 ) : (
                   veri.icerik.map((o) => (
-                    <Tr key={o.id}>
+                    <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>
                       <Td>{o.adSoyad}</Td>
                       <Td className="text-ink/55">{o.grupAd || '—'}</Td>
                       <Td>{o.veliAdSoyad || '—'}</Td>
                       <Td className="tabular-nums">{o.veliTelNo || '—'}</Td>
-                      <Td className="text-right tabular-nums">{tl(o.aylikAidat)}</Td>
                       <Td>
-                        <Tag
-                          tone={
-                            o.odemeDurumu === 'ODENDI'
-                              ? 'accent'
-                              : o.odemeDurumu === 'ODENMEDI'
-                                ? 'danger'
-                                : o.odemeDurumu === 'KISMI_ODENDI'
-                                  ? 'warning'
-                                  : 'neutral'
-                          }
-                        >
-                          {ODEME_DURUMU_LABEL[o.odemeDurumu] || '—'}
-                        </Tag>
+                        <OdemeDurumuEtiketi durum={o.odemeDurumu} />
                       </Td>
                       <Td>
                         <Tag tone={o.durum === 'AKTIF' ? 'accent' : 'outline'}>
@@ -155,8 +142,15 @@ export default function OgrenciListePage() {
                         {o.not || '—'}
                       </Td>
                       <Td className="text-right">
-                        <Button variant="secondary" size="sm" onClick={() => navigate('/ogrenciler/' + o.id)}>
-                          Güncelle
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/ogrenciler/' + o.id);
+                          }}
+                        >
+                          Detay
                         </Button>
                       </Td>
                     </Tr>
