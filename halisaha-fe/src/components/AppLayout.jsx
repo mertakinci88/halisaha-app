@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   Building2,
+  KeyRound,
   CupSoda,
   LayoutDashboard,
   Package,
@@ -62,6 +63,10 @@ export default function AppLayout() {
               <span className="border-l border-divider pl-2 text-ink/70">{kullanici.isletmeAd}</span>
             ) : null}
           </div>
+          <Button variant="secondary" onClick={() => navigate('/sifre-degistir')}>
+            <KeyRound size={16} strokeWidth={1.5} />
+            <span>Şifre</span>
+          </Button>
           <Button variant="secondary" onClick={cikis}>
             <LogOut size={16} strokeWidth={1.5} />
             <span>Çıkış</span>

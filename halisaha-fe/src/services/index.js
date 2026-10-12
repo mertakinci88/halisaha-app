@@ -12,6 +12,8 @@ export const authService = {
     return api.post('/api/auth/logout', { refreshToken }).catch(() => {});
   },
   me: () => api.get('/api/auth/me').then((r) => r.data),
+  sifreDegistir: (eskiSifre, yeniSifre) =>
+    api.post('/api/auth/sifre-degistir', { eskiSifre, yeniSifre }),
 };
 
 /* ── /api/kullanicilar (yalnızca admin) ───────────────────────── */
@@ -21,6 +23,7 @@ export const kullaniciService = {
   create: (body) => api.post('/api/kullanicilar', body).then((r) => r.data),
   /** body: { adSoyad, sifre? } — sifre boş/yok ise değişmez */
   guncelle: (id, body) => api.put('/api/kullanicilar/' + id, body).then((r) => r.data),
+  rolGuncelle: (id, rol) => api.put('/api/kullanicilar/' + id + '/rol', { rol }).then((r) => r.data),
   yetkileriGuncelle: (id, yetkiler) =>
     api.put('/api/kullanicilar/' + id + '/yetkiler', { yetkiler }).then((r) => r.data),
   durumGuncelle: (id, durum) =>
