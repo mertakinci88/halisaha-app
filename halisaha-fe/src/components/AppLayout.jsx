@@ -4,6 +4,8 @@ import {
   CalendarDays,
   ClipboardCheck,
   Building2,
+  KeyRound,
+  Landmark,
   CupSoda,
   LayoutDashboard,
   Package,
@@ -15,6 +17,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react';
+import AltBilgi from '@/components/AltBilgi';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -28,6 +31,7 @@ const NAV = [
   { to: '/sahalar', ad: 'Sahalar', Icon: Square, modul: 'SAHA' },
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
   { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
+  { to: '/hesaplar', ad: 'Hesaplar', Icon: Landmark, modul: 'HESAP' },
 ];
 
 export default function AppLayout() {
@@ -48,7 +52,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-full bg-bg text-ink">
+    <div className="flex min-h-full flex-col bg-bg text-ink">
       <header className="border-b border-divider">
         <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-5 px-5 py-3.5">
           <div className="mr-auto flex items-baseline gap-2 font-heading text-[20px] font-semibold tracking-[0.01em]">
@@ -62,6 +66,10 @@ export default function AppLayout() {
               <span className="border-l border-divider pl-2 text-ink/70">{kullanici.isletmeAd}</span>
             ) : null}
           </div>
+          <Button variant="secondary" onClick={() => navigate('/sifre-degistir')}>
+            <KeyRound size={16} strokeWidth={1.5} />
+            <span>Şifre</span>
+          </Button>
           <Button variant="secondary" onClick={cikis}>
             <LogOut size={16} strokeWidth={1.5} />
             <span>Çıkış</span>
@@ -91,9 +99,11 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-6">
+      <main className="mx-auto w-full max-w-[1360px] flex-1 px-5 pb-16 pt-6">
         <Outlet />
       </main>
+
+      <AltBilgi />
     </div>
   );
 }

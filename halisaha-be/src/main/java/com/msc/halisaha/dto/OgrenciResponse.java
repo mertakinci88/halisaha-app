@@ -27,6 +27,8 @@ public record OgrenciResponse(
         LocalDate sonrakiOdemeTarih,
         BigDecimal odenenTutar,
         OdemeYontemi odemeSekli,
+        Long hesapId,
+        String hesapAd,
         LocalDateTime kayitTarih,
         String not
 ) {
@@ -49,6 +51,8 @@ public record OgrenciResponse(
                 ogrenci.getSonrakiOdemeTarih(),
                 ogrenci.getOdenenTutar(),
                 ogrenci.getOdemeSekli(),
+                ogrenci.getHesap() != null ? ogrenci.getHesap().getId() : null,
+                ogrenci.getHesap() != null ? ogrenci.getHesap().getAd() : null,
                 ogrenci.getKayitTarih(),
                 ogrenci.getNot()
         );

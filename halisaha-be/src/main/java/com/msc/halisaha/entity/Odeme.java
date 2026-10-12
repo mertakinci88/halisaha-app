@@ -48,6 +48,11 @@ public class Odeme {
     @Column(name = "yontem", nullable = false, length = 20)
     private OdemeYontemi yontem;
 
+    /** Havale / EFT ile alınan ödemede paranın yattığı hesap (diğer yöntemlerde null). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hesap_id")
+    private Hesap hesap;
+
     @Column(name = "odeme_tarihi", nullable = false)
     private LocalDateTime odemeTarihi;
 

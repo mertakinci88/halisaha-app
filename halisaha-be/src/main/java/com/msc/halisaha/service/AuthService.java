@@ -5,15 +5,18 @@ import com.msc.halisaha.common.security.JwtService;
 import com.msc.halisaha.common.security.UserPrincipal;
 import com.msc.halisaha.dto.LoginRequest;
 import com.msc.halisaha.dto.RefreshRequest;
+import com.msc.halisaha.dto.SifreDegistirRequest;
 import com.msc.halisaha.dto.TokenResponse;
 import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.RefreshToken;
+import com.msc.halisaha.repository.KullaniciRepository;
 import com.msc.halisaha.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final KullaniciRepository kullaniciRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
@@ -64,6 +69,25 @@ public class AuthService {
                     refreshToken.setRevoked(true);
                     refreshTokenRepository.save(refreshToken);
                 });
+    }
+
+    /**
+     * Kullanıcı kendi şifresini mevcut şifresini doğrulayarak değiştirir. Hata 400 döner (401 değil):
+     * istemci 401'i oturum süresi doldu sanıp kullanıcıyı çıkışa yönlendirir.
+     * Başarılı olunca tüm refresh token'lar iptal edilir; kullanıcı yeniden giriş yapar.
+     */
+    @Transactional
+    public void sifreDegistir(Long kullaniciId, SifreDegistirRequest request) {
+        Kullanici kullanici = kullaniciRepository.findById(kullaniciId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Kullanıcı bulunamadı"));
+        if (!passwordEncoder.matches(request.eskiSifre(), kullanici.getSifre())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mevcut şifre hatalı");
+        }
+        if (request.eskiSifre().equals(request.yeniSifre())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Yeni şifre mevcut şifreyle aynı olamaz");
+        }
+        kullanici.setSifre(passwordEncoder.encode(request.yeniSifre()));
+        refreshTokenRepository.tumunuIptalEt(kullanici.getId());
     }
 
     private TokenResponse issueTokenPair(Kullanici kullanici) {

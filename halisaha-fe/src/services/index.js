@@ -12,6 +12,8 @@ export const authService = {
     return api.post('/api/auth/logout', { refreshToken }).catch(() => {});
   },
   me: () => api.get('/api/auth/me').then((r) => r.data),
+  sifreDegistir: (eskiSifre, yeniSifre) =>
+    api.post('/api/auth/sifre-degistir', { eskiSifre, yeniSifre }),
 };
 
 /* ── /api/kullanicilar (yalnızca admin) ───────────────────────── */
@@ -21,6 +23,7 @@ export const kullaniciService = {
   create: (body) => api.post('/api/kullanicilar', body).then((r) => r.data),
   /** body: { adSoyad, sifre? } — sifre boş/yok ise değişmez */
   guncelle: (id, body) => api.put('/api/kullanicilar/' + id, body).then((r) => r.data),
+  rolGuncelle: (id, rol) => api.put('/api/kullanicilar/' + id + '/rol', { rol }).then((r) => r.data),
   yetkileriGuncelle: (id, yetkiler) =>
     api.put('/api/kullanicilar/' + id + '/yetkiler', { yetkiler }).then((r) => r.data),
   durumGuncelle: (id, durum) =>
@@ -56,6 +59,15 @@ export const sahaService = {
   remove: (id) => api.delete('/api/sahalar/' + id),
 };
 
+/* ── /api/hesaplar (okuma herkese, yazma ADMIN ya da HESAP yetkisi) ── */
+export const hesapService = {
+  list: () => api.get('/api/hesaplar').then((r) => r.data),
+  get: (id) => api.get('/api/hesaplar/' + id).then((r) => r.data),
+  create: (body) => api.post('/api/hesaplar', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/hesaplar/' + id, body).then((r) => r.data),
+  remove: (id) => api.delete('/api/hesaplar/' + id),
+};
+
 /* ── /api/rezervasyonlar ───────────────────────────────────── */
 export const rezervasyonService = {
   list: (params) => api.get('/api/rezervasyonlar', { params }).then((r) => r.data),
@@ -83,7 +95,7 @@ export const raporService = {
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
 export const ogrenciService = {
-  /** params: { grupId, q, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  /** params: { grupId, q, aidatBekleyen, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/ogrenciler', { params }).then((r) => r.data),
   get: (id) => api.get('/api/ogrenciler/' + id).then((r) => r.data),
   create: (body) => api.post('/api/ogrenciler', body).then((r) => r.data),

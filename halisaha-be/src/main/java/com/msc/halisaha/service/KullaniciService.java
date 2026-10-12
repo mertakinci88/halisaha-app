@@ -6,6 +6,7 @@ import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
+import com.msc.halisaha.dto.RolGuncelleRequest;
 import com.msc.halisaha.dto.YetkiGuncelleRequest;
 import com.msc.halisaha.entity.Isletme;
 import com.msc.halisaha.entity.Kullanici;
@@ -39,6 +40,7 @@ public class KullaniciService {
     private final PasswordEncoder passwordEncoder;
     private final IsletmeContext isletmeContext;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MevcutKullanici mevcutKullanici;
 
     public List<KullaniciResponse> list() {
         return list(isletmeContext.id());
@@ -109,6 +111,30 @@ public class KullaniciService {
         if (kullaniciAdiDegisti || sifreDegisti) {
             refreshTokenRepository.tumunuIptalEt(kullanici.getId());
         }
+        return KullaniciResponse.from(kullanici);
+    }
+
+    /**
+     * Kullanıcının rolünü ADMIN ↔ PERSONEL arasında değiştirir. Admin kendi rolünü değiştiremez
+     * (işletmede admin kalmaması engellenir). Arayüz kullanıcı/menü bilgisini oturumda tuttuğu için açık oturumlar kapatılır; kullanıcı yeniden giriş yapar.
+     */
+    @Transactional
+    public KullaniciResponse rolGuncelle(Long id, RolGuncelleRequest request) {
+        if (request.rol() == Rol.SUPER_ADMIN) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu role atama yapılamaz");
+        }
+        Kullanici kullanici = getEntity(isletmeContext.id(), id);
+        Kullanici ben = mevcutKullanici.getir();
+        if (ben != null && ben.getId().equals(kullanici.getId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Kendi rolünüzü değiştiremezsiniz");
+        }
+        if (kullanici.getRol() == request.rol()) {
+            return KullaniciResponse.from(kullanici);
+        }
+        kullanici.setRol(request.rol());
+        // Admin tüm modüllere erişir; eski menü yetkileri kalıntı olmasın. Personel yetkisiz başlar.
+        kullanici.getYetkiler().clear();
+        refreshTokenRepository.tumunuIptalEt(kullanici.getId());
         return KullaniciResponse.from(kullanici);
     }
 

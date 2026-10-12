@@ -7,5 +7,6 @@ public enum Modul {
     SAHA,
     URUN,
     YOKLAMA,
-    ENVANTER
+    ENVANTER,
+    HESAP
 }

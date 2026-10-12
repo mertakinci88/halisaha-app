@@ -29,10 +29,12 @@ public class OgrenciService {
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
     private final EnvanterSatisRepository envanterSatisRepository;
+    private final HesapService hesapService;
 
-    public PageResponse<OgrenciResponse> list(Long grupId, String q, int sayfa, int boyut) {
+    /** aidatBekleyen: yalnızca ödemesi tamamlanmamış (Ödenmedi / Kısmi ödendi) öğrenciler. */
+    public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean aidatBekleyen, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, pageRequest);
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, aidatBekleyen, pageRequest);
         return PageResponse.from(sonuc, OgrenciResponse::from);
     }
 
@@ -90,6 +92,8 @@ public class OgrenciService {
         ogrenci.setSonrakiOdemeTarih(request.sonrakiOdemeTarih());
         ogrenci.setOdenenTutar(request.odenenTutar());
         ogrenci.setOdemeSekli(request.odemeSekli());
+        Long mevcutHesapId = ogrenci.getHesap() != null ? ogrenci.getHesap().getId() : null;
+        ogrenci.setHesap(hesapService.coz(request.hesapId(), request.odemeSekli(), mevcutHesapId));
         ogrenci.setNot(request.not());
     }
 

@@ -3,6 +3,7 @@ package com.msc.halisaha.controller;
 import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
+import com.msc.halisaha.dto.RolGuncelleRequest;
 import com.msc.halisaha.dto.YetkiGuncelleRequest;
 import com.msc.halisaha.entity.KullaniciDurum;
 import com.msc.halisaha.service.KullaniciService;
@@ -49,6 +50,11 @@ public class KullaniciController {
     @PutMapping("/{id}")
     public KullaniciResponse guncelle(@PathVariable Long id, @Valid @RequestBody KullaniciGuncelleRequest request) {
         return kullaniciService.guncelle(id, request);
+    }
+
+    @PutMapping("/{id}/rol")
+    public KullaniciResponse rolGuncelle(@PathVariable Long id, @Valid @RequestBody RolGuncelleRequest request) {
+        return kullaniciService.rolGuncelle(id, request);
     }
 
     @PutMapping("/{id}/yetkiler")

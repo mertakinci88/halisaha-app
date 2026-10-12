@@ -12,6 +12,8 @@ public record OdemeResponse(
         BigDecimal tutar,
         OdemeYontemi yontem,
         LocalDateTime odemeTarihi,
-        String kullaniciAdSoyad
+        String kullaniciAdSoyad,
+        Long hesapId,
+        String hesapAd
 ) {
 }

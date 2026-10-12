@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
 
+    boolean existsByHesapId(Long hesapId);
+
     Optional<Ogrenci> findByIdAndIsletmeId(Long id, Long isletmeId);
 
     List<Ogrenci> findByIsletmeIdAndGrupIdAndDurum(Long isletmeId, Long grupId, OgrenciDurum durum);
@@ -21,10 +23,12 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
             SELECT o FROM Ogrenci o LEFT JOIN o.grup g
             WHERE o.isletme.id = :isletmeId
               AND (:grupId IS NULL OR g.id = :grupId)
+              AND (:aidatBekleyen = FALSE OR o.odemeDurumu <> com.msc.halisaha.entity.OdemeDurumu.ODENDI)
               AND (:q IS NULL OR :q = ''
                    OR LOWER(o.adSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(o.veliAdSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(g.ad) LIKE LOWER(CONCAT('%', :q, '%')))
             """)
-    Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q, Pageable pageable);
+    Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q,
+                      @Param("aidatBekleyen") boolean aidatBekleyen, Pageable pageable);
 }

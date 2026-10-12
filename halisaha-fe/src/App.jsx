@@ -3,6 +3,7 @@ import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
 
 import LoginPage from '@/pages/LoginPage';
+import SifreDegistirPage from '@/pages/SifreDegistirPage';
 import DashboardPage from '@/pages/DashboardPage';
 import TakvimPage from '@/pages/TakvimPage';
 import RezervasyonYeniPage from '@/pages/RezervasyonYeniPage';
@@ -25,6 +26,9 @@ import EnvanterKayitPage from '@/pages/EnvanterKayitPage';
 import EnvanterDetayPage from '@/pages/EnvanterDetayPage';
 import EnvanterSetKayitPage from '@/pages/EnvanterSetKayitPage';
 import EnvanterSetDetayPage from '@/pages/EnvanterSetDetayPage';
+import HesapListePage from '@/pages/HesapListePage';
+import HesapKayitPage from '@/pages/HesapKayitPage';
+import HesapDetayPage from '@/pages/HesapDetayPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
 import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
@@ -37,7 +41,7 @@ function KorumaliAlan({ children }) {
   const { pathname } = useLocation();
   if (!girisli) return <Navigate to="/giris" replace />;
   // Süper admin işletme verisine bağlı değildir; yalnızca /isletmeler altındaki sayfaları kullanır
-  if (isSuperAdmin && !pathname.startsWith('/isletmeler')) return <Navigate to="/isletmeler" replace />;
+  if (isSuperAdmin && !pathname.startsWith('/isletmeler') && pathname !== '/sifre-degistir') return <Navigate to="/isletmeler" replace />;
   return children;
 }
 
@@ -63,6 +67,10 @@ export default function App() {
         }
       >
         <Route path="/panel" element={<DashboardPage />} />
+        <Route path="/hesaplar" element={<YetkiliRota modul="HESAP"><HesapListePage /></YetkiliRota>} />
+        <Route path="/hesaplar/yeni" element={<YetkiliRota modul="HESAP"><HesapKayitPage /></YetkiliRota>} />
+        <Route path="/hesaplar/:id" element={<YetkiliRota modul="HESAP"><HesapDetayPage /></YetkiliRota>} />
+        <Route path="/sifre-degistir" element={<SifreDegistirPage />} />
         <Route path="/takvim" element={<TakvimPage />} />
         <Route path="/rezervasyon/yeni" element={<RezervasyonYeniPage />} />
         <Route path="/rezervasyon/:id" element={<RezervasyonDetayPage />} />

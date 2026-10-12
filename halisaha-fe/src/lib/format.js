@@ -28,6 +28,15 @@ export const telMaske = (rakam) => {
   return [r.slice(0, 3), r.slice(3, 6), r.slice(6, 8), r.slice(8, 10)].filter(Boolean).join(' ');
 };
 
+/** "tr33 0006…" -> "TR33 0006 1005 …" (boşluk/harf dışı atılır, en çok 26 karakter, 4'lü gruplanır) */
+export const ibanMaske = (deger) =>
+  String(deger || '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
+    .slice(0, 26)
+    .replace(/(.{4})/g, '$1 ')
+    .trim();
+
 export const hh = (h) => String(h % 24).padStart(2, '0') + ':00';
 
 /** Date -> "2026-09-12" (backend @DateTimeFormat ISO.DATE) */
