@@ -59,6 +59,15 @@ export const sahaService = {
   remove: (id) => api.delete('/api/sahalar/' + id),
 };
 
+/* ── /api/hesaplar (okuma herkese, yazma ADMIN ya da HESAP yetkisi) ── */
+export const hesapService = {
+  list: () => api.get('/api/hesaplar').then((r) => r.data),
+  get: (id) => api.get('/api/hesaplar/' + id).then((r) => r.data),
+  create: (body) => api.post('/api/hesaplar', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/hesaplar/' + id, body).then((r) => r.data),
+  remove: (id) => api.delete('/api/hesaplar/' + id),
+};
+
 /* ── /api/rezervasyonlar ───────────────────────────────────── */
 export const rezervasyonService = {
   list: (params) => api.get('/api/rezervasyonlar', { params }).then((r) => r.data),

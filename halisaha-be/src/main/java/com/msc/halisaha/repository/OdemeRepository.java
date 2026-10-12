@@ -10,11 +10,13 @@ import java.util.List;
 
 public interface OdemeRepository extends JpaRepository<Odeme, Long> {
 
-    @Query("SELECT o FROM Odeme o LEFT JOIN FETCH o.kullanici WHERE o.rezervasyon.id = :rezervasyonId ORDER BY o.odemeTarihi, o.id")
+    @Query("SELECT o FROM Odeme o LEFT JOIN FETCH o.kullanici LEFT JOIN FETCH o.hesap WHERE o.rezervasyon.id = :rezervasyonId ORDER BY o.odemeTarihi, o.id")
     List<Odeme> findByRezervasyonId(@Param("rezervasyonId") Long rezervasyonId);
 
-    @Query("SELECT o FROM Odeme o LEFT JOIN FETCH o.kullanici WHERE o.rezervasyon.id IN :ids ORDER BY o.odemeTarihi, o.id")
+    @Query("SELECT o FROM Odeme o LEFT JOIN FETCH o.kullanici LEFT JOIN FETCH o.hesap WHERE o.rezervasyon.id IN :ids ORDER BY o.odemeTarihi, o.id")
     List<Odeme> findByRezervasyonIdIn(@Param("ids") Collection<Long> ids);
 
     boolean existsByRezervasyonId(Long rezervasyonId);
+
+    boolean existsByHesapId(Long hesapId);
 }

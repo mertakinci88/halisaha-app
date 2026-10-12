@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
 
+    boolean existsByHesapId(Long hesapId);
+
     Optional<Ogrenci> findByIdAndIsletmeId(Long id, Long isletmeId);
 
     List<Ogrenci> findByIsletmeIdAndGrupIdAndDurum(Long isletmeId, Long grupId, OgrenciDurum durum);

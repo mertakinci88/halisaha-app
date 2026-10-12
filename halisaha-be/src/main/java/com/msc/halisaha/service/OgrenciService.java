@@ -29,6 +29,7 @@ public class OgrenciService {
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
     private final EnvanterSatisRepository envanterSatisRepository;
+    private final HesapService hesapService;
 
     public PageResponse<OgrenciResponse> list(Long grupId, String q, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
@@ -90,6 +91,8 @@ public class OgrenciService {
         ogrenci.setSonrakiOdemeTarih(request.sonrakiOdemeTarih());
         ogrenci.setOdenenTutar(request.odenenTutar());
         ogrenci.setOdemeSekli(request.odemeSekli());
+        Long mevcutHesapId = ogrenci.getHesap() != null ? ogrenci.getHesap().getId() : null;
+        ogrenci.setHesap(hesapService.coz(request.hesapId(), request.odemeSekli(), mevcutHesapId));
         ogrenci.setNot(request.not());
     }
 

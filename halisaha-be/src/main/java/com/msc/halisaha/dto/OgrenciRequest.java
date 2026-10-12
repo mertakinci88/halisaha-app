@@ -24,6 +24,8 @@ public record OgrenciRequest(
         LocalDate sonrakiOdemeTarih,
         BigDecimal odenenTutar,
         OdemeYontemi odemeSekli,
+        /** Ödeme şekli Havale / EFT ise paranın yattığı hesap. */
+        Long hesapId,
         String not
 ) {
 }

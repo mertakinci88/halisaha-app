@@ -11,6 +11,7 @@ import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.dto.RezervasyonUrunRequest;
 import com.msc.halisaha.dto.RezervasyonUrunResponse;
 import com.msc.halisaha.entity.KalemTip;
+import com.msc.halisaha.entity.Hesap;
 import com.msc.halisaha.entity.Odeme;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.OdemeTipi;
@@ -56,6 +57,7 @@ public class RezervasyonService {
     private final StokService stokService;
     private final MevcutKullanici mevcutKullanici;
     private final IsletmeContext isletmeContext;
+    private final HesapService hesapService;
 
     public List<RezervasyonResponse> list(Long sahaId, LocalDate tarih) {
         Long isletmeId = isletmeContext.id();
@@ -89,7 +91,8 @@ public class RezervasyonService {
         Saha saha = getSaha(request.sahaId());
         checkOverlap(request.sahaId(), request.baslangicTarih(), request.bitisTarih(), null);
 
-        BigDecimal kapora = request.kapora() != null ? request.kapora().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        boolean tamOdeme = Boolean.TRUE.equals(request.tamOdeme());
+        BigDecimal kapora = request.kapora() != null && !tamOdeme ? request.kapora().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         BigDecimal sahaTutari = hesaplaSahaUcreti(saha, request.baslangicTarih(), request.bitisTarih());
         if (kapora.compareTo(sahaTutari) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Kapora rezervasyon tutarını (" + sahaTutari + ") aşamaz");
@@ -111,9 +114,11 @@ public class RezervasyonService {
         kalemRepository.save(sahaKalemi(rezervasyon, saha, request.baslangicTarih(), request.bitisTarih()));
         recalculate(rezervasyon);
 
-        if (kapora.signum() > 0) {
-            odemeKaydet(rezervasyon, OdemeTipi.KAPORA, kapora,
-                    request.odemeYontemi() != null ? request.odemeYontemi() : OdemeYontemi.NAKIT);
+        OdemeYontemi yontem = request.odemeYontemi() != null ? request.odemeYontemi() : OdemeYontemi.NAKIT;
+        if (tamOdeme) {
+            odemeKaydet(rezervasyon, OdemeTipi.ODEME, rezervasyon.getOdenecekTutar(), yontem, request.hesapId());
+        } else if (kapora.signum() > 0) {
+            odemeKaydet(rezervasyon, OdemeTipi.KAPORA, kapora, yontem, request.hesapId());
         }
         return toResponse(rezervasyon);
     }
@@ -246,15 +251,18 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse odemeEkle(Long rezervasyonId, OdemeRequest request) {
         Rezervasyon rezervasyon = getEntity(rezervasyonId);
-        odemeKaydet(rezervasyon, request.tip(), request.tutar().setScale(2, RoundingMode.HALF_UP), request.yontem());
+        if (request.tip() == OdemeTipi.KAPORA) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Kapora yalnızca rezervasyon kaydı sırasında alınır; sonraki ödemeler kısmi ödeme olarak alınır");
+        }
+        odemeKaydet(rezervasyon, request.tip(), request.tutar().setScale(2, RoundingMode.HALF_UP), request.yontem(), request.hesapId());
         return toResponse(rezervasyon);
     }
 
     /**
-     * Kısmi ödeme KAPORA (ilk kez, rezervasyon başına bir tane) ya da KISMI (kapora alındıktan sonra)
+     * Kısmi ödeme KAPORA (yalnızca rezervasyon kaydı sırasında) ya da KISMI (kayıttan sonra)
      * ile alınır ve kalan tutarı aşamaz; ODEME ise kalan tutarın tamamını kapatır.
      */
-    private void odemeKaydet(Rezervasyon rezervasyon, OdemeTipi tip, BigDecimal tutar, OdemeYontemi yontem) {
+    private void odemeKaydet(Rezervasyon rezervasyon, OdemeTipi tip, BigDecimal tutar, OdemeYontemi yontem, Long hesapId) {
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyon için ödeme alınamaz");
         }
@@ -266,22 +274,17 @@ public class RezervasyonService {
         if (tutar.compareTo(kalan) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Tutar kalan tutarı (" + kalan + ") aşamaz");
         }
-        boolean kaporaAlindi = mevcutOdemeler.stream().anyMatch(o -> o.getTip() == OdemeTipi.KAPORA);
-        if (tip == OdemeTipi.KAPORA && kaporaAlindi) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu rezervasyon için kapora zaten alınmış; kısmi ödeme alın");
-        }
-        if (tip == OdemeTipi.KISMI && !kaporaAlindi) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Kısmi ödeme için önce kapora alınmalıdır");
-        }
         if (tip == OdemeTipi.ODEME && tutar.compareTo(kalan) != 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme, kalan tutarın (" + kalan + ") tamamını kapatmalıdır; kısmi ödeme için kapora/kısmi ödeme alın");
         }
 
+        Hesap hesap = hesapService.coz(hesapId, yontem, null);
         odemeRepository.save(Odeme.builder()
                 .rezervasyon(rezervasyon)
                 .tip(tip)
                 .tutar(tutar)
                 .yontem(yontem)
+                .hesap(hesap)
                 .odemeTarihi(AppZaman.simdi())
                 .kullanici(mevcutKullanici.getir())
                 .build());
@@ -401,7 +404,9 @@ public class RezervasyonService {
                         o.getTutar(),
                         o.getYontem(),
                         o.getOdemeTarihi(),
-                        o.getKullanici() != null ? o.getKullanici().getAdSoyad() : null))
+                        o.getKullanici() != null ? o.getKullanici().getAdSoyad() : null,
+                        o.getHesap() != null ? o.getHesap().getId() : null,
+                        o.getHesap() != null ? o.getHesap().getAd() : null))
                 .toList();
 
         return new RezervasyonResponse(
