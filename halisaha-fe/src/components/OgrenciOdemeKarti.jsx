@@ -18,13 +18,6 @@ const SATIR_RENK = {
   ODEME_BEKLIYOR: 'bg-yellow-100 hover:bg-yellow-100',
   ODENMEDI: 'bg-hata-100 hover:bg-hata-100',
 };
-const ODEME_GUNU = 15;
-
-/** Ödeme girilmemiş ay: ayın 15'inin sonuna kadar (gelecek aylar dahil) "Ödeme bekliyor", sonrasında "Ödenmedi". Backend ile aynı kural. */
-const bosAyDurumu = (yil, ay, bugunIso) => {
-  const bugun = Number(String(bugunIso).slice(0, 10).replace(/-/g, ''));
-  return bugun > yil * 10000 + ay * 100 + ODEME_GUNU ? 'ODENMEDI' : 'ODEME_BEKLIYOR';
-};
 
 const taslak = (a) => ({
   tutar: Number(a.odenenTutar) > 0 ? String(a.odenenTutar) : '',
@@ -45,7 +38,7 @@ const degisti = (t, ilk) => {
 
 /**
  * Öğrenci detayındaki aylık ödemeler: seçili yılın 12 ayı için ödenen tutar, ödeme şekli (Havale / EFT'de hesap),
- * ödeme tarihi ve not girilir. Sabit tutar ya da üst sınır yoktur; tutar girilen ay Ödendi (yeşil); girilmeyen ay ayın 15'ine kadar Ödeme bekliyor (sarı), sonra Ödenmedi (kırmızı).
+ * ödeme tarihi ve not girilir. Sabit tutar ya da üst sınır yoktur; tutar kaydedilen ay Ödendi (yeşil); kaydedilmeyen ay ayın 15'ine kadar Ödeme bekliyor (sarı), sonra Ödenmedi (kırmızı). Renkler kaydedilmiş durumu gösterir.
  * Yalnızca değiştirilen aylar kaydedilir; tutarı boşaltılan ayın kaydı silinir.
  */
 export default function OgrenciOdemeKarti({ ogrenciId }) {
@@ -213,13 +206,25 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
     };
   };
 
-  /** Kayıtlı duruma değil, ekrandaki tutara göre canlı durum: tutar girilmişse ödendi, değilse vadeye göre bekliyor / ödenmedi. */
-  const canliDurum = (a) => {
-    if (tutarSayi(taslaklar[a.ay].tutar) > 0) return 'ODENDI';
-    return a.durum !== 'ODENDI' ? a.durum : bosAyDurumu(a.yil, a.ay, veri.bugun);
-  };
-  const satirRenk = (a) => SATIR_RENK[canliDurum(a)];
-  const durumTag = (a) => <OdemeDurumuEtiketi belirgin durum={canliDurum(a)} />;
+  /** Renk ve etiket her zaman son KAYDEDİLMİŞ durumu gösterir; girilen ama kaydedilmemiş değişiklik yalnızca "Değişti" işaretiyle belli olur. */
+  const kayitliDurum = (a) => a.durum;
+  const satirRenk = (a) => SATIR_RENK[kayitliDurum(a)];
+  const durumTag = (a) => <OdemeDurumuEtiketi belirgin durum={kayitliDurum(a)} />;
+  const degistiMi = (a) => degisenler.some((d) => d.ay === a.ay);
+  // Kaydedilmemiş değişikliği olan satırı soldaki çubuk + "Değişti" etiketi ile işaretle
+  // gizli: etiketin yeri her zaman ayrılır (görünmez), böylece Ay kolonu genişleyip tabloyu yana kaydırmaz
+  const degistiEtiketi = (a, gizliYerTut = false) =>
+    degistiMi(a) || gizliYerTut ? (
+      <span
+        aria-hidden={!degistiMi(a)}
+        className={cn(
+          'border border-accent bg-accent-100 px-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-accent-800',
+          !degistiMi(a) && 'invisible',
+        )}
+      >
+        Değişti
+      </span>
+    ) : null;
   const buAyMi = (a) => veri != null && a.yil === Number(veri.bugun.slice(0, 4)) && a.ay === Number(veri.bugun.slice(5, 7));
 
   return (
@@ -258,10 +263,11 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
               {veri.aylar.map((a) => {
                 const g = girdiler(a);
                 return (
-                  <div key={a.ay} className={cn('grid gap-2 border-b border-hairline px-2 py-3', satirRenk(a))}>
+                  <div key={a.ay} className={cn('grid gap-2 border-b border-l-4 border-b-hairline border-l-transparent px-2 py-3', satirRenk(a), degistiMi(a) && 'border-l-accent')}>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{AYLAR[a.ay - 1]}</span>
                       {buAyMi(a) ? <span className="text-[12.5px] text-ink/60">bu ay</span> : null}
+                      {degistiEtiketi(a)}
                       <span className="ml-auto">{durumTag(a)}</span>
                     </div>
                     {g.tutar}
@@ -292,9 +298,10 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                   const g = girdiler(a);
                   return (
                     <Tr key={a.ay} className={satirRenk(a)}>
-                      <Td className="whitespace-nowrap font-semibold">
+                      <Td className={cn('whitespace-nowrap font-semibold', degistiMi(a) && 'shadow-[inset_4px_0_0_var(--color-accent)]')}>
                         {AYLAR[a.ay - 1]}
                         {buAyMi(a) ? <span className="ml-2 text-[12.5px] font-normal text-ink/60">bu ay</span> : null}
+                        <span className="ml-2 align-middle">{degistiEtiketi(a, true)}</span>
                       </Td>
                       <Td>{g.tutar}</Td>
                       <Td>
@@ -328,7 +335,10 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                 <Button variant="secondary" disabled={kaydediyor} onClick={() => uygula(veri)}>
                   Vazgeç
                 </Button>
-                <span className="text-[13.5px] text-ink/60">{degisenler.length} ayda kaydedilmemiş değişiklik var</span>
+                <span className="text-[13.5px] text-ink/60">
+                  {degisenler.length} ayda kaydedilmemiş değişiklik var:{' '}
+                  <b className="font-semibold text-ink/80">{degisenler.map((a) => AYLAR[a.ay - 1]).join(', ')}</b>
+                </span>
               </>
             ) : null}
           </div>
