@@ -113,6 +113,21 @@ class EnvanterSatisServiceTest {
     }
 
     @Test
+    void elleGirilenSatisFiyatiGecerliOlurEnvanterFiyatiDegismez() {
+        var istek = new EnvanterSatisRequest(
+                List.of(new EnvanterSatisRequest.Kalem(TOZLUK, null, true, false, new BigDecimal("100"))), null);
+        var satis = satisService.olustur(ogrenci, istek);
+        assertEquals(0, new BigDecimal("100").compareTo(kalem(satis, TOZLUK).birimFiyat()));
+        assertEquals(0, new BigDecimal("100").compareTo(satis.setTutari()));
+        assertEquals(0, new BigDecimal("100").compareTo(satis.odenenTutar()));
+
+        var guncel = satisService.guncelle(ogrenci, satis.id(), new EnvanterSatisRequest(
+                List.of(new EnvanterSatisRequest.Kalem(TOZLUK, null, true, false, new BigDecimal("120"))), null));
+        assertEquals(0, new BigDecimal("120").compareTo(kalem(guncel, TOZLUK).birimFiyat()));
+        assertEquals(0, new BigDecimal("120").compareTo(guncel.setTutari()));
+    }
+
+    @Test
     void odenenTutarElleDegisebilirAmaSetTutariniAsamazVeBosOlamaz() {
         var azi = satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), "450"));
         assertEquals(OdemeDurumu.KISMI_ODENDI, azi.odemeDurumu());

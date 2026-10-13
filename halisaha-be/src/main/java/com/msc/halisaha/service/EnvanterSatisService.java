@@ -83,11 +83,12 @@ public class EnvanterSatisService {
         Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
         for (EnvanterTur tur : istekler.keySet()) {
             Envanter envanter = envanterler.get(tur);
-            fiyatlar.put(tur, envanter.getSatisFiyati());
+            BigDecimal fiyat = fiyatBelirle(istekler.get(tur), envanter.getSatisFiyati());
+            fiyatlar.put(tur, fiyat);
             satis.getKalemler().add(EnvanterSatisKalem.builder()
                     .satis(satis)
                     .envanter(envanter)
-                    .birimFiyat(envanter.getSatisFiyati())
+                    .birimFiyat(fiyat)
                     .odendi(istekler.get(tur).odendi())
                     .build());
         }
@@ -145,7 +146,7 @@ public class EnvanterSatisService {
                 kalem = EnvanterSatisKalem.builder()
                         .satis(satis)
                         .envanter(hedef)
-                        .birimFiyat(hedef.getSatisFiyati())
+                        .birimFiyat(fiyatBelirle(istek, hedef.getSatisFiyati()))
                         .odendi(istek.odendi())
                         .build();
                 satis.getKalemler().add(kalem);
@@ -171,6 +172,9 @@ public class EnvanterSatisService {
                 }
             }
             kalem.setOdendi(istek.odendi());
+            if (istek.birimFiyat() != null) {
+                kalem.setBirimFiyat(fiyatBelirle(istek, kalem.getBirimFiyat()));   // elle girilen fiyat geçerli olur
+            }
         }
 
         Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
@@ -239,6 +243,11 @@ public class EnvanterSatisService {
                             tur.getAd() + " · " + aranan + " için envanter kaydı yok; önce Envanter menüsünden ekleyin")));
         }
         return sonuc;
+    }
+
+    /** İstekte fiyat varsa o, yoksa varsayılan (envanter fiyatı ya da kalemin mevcut fiyatı). */
+    private BigDecimal fiyatBelirle(EnvanterSatisRequest.Kalem istek, BigDecimal varsayilan) {
+        return istek.birimFiyat() != null ? istek.birimFiyat().setScale(2, RoundingMode.HALF_UP) : varsayilan;
     }
 
     private BigDecimal toplam(Map<EnvanterTur, BigDecimal> fiyatlar) {
