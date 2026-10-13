@@ -13,18 +13,28 @@ services:
       - halisaha-postgres-data:/var/lib/postgresql/data
 
   app:
-    image: ghcr.io/mertakinci88/halisaha-be:latest
-    container_name: halisaha-app
+    image: ghcr.io/mertakinci88/halisaha-be:${IMAGE_TAG:-latest}
+    # container_name bilinçli yok: kesintisiz deploy sırasında eski+yeni container birlikte çalışır.
     restart: unless-stopped
     depends_on:
       - postgres
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/actuator/health/readiness | grep -q UP"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 40s
     labels:
       - traefik.enable=true
       - traefik.http.routers.halisaha-api.rule=Host(`api.halisahapro.tech`)
       - traefik.http.routers.halisaha-api.entrypoints=websecure
       - traefik.http.routers.halisaha-api.tls.certresolver=letsencrypt
+      # Deploy sırasında eski container kapanırken Traefik'in rotayı güncellemesindeki kısa aralık için:
+      - traefik.http.middlewares.halisaha-api-retry.retry.attempts=3
+      - traefik.http.middlewares.halisaha-api-retry.retry.initialinterval=100ms
+      - traefik.http.routers.halisaha-api.middlewares=halisaha-api-retry
       - traefik.http.services.halisaha-api.loadbalancer.server.port=8080
 
 volumes:

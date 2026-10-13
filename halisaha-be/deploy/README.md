@@ -134,6 +134,56 @@ erişebilirsiniz.
 
 ---
 
+## Kesintisiz deploy (rolling)
+
+Deploy adımı `docker compose up -d` yerine `rollout.sh <servis>` çalıştırır
+(`halisaha-be/deploy/rollout.sh`, sunucuda `/opt/halisaha-*/rollout.sh`):
+
+1. Servis 2 kat ölçeklenir; eski container'a dokunulmaz.
+2. Yeni container'ın healthcheck'i `healthy` olunca Traefik ona trafik yollamaya başlar
+   (Traefik sağlıksız/başlamakta olan container'ı rotaya almaz).
+3. Eski container durdurulup silinir.
+4. Yeni container zaman aşımı süresi (varsayılan 180 sn, ikinci argüman) içinde healthy olmazsa yeni container silinir,
+   eski çalışmaya devam eder ve deploy adımı hata verir.
+
+Gereksinimler: servis tanımında `healthcheck` olmalı, `container_name` kullanılmamalı.
+BE healthcheck'i Spring Actuator'ın ayrı yönetim portunda (`8081`, `MANAGEMENT_PORT`) çalışır;
+bu port Traefik'e açılmaz, dışarıdan erişilemez.
+
+Dikkat: deploy sırasında eski ve yeni sürüm aynı veritabanını birlikte kullanır. Flyway
+migration'ları eski sürümle uyumlu olmalı (sütun silme/yeniden adlandırma gibi kırıcı değişiklikleri
+iki aşamada yapın).
+
+---
+
+## Sürümlü deploy ve geri alma (rollback)
+
+Her deploy, imajı `:latest` yerine commit SHA etiketiyle (`IMAGE_TAG`) yayına alır
+(`deploy/release.sh <servis> <sha|previous>`). Sunucuda her uygulama dizininde:
+
+- `.current-tag`: şu an çalışan sürüm (SHA)
+- `.deploy-history`: başarılı deploy'ların kaydı (`<UTC zaman> <sha>`)
+
+**Geri alma:** GitHub → Actions → **Rollback** → *Run workflow*. `app` (be/fe) seçin,
+`version` alanına bir SHA ya da `previous` yazın (`previous`: şu an çalışandan farklı en son sürüm).
+Build gerekmez, imaj GHCR'da hazırdır ve geçiş yine kesintisizdir (birkaç saniye).
+Hangi SHA'lar var: sunucuda `tail /opt/halisaha-<be|fe>/.deploy-history`.
+
+Notlar:
+- Rollback yalnızca çalışan sürümü değiştirir. `main`'deki hatalı commit yerinde durur; bir sonraki
+  push yeniden o kodu deploy eder. Kalıcı çözüm için hatalı değişikliği `main`'de revert edin.
+- **Veritabanı migration'ları geri alınmaz.** Eski kod yeni şemayla çalışabiliyorsa rollback yeterlidir;
+  sütun silen/veriyi dönüştüren bir migration yayına çıktıysa yedekten dönmek gerekir (bkz. `YEDEK.md`).
+- Sunucuda `release.sh` dışında elle `docker compose up -d` çalıştırmayın: `IMAGE_TAG` verilmezse
+  servis `:latest`'e düşer ve `.current-tag` ile çalışan sürüm tutarsız olur.
+- İlk deploy'dan sonra geçmişte tek kayıt olur; `previous` ikinci deploy'dan itibaren kullanılabilir.
+- Eski imaj temizliği otomatiktir: her başarılı deploy sonrası `release.sh`, kayıttaki son 5 sürümün
+  (ve çalışan sürümün) dışındaki SHA etiketli imajları sunucudan siler. Sayı `KEEP_VERSIONS`
+  ortam değişkeniyle değişir. Rollback bu son 5 sürüme yapılabilir; daha eskisi için imaj GHCR'dan
+  yeniden çekilir (SHA hâlâ geçerliyse rollback workflow'u bunu kendisi yapar). Temizlik hatası deploy'u bozmaz.
+
+---
+
 ## Sorun giderme
 
 - **Deploy adımı SSH ile bağlanamıyor**: `VPS_SSH_KEY` secret'ının private

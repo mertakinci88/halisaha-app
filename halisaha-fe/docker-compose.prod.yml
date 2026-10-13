@@ -1,11 +1,21 @@
 services:
   web:
-    image: ghcr.io/mertakinci88/halisaha-fe:latest
-    container_name: halisaha-web
+    image: ghcr.io/mertakinci88/halisaha-fe:${IMAGE_TAG:-latest}
+    # container_name bilinçli yok: kesintisiz deploy sırasında eski+yeni container birlikte çalışır.
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     labels:
       - traefik.enable=true
       - traefik.http.routers.halisaha-web.rule=Host(`app.halisahapro.tech`)
       - traefik.http.routers.halisaha-web.entrypoints=websecure
       - traefik.http.routers.halisaha-web.tls.certresolver=letsencrypt
+      # Deploy sırasında eski container kapanırken Traefik'in rotayı güncellemesindeki kısa aralık için:
+      - traefik.http.middlewares.halisaha-web-retry.retry.attempts=3
+      - traefik.http.middlewares.halisaha-web-retry.retry.initialinterval=100ms
+      - traefik.http.routers.halisaha-web.middlewares=halisaha-web-retry
       - traefik.http.services.halisaha-web.loadbalancer.server.port=80

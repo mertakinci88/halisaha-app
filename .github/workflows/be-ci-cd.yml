@@ -117,6 +117,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: production
+    concurrency:
+      group: deploy-be
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: read
@@ -130,7 +133,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: halisaha-be/docker-compose.prod.yml
+          source: halisaha-be/docker-compose.prod.yml,halisaha-be/deploy/rollout.sh,halisaha-be/deploy/release.sh
           target: /tmp/halisaha-be-deploy
           strip_components: 1
 
@@ -140,16 +143,20 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GHCR_ACTOR,GHCR_TOKEN
+          envs: GHCR_ACTOR,GHCR_TOKEN,IMAGE_TAG
           script: |
             set -e
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
             mkdir -p /opt/halisaha-be
             mv /tmp/halisaha-be-deploy/docker-compose.prod.yml /opt/halisaha-be/docker-compose.yml
+            mv /tmp/halisaha-be-deploy/deploy/rollout.sh /tmp/halisaha-be-deploy/deploy/release.sh /opt/halisaha-be/
+            chmod +x /opt/halisaha-be/rollout.sh /opt/halisaha-be/release.sh
             cd /opt/halisaha-be
-            docker compose pull
-            docker compose up -d
+            docker compose up -d postgres
+            # Sürümlü + kesintisiz deploy (bkz. deploy/release.sh, deploy/rollout.sh)
+            ./release.sh app "$IMAGE_TAG"
             docker image prune -f
         env:
           GHCR_ACTOR: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAG: ${{ github.sha }}
