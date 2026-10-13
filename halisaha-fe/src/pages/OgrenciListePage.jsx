@@ -151,7 +151,7 @@ export default function OgrenciListePage() {
                       </Td>
                       <Td className="text-right">
                         <Button
-                          variant="secondary"
+                          variant="primary"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();

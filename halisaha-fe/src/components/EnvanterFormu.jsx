@@ -107,7 +107,7 @@ export default function EnvanterFormu({ baslangic, kaydetEtiketi, kaydediyor, on
           <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
             {kaydediyor ? 'Kaydediliyor…' : kaydetEtiketi}
           </Button>
-          <Button variant="secondary" onClick={() => navigate('/envanter')}>
+          <Button variant="danger" onClick={() => navigate('/envanter')}>
             Vazgeç
           </Button>
         </div>

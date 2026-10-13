@@ -113,3 +113,10 @@ export const ODEME_YONTEMI_LABEL = {
   KART: 'Kart',
   HAVALE_EFT: 'Havale / EFT',
 };
+
+export const TRANSFER_DURUM = {
+  BEKLIYOR: { ad: 'Onay bekliyor', tone: 'warning' },
+  ONAYLANDI: { ad: 'Onaylandı', tone: 'accent' },
+  REDDEDILDI: { ad: 'Reddedildi', tone: 'danger' },
+  IPTAL: { ad: 'İptal edildi', tone: 'neutral' },
+};

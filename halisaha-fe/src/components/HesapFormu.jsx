@@ -76,7 +76,7 @@ export default function HesapFormu({ baslangic, kaydediyor, onKaydet, kaydetEtik
           <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
             {kaydediyor ? 'Kaydediliyor…' : kaydetEtiket}
           </Button>
-          <Button variant="secondary" onClick={() => navigate('/hesaplar')}>
+          <Button variant="danger" onClick={() => navigate('/hesaplar')}>
             Vazgeç
           </Button>
         </div>

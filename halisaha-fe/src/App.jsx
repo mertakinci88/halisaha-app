@@ -14,6 +14,7 @@ import OgrenciDetayPage from '@/pages/OgrenciDetayPage';
 import GrupListePage from '@/pages/GrupListePage';
 import GrupKayitPage from '@/pages/GrupKayitPage';
 import GrupDetayPage from '@/pages/GrupDetayPage';
+import TransferListePage from '@/pages/TransferListePage';
 import YoklamaPage from '@/pages/YoklamaPage';
 import SahaListePage from '@/pages/SahaListePage';
 import SahaKayitPage from '@/pages/SahaKayitPage';
@@ -166,6 +167,10 @@ export default function App() {
           element={<YetkiliRota sadeceSuperAdmin><IsletmeDetayPage /></YetkiliRota>}
         />
 
+        <Route
+          path="/transferler"
+          element={<YetkiliRota modul="TRANSFER"><TransferListePage /></YetkiliRota>}
+        />
         <Route
           path="/personel"
           element={<YetkiliRota sadeceAdmin><PersonelListePage /></YetkiliRota>}

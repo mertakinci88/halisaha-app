@@ -8,6 +8,8 @@ const buttonVariants = cva(
       variant: {
         primary: 'bg-accent border-accent text-bg hover:bg-accent-600 active:bg-accent-700',
         secondary: 'bg-transparent border-divider text-ink hover:bg-ink/7 active:bg-ink/14',
+        guncelle: 'bg-accent border-accent text-bg hover:bg-accent-600 hover:border-accent-600 active:bg-accent-700',
+        danger: 'bg-hata-600 border-hata-600 text-white hover:bg-hata-800 hover:border-hata-800 active:bg-hata-800',
         ghost: 'bg-transparent border-transparent text-accent-700 hover:bg-accent/10 active:bg-accent/18',
       },
       size: {

@@ -8,5 +8,7 @@ public enum Modul {
     URUN,
     YOKLAMA,
     ENVANTER,
-    HESAP
+    HESAP,
+    /** Öğrenci grup transfer taleplerini onaylama / reddetme ekranı. */
+    TRANSFER
 }

@@ -295,7 +295,7 @@ export default function IsletmeDetayPage() {
                 <Button type="submit" variant="primary" className="flex-1" disabled={islemde}>
                   Şifreyi kaydet
                 </Button>
-                <Button variant="secondary" onClick={() => setSifreHedef(null)}>
+                <Button variant="danger" onClick={() => setSifreHedef(null)}>
                   Vazgeç
                 </Button>
               </div>

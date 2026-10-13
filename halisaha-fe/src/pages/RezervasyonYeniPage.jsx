@@ -327,7 +327,7 @@ export default function RezervasyonYeniPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/takvim')}>
+            <Button variant="danger" onClick={() => navigate('/takvim')}>
               Vazgeç
             </Button>
           </div>

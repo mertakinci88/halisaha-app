@@ -109,11 +109,11 @@ export default function SahaListePage() {
                     <Td etiket="Saatlik ücret" className="text-right tabular-nums">{tl(s.saatlikUcret)}</Td>
                     <Td tam className="text-right">
                       <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
-                        <Button variant="secondary" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
+                        <Button variant="guncelle" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
                           Güncelle
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="danger"
                           size="sm"
                           disabled={kontrolEdilenId === s.id}
                           onClick={() => silBaslat(s)}
@@ -136,6 +136,7 @@ export default function SahaListePage() {
         description="Bu işlem geri alınamaz."
         isim={silinecek?.ad}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />
