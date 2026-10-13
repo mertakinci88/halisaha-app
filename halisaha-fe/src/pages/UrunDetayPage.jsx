@@ -118,7 +118,7 @@ export default function UrunDetayPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Ürünü güncelle'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/urunler')}>
+            <Button variant="danger" onClick={() => navigate('/urunler')}>
               Vazgeç
             </Button>
           </div>

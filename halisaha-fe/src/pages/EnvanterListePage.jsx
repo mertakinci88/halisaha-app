@@ -122,10 +122,10 @@ export default function EnvanterListePage() {
                     </Td>
                     <Td tam etiket="Toplam tutar" className="whitespace-nowrap text-right tabular-nums">{tl(s.toplamTutar)}</Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
+                      <Button variant="guncelle" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
                         Güncelle
                       </Button>
-                      <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecekSet(s)}>
+                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecekSet(s)}>
                         Sil
                       </Button>
                     </Td>
@@ -164,10 +164,10 @@ export default function EnvanterListePage() {
                       ) : null}
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/envanter/' + e.id)}>
+                      <Button variant="guncelle" size="sm" onClick={() => navigate('/envanter/' + e.id)}>
                         Güncelle
                       </Button>
-                      <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecek(e)}>
+                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(e)}>
                         Sil
                       </Button>
                     </Td>
@@ -185,6 +185,7 @@ export default function EnvanterListePage() {
         description="Bu işlem geri alınamaz. Satışta kullanılan envanter silinemez."
         isim={silinecek ? silinecek.turAd + (silinecek.bedenli ? ' · ' + silinecek.beden : '') : ''}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />
@@ -194,6 +195,7 @@ export default function EnvanterListePage() {
         description="Set silinir, envanter kayıtları ve geçmiş satışlar etkilenmez."
         isim={silinecekSet ? silinecekSet.ad : ''}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={setSil}
         onCancel={() => setSilinecekSet(null)}
       />

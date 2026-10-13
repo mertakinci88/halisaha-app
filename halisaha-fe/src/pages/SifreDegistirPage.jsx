@@ -91,7 +91,7 @@ export default function SifreDegistirPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || tamamlandi}>
               {tamamlandi ? 'Yönlendiriliyor…' : kaydediyor ? 'Kaydediliyor…' : 'Şifreyi değiştir'}
             </Button>
-            <Button variant="secondary" disabled={tamamlandi} onClick={() => navigate(-1)}>
+            <Button variant="danger" disabled={tamamlandi} onClick={() => navigate(-1)}>
               Vazgeç
             </Button>
           </div>

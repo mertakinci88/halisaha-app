@@ -136,7 +136,7 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
           <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || seciliKayitlar.length === 0 || !ad.trim()}>
             {kaydediyor ? 'Kaydediliyor…' : kaydetEtiketi}
           </Button>
-          <Button variant="secondary" onClick={() => navigate('/envanter?sekme=setler')}>
+          <Button variant="danger" onClick={() => navigate('/envanter?sekme=setler')}>
             Vazgeç
           </Button>
         </div>

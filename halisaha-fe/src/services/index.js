@@ -112,6 +112,23 @@ export const ogrenciOdemeService = {
     api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil, body).then((r) => r.data),
 };
 
+/* ── Öğrenci grup transferi ───────────────────────────────────── */
+export const transferService = {
+  /** Öğrencinin transfer geçmişi (en yeni önce): [{ id, kaynakGrupAd, hedefGrupAd, durum (BEKLIYOR | ONAYLANDI | REDDEDILDI | IPTAL), aciklama, talepEden, talepTarihi, kararVeren, kararTarihi, kararNotu }] */
+  gecmis: (ogrenciId) => api.get('/api/ogrenciler/' + ogrenciId + '/transferler').then((r) => r.data),
+  /** body: { hedefGrupId, aciklama? } — ADMIN ya da OGRENCI yetkisi; admin onaylayana kadar öğrenci eski grubunda kalır */
+  talepEt: (ogrenciId, body) => api.post('/api/ogrenciler/' + ogrenciId + '/transferler', body).then((r) => r.data),
+  /** body: { hedefGrupId, aciklama? } — yalnızca bekleyen talep güncellenebilir */
+  guncelle: (id, body) => api.put('/api/transferler/' + id, body).then((r) => r.data),
+  /** Bekleyen talebi geri çeker (ADMIN ya da OGRENCI yetkisi) */
+  iptal: (id, not) => api.put('/api/transferler/' + id + '/iptal', { not: not || null }).then((r) => r.data),
+  /** Yalnızca admin: durum boşsa tüm talepler (BEKLIYOR | ONAYLANDI | REDDEDILDI | IPTAL) */
+  list: (durum) => api.get('/api/transferler', { params: durum ? { durum } : {} }).then((r) => r.data),
+  bekleyenSayisi: () => api.get('/api/transferler/bekleyen-sayisi').then((r) => r.data.sayi),
+  onayla: (id) => api.put('/api/transferler/' + id + '/onayla').then((r) => r.data),
+  reddet: (id, not) => api.put('/api/transferler/' + id + '/reddet', { not: not || null }).then((r) => r.data),
+};
+
 /* ── /api/yoklamalar (ADMIN ya da YOKLAMA yetkisi) ───────────── */
 export const yoklamaService = {
   /** Grubun aktif öğrencileri ve seçili günkü yoklamaları: [{ ogrenciId, adSoyad, durum: GELDI|GELMEDI|IZINLI|null, not }] */

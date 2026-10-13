@@ -89,10 +89,10 @@ export default function UrunListePage() {
                       ) : null}
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
+                      <Button variant="guncelle" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
                         Güncelle
                       </Button>
-                      <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecek(u)}>
+                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(u)}>
                         Sil
                       </Button>
                     </Td>
@@ -110,6 +110,7 @@ export default function UrunListePage() {
         description="Bu işlem geri alınamaz."
         isim={silinecek?.ad}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />

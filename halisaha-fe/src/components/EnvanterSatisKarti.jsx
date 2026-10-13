@@ -603,7 +603,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                 {kaydediyor ? 'Kaydediliyor…' : duzenlenen ? 'Satışı güncelle' : 'Satışı kaydet'}
               </Button>
               {duzenlenen ? (
-                <Button variant="secondary" onClick={sifirla}>
+                <Button variant="danger" onClick={sifirla}>
                   Vazgeç
                 </Button>
               ) : null}
@@ -632,10 +632,10 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
             );
           const islemler = (s) => (
             <>
-              <Button variant="secondary" size="sm" onClick={() => duzenlemeyeBasla(s)}>
+              <Button variant="guncelle" size="sm" onClick={() => duzenlemeyeBasla(s)}>
                 Güncelle
               </Button>
-              <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecek(s)}>
+              <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(s)}>
                 Sil
               </Button>
             </>
@@ -732,6 +732,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
         description="Bu işlem geri alınamaz. Teslim edilmiş envanterlerin stoğu geri döner."
         isim={silinecek ? 'Envanter seti · ' + tl(silinecek.setTutari) : ''}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />

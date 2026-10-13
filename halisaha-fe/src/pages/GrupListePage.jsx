@@ -83,10 +83,10 @@ export default function GrupListePage() {
                     </Td>
                     <Td tam className="text-right">
                       <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
-                        <Button variant="secondary" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
+                        <Button variant="guncelle" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
                           Güncelle
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setSilinecek(g)}>
+                        <Button variant="danger" size="sm" onClick={() => setSilinecek(g)}>
                           Sil
                         </Button>
                       </div>
@@ -105,6 +105,7 @@ export default function GrupListePage() {
         description="Bu işlem geri alınamaz."
         isim={silinecek?.ad}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />

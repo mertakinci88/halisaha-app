@@ -333,7 +333,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
             </Button>
             {degisenler.length > 0 ? (
               <>
-                <Button variant="secondary" disabled={kaydediyor} onClick={() => uygula(veri)}>
+                <Button variant="danger" disabled={kaydediyor} onClick={() => uygula(veri)}>
                   Vazgeç
                 </Button>
                 <span className="text-[13.5px] text-ink/60">

@@ -123,7 +123,7 @@ export default function SahaDetayPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Sahayı güncelle'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/sahalar')}>
+            <Button variant="danger" onClick={() => navigate('/sahalar')}>
               Vazgeç
             </Button>
           </div>

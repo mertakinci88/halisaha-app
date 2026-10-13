@@ -11,6 +11,7 @@ import {
   Package,
   Layers,
   LogOut,
+  ArrowRightLeft,
   Plus,
   ShieldCheck,
   Square,
@@ -32,6 +33,7 @@ const NAV = [
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
   { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
   { to: '/hesaplar', ad: 'Hesaplar', Icon: Landmark, modul: 'HESAP' },
+  { to: '/transferler', ad: 'Transferler', Icon: ArrowRightLeft, modul: 'TRANSFER' },
 ];
 
 export default function AppLayout() {

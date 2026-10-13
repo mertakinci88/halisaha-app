@@ -87,10 +87,10 @@ export default function HesapListePage() {
                       </Tag>
                     </Td>
                     <Td tam className="text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/hesaplar/' + h.id)}>
+                      <Button variant="guncelle" size="sm" onClick={() => navigate('/hesaplar/' + h.id)}>
                         Güncelle
                       </Button>
-                      <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecek(h)}>
+                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(h)}>
                         Sil
                       </Button>
                     </Td>
@@ -108,6 +108,7 @@ export default function HesapListePage() {
         description="Bu hesap ödeme ya da öğrenci kayıtlarında kullanılmışsa silinmez, pasife alınır."
         isim={silinecek?.ad}
         confirmLabel="Sil"
+        tehlikeli
         onConfirm={sil}
         onCancel={() => setSilinecek(null)}
       />
