@@ -63,7 +63,7 @@ export default function PersonelListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Ad soyad</Th>
@@ -80,9 +80,9 @@ export default function PersonelListePage() {
               ) : (
                 kullanicilar.map((k) => (
                   <Tr key={k.id}>
-                    <Td>{k.adSoyad}</Td>
-                    <Td>{k.kullaniciAdi}</Td>
-                    <Td>
+                    <Td tam className="font-semibold sm:font-normal">{k.adSoyad}</Td>
+                    <Td etiket="Kullanıcı adı">{k.kullaniciAdi}</Td>
+                    <Td etiket="Rol">
                       {k.rol === 'ADMIN' ? (
                         <Tag tone="accent">
                           <ShieldCheck size={13} strokeWidth={1.75} className="mr-1 inline" />
@@ -92,7 +92,7 @@ export default function PersonelListePage() {
                         <Tag tone="neutral">Personel</Tag>
                       )}
                     </Td>
-                    <Td>
+                    <Td tam etiket="Menü yetkileri">
                       {k.rol === 'ADMIN' ? (
                         <span className="text-ink/55">Tüm menüler</span>
                       ) : k.yetkiler.length === 0 ? (
@@ -107,12 +107,12 @@ export default function PersonelListePage() {
                         </div>
                       )}
                     </Td>
-                    <Td>
+                    <Td etiket="Durum">
                       <Tag tone={k.durum === 'AKTIF' ? 'accent' : 'outline'}>
                         {k.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
                       </Tag>
                     </Td>
-                    <Td className="whitespace-nowrap text-right">
+                    <Td tam className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/personel/' + k.id)}>
                         Düzenle
                       </Button>

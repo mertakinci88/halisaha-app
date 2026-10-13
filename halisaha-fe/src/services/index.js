@@ -95,7 +95,7 @@ export const raporService = {
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
 export const ogrenciService = {
-  /** params: { grupId, q, odemeBekleyen, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  /** params: { grupId, q, odemeBekleyen, envanterEksik, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/ogrenciler', { params }).then((r) => r.data),
   get: (id) => api.get('/api/ogrenciler/' + id).then((r) => r.data),
   create: (body) => api.post('/api/ogrenciler', body).then((r) => r.data),

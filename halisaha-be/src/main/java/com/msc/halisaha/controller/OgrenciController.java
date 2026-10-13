@@ -30,9 +30,10 @@ public class OgrenciController {
             @RequestParam(required = false) Long grupId,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "false") boolean odemeBekleyen,
+            @RequestParam(defaultValue = "false") boolean envanterEksik,
             @RequestParam(defaultValue = "0") int sayfa,
             @RequestParam(defaultValue = "10") int boyut) {
-        return ogrenciService.list(grupId, q, odemeBekleyen, sayfa, boyut);
+        return ogrenciService.list(grupId, q, odemeBekleyen, envanterEksik, sayfa, boyut);
     }
 
     @GetMapping("/{id}")

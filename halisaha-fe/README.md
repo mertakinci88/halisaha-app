@@ -104,8 +104,11 @@ değişiklik telefonda da çalışmalı; bir değişikliği bitmiş saymadan ön
 - **Tarih/saat seçicilerde** `showPicker()` gibi programatik açmaya güvenme. iOS'ta seçici ancak kullanıcı
   doğrudan `<input type="date">`'e dokununca açılır: input'u görünür alanın üstüne `opacity-0` ile bindir
   (bkz. `TakvimPage.jsx`); `pointer-events-none` verme. `showPicker` sadece masaüstü için ek yardımcıdır.
+- **Liste tabloları** dar ekranda yana kaydırılmamalı: `<Table kart>` kullan; hücrelere `etiket="…"` (kart içinde başlık) ve gerekirse `tam` (tüm genişlik) ver. 640 px altında satırlar kart olur, masaüstü değişmez (`index.css` → `.tablo-kart`).
 - **Hover'a bağlı etkileşim** olmamalı (dokunmatikte hover yok); dokunma hedefleri yaklaşık 40 px ve üzeri olmalı.
 - Bildirimler (toast) telefonda ekranın üstünde tam genişlikte açılır; yeni bildirim eklerken `useToast` / `useHata` kullan.
+
+Test edilen genişlikler: 320, 360 (Android), 390 (iPhone), 412 (Android).
 
 Hızlı doğrulama: dev sunucu açıkken Playwright ile iPhone emülasyonu (`devices['iPhone 13']`, Chromium) kullanıp
 her sayfada `document.documentElement.scrollWidth > window.innerWidth` kontrolü ve ekran görüntüsü alınabilir.

@@ -119,7 +119,7 @@ export default function PersonelDuzenlePage() {
       <PageHeader kicker="Yönetim" baslik={kullanici.adSoyad} />
       <Hata mesaj={hata} />
 
-      <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+      <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]">
         <form onSubmit={bilgiKaydet}>
           <Card className="gap-3.5">
             <h4 className="text-[22px]">Kullanıcı bilgileri</h4>

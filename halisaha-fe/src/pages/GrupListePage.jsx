@@ -63,7 +63,7 @@ export default function GrupListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Grup adı</Th>
@@ -77,17 +77,19 @@ export default function GrupListePage() {
               ) : (
                 gruplar.map((g) => (
                   <Tr key={g.id}>
-                    <Td>{g.ad}</Td>
-                    <Td className="text-right tabular-nums">
+                    <Td tam className="font-semibold sm:font-normal">{g.ad}</Td>
+                    <Td etiket="Öğrenci sayısı" className="text-right tabular-nums">
                       {ogrenciler.filter((o) => o.grupId === g.id).length}
                     </Td>
-                    <Td className="text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
-                        Güncelle
-                      </Button>
-                      <Button variant="ghost" size="sm" className="ml-1" onClick={() => setSilinecek(g)}>
-                        Sil
-                      </Button>
+                    <Td tam className="text-right">
+                      <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
+                        <Button variant="secondary" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
+                          Güncelle
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setSilinecek(g)}>
+                          Sil
+                        </Button>
+                      </div>
                     </Td>
                   </Tr>
                 ))

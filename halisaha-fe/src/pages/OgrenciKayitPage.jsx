@@ -69,7 +69,7 @@ export default function OgrenciKayitPage() {
 
       <form
         onSubmit={kaydet}
-        className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]"
+        className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]"
       >
         <Card className="gap-3.5">
           <div className="grid gap-x-10 gap-y-5 md:grid-cols-2">
