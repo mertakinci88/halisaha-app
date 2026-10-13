@@ -46,7 +46,8 @@ const adBeden = (tur, beden) => (tur.bedenli ? tur.ad + ' (' + beden + ')' : tur
 /**
  * Öğrenci detayındaki envanter seti satışı. Her envanter türünden bir kalem seçilir (bedenli türlerde beden);
  * her kalem için Ödendi ve Teslim ayrı işaretlenir. Ödendi işaretlenenlerin fiyatları ödenen tutara eklenir
- * (tutar elle de değiştirilebilir, set tutarını aşamaz). Stok yalnızca teslim edilen kalem için düşer; teslim
+ * (tutar elle de değiştirilebilir, set tutarını aşamaz). Satış fiyatı envanterden gelir ama satırda elle değiştirilebilir;
+ * girilen fiyat o satış için geçerli olur. Stok yalnızca teslim edilen kalem için düşer; teslim
  * geri alınırsa geri döner. Stoğu biten envanter satılabilir ama teslim edilemez (Eksik envanter'de bekler).
  * Teslim edilmiş kalemin bedeni değiştirilemez.
  */
@@ -69,6 +70,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const [odendi, setOdendi] = useState(() => new Set());
   const [teslim, setTeslim] = useState(() => new Set());
   const [odenen, setOdenen] = useState('');
+  const [fiyatDuz, setFiyatDuz] = useState({}); // { TUR: '250' } elle değiştirilen satış fiyatları
   const [elle, setElle] = useState(false); // tutar elle değiştirildiyse Ödendi işaretleri üzerine yazmaz
   const [kaydediyor, setKaydediyor] = useState(false);
   const [kayitHatasi, setKayitHatasi] = useState(''); // yalnızca Satışı kaydet / güncelle hatası; kartın içinde gösterilir
@@ -102,10 +104,12 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     const o = orijinal(tur);
     return Boolean(o?.teslimEdildi && env && o.envanterId === env.id);
   };
-  // Satış anındaki fiyat korunur; beden değiştiyse yeni bedenin güncel fiyatı
+  // Elle girilen fiyat geçerlidir; yoksa satış anındaki fiyat korunur, beden değiştiyse yeni bedenin güncel fiyatı
   const fiyatOf = (tur) => {
     const e = envOf(tur);
     if (!e) return null;
+    const duz = fiyatDuz[tur.kod];
+    if (duz !== undefined) return duz === '' ? 0 : Number(duz);
     const o = orijinal(tur);
     return o && o.envanterId === e.id ? Number(o.birimFiyat) : Number(e.satisFiyati);
   };
@@ -163,6 +167,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setTeslim(new Set());
     setOdenen('');
     setElle(false);
+    setFiyatDuz({});
   };
 
   // Set seçilince tablo setin envanterleriyle dolar (bedenler hazır gelir, satırlarda değiştirilebilir)
@@ -176,6 +181,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setTeslim(new Set());
     setOdenen('');
     setElle(false);
+    setFiyatDuz({});
   };
 
   const duzenlemeyeBasla = (satis) => {
@@ -188,6 +194,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setTeslim(new Set(satis.kalemler.filter((k) => k.teslimEdildi).map((k) => k.tur)));
     setOdenen(String(satis.odenenTutar));
     setElle(true);
+    setFiyatDuz({});
     kartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -204,6 +211,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       // Satıştan çıkarılan envanterin Ödendi / Teslim işaretleri de temizlenir
       setOdendi((p) => new Set([...p].filter((k) => k !== kod)));
       setTeslim((p) => new Set([...p].filter((k) => k !== kod)));
+      setFiyatDuz(({ [kod]: _, ...kalan }) => kalan);
       setElle(false);
     }
   };
@@ -215,6 +223,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
 
   const bedenSec = (tur, beden) => {
     setSecim((p) => ({ ...p, [tur.kod]: beden }));
+    setFiyatDuz(({ [tur.kod]: _, ...kalan }) => kalan); // beden değişince fiyat yeni bedenin fiyatına döner
     const yeni = envanterler.find((e) => e.tur === tur.kod && e.beden === beden);
     // Stoğu olmayan bedenin teslimi işaretlenemez
     if (!yeni || (yeni.adet <= 0 && !zatenTeslim(tur, yeni))) {
@@ -236,6 +245,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
         beden: t.bedenli ? secim[t.kod] : null,
         odendi: odendi.has(t.kod),
         teslim: teslim.has(t.kod),
+        birimFiyat: fiyatOf(t),
       })),
       odenenTutar: tutar,
       ...(duzenlenen || !seciliSet ? {} : { setId: seciliSet.id }),
@@ -319,8 +329,28 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       <span className="text-ink/55">{env ? 'Standart' : 'Envanter yok'}</span>
     );
     const dahilMi = setliMod || ekle.has(tur.kod);
-    return { tur, env, fiyat: fiyatOf(tur), stokEtiketi, bedenAlani, dahilMi, ekleKilitli: kilitli(tur) && teslim.has(tur.kod), teslimPasif: !dahilMi || teslimPasif(tur) };
+    return { tur, env, fiyat: fiyatOf(tur), fiyatGirdi: fiyatDuz[tur.kod] ?? (fiyatOf(tur) === null ? '' : String(fiyatOf(tur))), stokEtiketi, bedenAlani, dahilMi, ekleKilitli: kilitli(tur) && teslim.has(tur.kod), teslimPasif: !dahilMi || teslimPasif(tur) };
   });
+
+  const fiyatKutusu = (r) =>
+    r.fiyat === null ? (
+      <span className="text-ink/55">—</span>
+    ) : (
+      <Input
+        type="number"
+        min="0"
+        step="1"
+        inputMode="decimal"
+        value={r.fiyatGirdi}
+        disabled={!r.dahilMi}
+        onChange={(e) => {
+          const v = e.target.value;
+          setFiyatDuz((p) => ({ ...p, [r.tur.kod]: v }));
+        }}
+        aria-label={r.tur.ad + ' satış fiyatı'}
+        className="min-h-9 w-[110px] py-1 text-right text-[16px] tabular-nums disabled:bg-neutral-200 disabled:text-ink/60"
+      />
+    );
 
   if (yukleniyor) return <Yukleniyor />;
 
@@ -392,7 +422,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                 <div key={r.tur.kod} className={cn('border-b border-hairline py-3', !r.dahilMi && 'opacity-60')}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="font-semibold">{r.tur.ad}</span>
-                    <span className="tabular-nums">{r.fiyat === null ? <span className="text-ink/55">—</span> : tl(r.fiyat)}</span>
+                    {fiyatKutusu(r)}
                   </div>
                   {setliMod ? null : (
                     <Kutu
@@ -466,7 +496,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                       {r.env ? <>{r.env.adet}{r.stokEtiketi}</> : <span className="text-ink/55">—</span>}
                     </Td>
                     <Td className="whitespace-nowrap text-right tabular-nums">
-                      {r.fiyat === null ? <span className="text-ink/55">—</span> : tl(r.fiyat)}
+                      {fiyatKutusu(r)}
                     </Td>
                     <Td className="text-center">
                       <Kutu
@@ -621,6 +651,9 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
               </Table>
             );
           }
+          const topTutar = satislar.reduce((t, s) => t + Number(s.setTutari), 0);
+          const topOdenen = satislar.reduce((t, s) => t + Number(s.odenenTutar), 0);
+          const topKalan = satislar.reduce((t, s) => t + Number(s.kalanTutar), 0);
           return mobil ? (
             <div className="flex flex-col">
               {satislar.map((s) => (
@@ -641,6 +674,11 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <div className="mt-3">{islemler(s)}</div>
                 </div>
               ))}
+              <div className="flex flex-col gap-1 py-3 text-[14.5px]">
+                <div className="flex justify-between"><span>Toplam ödenen</span><b className="tabular-nums">{tl(topOdenen)}</b></div>
+                <div className="flex justify-between"><span>Toplam kalan</span><b className="tabular-nums">{topKalan > 0 ? tl(topKalan) : '—'}</b></div>
+                <div className="mt-1 flex justify-between border-t-2 border-ink/60 pt-1.5"><span>Toplam tutar <span className="text-[13px] text-ink/60">(ödenen + kalan)</span></span><b className="tabular-nums">{tl(topTutar)}</b></div>
+              </div>
             </div>
           ) : (
             <Table>
@@ -671,6 +709,17 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     <Td className="whitespace-nowrap text-right">{islemler(s)}</Td>
                   </Tr>
                 ))}
+                <tr>
+                  <Td className="font-bold">Toplam</Td>
+                  <Td className="whitespace-nowrap text-right font-bold tabular-nums">{tl(topOdenen)}</Td>
+                  <Td className="whitespace-nowrap text-right font-bold tabular-nums">{topKalan > 0 ? tl(topKalan) : '—'}</Td>
+                  <Td colSpan={5} />
+                </tr>
+                <tr>
+                  <Td className="whitespace-nowrap border-t-2 border-ink/60 font-bold">Toplam tutar</Td>
+                  <Td colSpan={2} className="whitespace-nowrap border-t-2 border-ink/60 text-right font-bold tabular-nums">{tl(topTutar)}</Td>
+                  <Td colSpan={5} className="text-[13.5px] text-ink/60">= Ödenen tutar + Kalan tutar</Td>
+                </tr>
               </tbody>
             </Table>
           );

@@ -26,7 +26,13 @@ public record EnvanterSatisRequest(
             /** Bedenli türlerde zorunlu. */
             String beden,
             boolean odendi,
-            boolean teslim
+            boolean teslim,
+            /** Boşsa envanterin satış fiyatı (güncellemede kalemin mevcut fiyatı) kullanılır; doluysa bu satışa özel fiyat geçerli olur. */
+            @PositiveOrZero(message = "Satış fiyatı negatif olamaz") BigDecimal birimFiyat
     ) {
+
+        public Kalem(EnvanterTur tur, String beden, boolean odendi, boolean teslim) {
+            this(tur, beden, odendi, teslim, null);
+        }
     }
 }
