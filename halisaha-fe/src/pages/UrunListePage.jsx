@@ -62,7 +62,7 @@ export default function UrunListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Ürün</Th>
@@ -78,9 +78,9 @@ export default function UrunListePage() {
               ) : (
                 urunler.map((u) => (
                   <Tr key={u.id}>
-                    <Td>{u.ad}</Td>
-                    <Td className="text-right tabular-nums">{tl(u.fiyat)}</Td>
-                    <Td className="text-right tabular-nums">{u.adet}</Td>
+                    <Td tam className="font-semibold sm:font-normal">{u.ad}</Td>
+                    <Td etiket="Fiyat" className="text-right tabular-nums">{tl(u.fiyat)}</Td>
+                    <Td etiket="Stok" className="text-right tabular-nums">{u.adet}</Td>
                     <Td>
                       {stokDurumu(u) === 'TUKENDI' ? (
                         <Tag tone="danger">Tükendi</Tag>
@@ -88,7 +88,7 @@ export default function UrunListePage() {
                         <Tag tone="outline">Stok az</Tag>
                       ) : null}
                     </Td>
-                    <Td className="whitespace-nowrap text-right">
+                    <Td tam className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
                         Güncelle
                       </Button>

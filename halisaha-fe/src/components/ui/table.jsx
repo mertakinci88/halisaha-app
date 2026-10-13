@@ -1,9 +1,13 @@
 import { cn } from '@/lib/utils';
 
-export function Table({ className, children }) {
+/**
+ * kart: dar ekranda (sm altı) tablo kart listesine dönüşür (başlık gizlenir, her satır bir kart olur,
+ * hücreler Td'deki `etiket` ile alt alta dizilir; `tam` hücre tüm genişliği kaplar). Masaüstü aynı kalır.
+ */
+export function Table({ className, kart = false, children }) {
   return (
     <div className="w-full overflow-x-auto">
-      <table className={cn('w-full border-collapse text-[15.5px]', className)}>{children}</table>
+      <table className={cn('w-full border-collapse text-[15.5px]', kart && 'tablo-kart', className)}>{children}</table>
     </div>
   );
 }
@@ -22,9 +26,14 @@ export function Th({ className, children, ...props }) {
   );
 }
 
-export function Td({ className, children, ...props }) {
+export function Td({ className, etiket, tam, children, ...props }) {
   return (
-    <td className={cn('px-2 py-2 border-b border-hairline align-middle', className)} {...props}>
+    <td
+      className={cn('px-2 py-2 border-b border-hairline align-middle', className)}
+      data-etiket={etiket}
+      data-tam={tam ? '' : undefined}
+      {...props}
+    >
       {children}
     </td>
   );

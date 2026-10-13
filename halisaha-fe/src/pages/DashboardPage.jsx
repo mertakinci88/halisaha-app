@@ -144,7 +144,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))]">
             <Card>
               <div className="flex items-baseline gap-2.5">
                 <h4 className="text-[22px]">Bugünün programı</h4>
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                   Tümü
                 </Button>
               </div>
-              <Table>
+              <Table kart>
                 <thead>
                   <tr>
                     <Th>Saat</Th>
@@ -174,12 +174,12 @@ export default function DashboardPage() {
                           className="cursor-pointer"
                           onClick={() => navigate('/rezervasyon/' + r.id)}
                         >
-                          <Td className="whitespace-nowrap tabular-nums">
+                          <Td etiket="Saat" className="whitespace-nowrap tabular-nums">
                             {saatOf(r.baslangicTarih)} – {saatOf(r.bitisTarih)}
                           </Td>
-                          <Td className="text-ink/55">{r.sahaAd}</Td>
-                          <Td>{r.adSoyad}</Td>
-                          <Td className="text-right tabular-nums">{tl(r.odenecekTutar)}</Td>
+                          <Td etiket="Saha" className="text-ink/55">{r.sahaAd}</Td>
+                          <Td etiket="Ad soyad">{r.adSoyad}</Td>
+                          <Td etiket="Tutar" className="text-right tabular-nums">{tl(r.odenecekTutar)}</Td>
                         </Tr>
                       ))
                   )}

@@ -64,7 +64,7 @@ export default function IsletmeListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>İşletme</Th>
@@ -80,18 +80,18 @@ export default function IsletmeListePage() {
               ) : (
                 isletmeler.map((i) => (
                   <Tr key={i.id}>
-                    <Td>{i.ad}</Td>
-                    <Td className="whitespace-nowrap">
+                    <Td tam className="font-semibold sm:font-normal">{i.ad}</Td>
+                    <Td etiket="Yönetici" className="whitespace-nowrap">
                       {i.yoneticiAdSoyad || '—'}
                       {i.yoneticiTelNo ? <span className="ml-2 text-ink/55">{telGoster(i.yoneticiTelNo)}</span> : null}
                     </Td>
-                    <Td className="whitespace-nowrap">{kisaTarih(String(i.kayitTarih).slice(0, 10))}</Td>
-                    <Td>
+                    <Td etiket="Kayıt tarihi" className="whitespace-nowrap">{kisaTarih(String(i.kayitTarih).slice(0, 10))}</Td>
+                    <Td etiket="Durum">
                       <Tag tone={i.durum === 'AKTIF' ? 'accent' : 'outline'}>
                         {i.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
                       </Tag>
                     </Td>
-                    <Td className="whitespace-nowrap text-right">
+                    <Td tam className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/isletmeler/' + i.id)}>
                         Yönet
                       </Button>

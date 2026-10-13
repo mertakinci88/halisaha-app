@@ -95,7 +95,7 @@ export default function EnvanterListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : setlerSekmesi ? (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Set adı</Th>
@@ -110,8 +110,8 @@ export default function EnvanterListePage() {
               ) : (
                 setler.map((s) => (
                   <Tr key={s.id}>
-                    <Td>{s.ad}</Td>
-                    <Td>
+                    <Td tam className="font-semibold sm:font-normal">{s.ad}</Td>
+                    <Td tam etiket="Envanterler">
                       <div className="flex flex-wrap gap-1">
                         {s.kalemler.map((k) => (
                           <Tag key={k.envanterId} tone="outline">
@@ -120,8 +120,8 @@ export default function EnvanterListePage() {
                         ))}
                       </div>
                     </Td>
-                    <Td className="whitespace-nowrap text-right tabular-nums">{tl(s.toplamTutar)}</Td>
-                    <Td className="whitespace-nowrap text-right">
+                    <Td tam etiket="Toplam tutar" className="whitespace-nowrap text-right tabular-nums">{tl(s.toplamTutar)}</Td>
+                    <Td tam className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
                         Güncelle
                       </Button>
@@ -135,7 +135,7 @@ export default function EnvanterListePage() {
             </tbody>
           </Table>
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Envanter</Th>
@@ -152,10 +152,10 @@ export default function EnvanterListePage() {
               ) : (
                 liste.map((e) => (
                   <Tr key={e.id}>
-                    <Td>{e.turAd}</Td>
-                    <Td>{e.bedenli ? e.beden : 'Standart'}</Td>
-                    <Td className="text-right tabular-nums">{tl(e.satisFiyati)}</Td>
-                    <Td className="text-right tabular-nums">{e.adet}</Td>
+                    <Td tam className="font-semibold sm:font-normal">{e.turAd}</Td>
+                    <Td etiket="Beden">{e.bedenli ? e.beden : 'Standart'}</Td>
+                    <Td etiket="Satış fiyatı" className="text-right tabular-nums">{tl(e.satisFiyati)}</Td>
+                    <Td etiket="Adet" className="text-right tabular-nums">{e.adet}</Td>
                     <Td>
                       {stokDurumu(e) === 'TUKENDI' ? (
                         <Tag tone="danger">Tükendi</Tag>
@@ -163,7 +163,7 @@ export default function EnvanterListePage() {
                         <Tag tone="outline">Stok az</Tag>
                       ) : null}
                     </Td>
-                    <Td className="whitespace-nowrap text-right">
+                    <Td tam className="whitespace-nowrap text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/envanter/' + e.id)}>
                         Güncelle
                       </Button>
