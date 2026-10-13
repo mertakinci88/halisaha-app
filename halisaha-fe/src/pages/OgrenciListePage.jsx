@@ -115,7 +115,7 @@ export default function OgrenciListePage() {
           <Yukleniyor />
         ) : (
           <>
-            <Table>
+            <Table kart>
               <thead>
                 <tr>
                   <Th>Ad soyad</Th>
@@ -134,19 +134,19 @@ export default function OgrenciListePage() {
                 ) : (
                   veri.icerik.map((o) => (
                     <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>
-                      <Td>{o.adSoyad}</Td>
-                      <Td className="text-ink/55">{o.grupAd || '—'}</Td>
-                      <Td>{o.veliAdSoyad || '—'}</Td>
-                      <Td className="tabular-nums">{o.veliTelNo || '—'}</Td>
-                      <Td>
+                      <Td tam className="font-semibold sm:font-normal">{o.adSoyad}</Td>
+                      <Td etiket="Grup" className="text-ink/55">{o.grupAd || '—'}</Td>
+                      <Td etiket="Veli">{o.veliAdSoyad || '—'}</Td>
+                      <Td etiket="Telefon" className="tabular-nums">{o.veliTelNo || '—'}</Td>
+                      <Td etiket="Bu ayki ödeme">
                         <OdemeDurumuEtiketi durum={o.odemeDurumu} />
                       </Td>
-                      <Td>
+                      <Td etiket="Durum">
                         <Tag tone={o.durum === 'AKTIF' ? 'accent' : 'outline'}>
                           {o.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
                         </Tag>
                       </Td>
-                      <Td className="max-w-[220px] truncate text-[13.5px] text-ink/70" title={o.not || ''}>
+                      <Td tam etiket="Not" className="max-sm:order-1 max-w-[220px] truncate text-[13.5px] text-ink/70" title={o.not || ''}>
                         {o.not || '—'}
                       </Td>
                       <Td className="text-right">

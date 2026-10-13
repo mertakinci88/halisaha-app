@@ -62,7 +62,7 @@ export default function HesapListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Hesap adı</Th>
@@ -78,15 +78,15 @@ export default function HesapListePage() {
               ) : (
                 hesaplar.map((h) => (
                   <Tr key={h.id}>
-                    <Td>{h.ad}</Td>
-                    <Td className="tabular-nums">{ibanMaske(h.iban)}</Td>
-                    <Td>{h.hesapSahibi}</Td>
-                    <Td>
+                    <Td tam className="font-semibold sm:font-normal">{h.ad}</Td>
+                    <Td tam etiket="IBAN" className="tabular-nums">{ibanMaske(h.iban)}</Td>
+                    <Td etiket="Hesap sahibi">{h.hesapSahibi}</Td>
+                    <Td etiket="Durum">
                       <Tag tone={h.durum === 'AKTIF' ? 'accent' : 'neutral'}>
                         {h.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
                       </Tag>
                     </Td>
-                    <Td className="text-right">
+                    <Td tam className="text-right">
                       <Button variant="secondary" size="sm" onClick={() => navigate('/hesaplar/' + h.id)}>
                         Güncelle
                       </Button>

@@ -144,7 +144,7 @@ export default function RezervasyonYeniPage() {
 
       <form
         onSubmit={kaydet}
-        className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]"
+        className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]"
       >
         <Card className="gap-4">
           <h4 className="text-[22px]">Rezervasyon bilgileri</h4>

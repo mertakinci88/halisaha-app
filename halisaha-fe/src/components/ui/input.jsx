@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 const base =
-  'w-full min-h-10 rounded-none bg-surface border border-divider px-[11px] py-2 text-[15.5px] text-ink font-body caret-accent hover:border-ink/45 focus-visible:border-accent focus-visible:outline-offset-0';
+  'w-full min-w-0 max-w-full min-h-10 rounded-none bg-surface border border-divider px-[11px] py-2 text-[15.5px] text-ink font-body caret-accent hover:border-ink/45 focus-visible:border-accent focus-visible:outline-offset-0';
 
 export function Input({ className, ...props }) {
   return <input className={cn(base, className)} {...props} />;
@@ -29,7 +29,7 @@ export function Label({ className, children, ...props }) {
 
 export function Field({ label, children, className }) {
   return (
-    <div className={className}>
+    <div className={cn('min-w-0', className)}>
       {label ? <Label>{label}</Label> : null}
       {children}
     </div>

@@ -85,7 +85,7 @@ export default function SahaListePage() {
         {yukleniyor ? (
           <Yukleniyor />
         ) : (
-          <Table>
+          <Table kart>
             <thead>
               <tr>
                 <Th>Saha adı</Th>
@@ -100,26 +100,27 @@ export default function SahaListePage() {
               ) : (
                 sahalar.map((s) => (
                   <Tr key={s.id}>
-                    <Td>{s.ad}</Td>
-                    <Td>
+                    <Td tam className="font-semibold sm:font-normal">{s.ad}</Td>
+                    <Td etiket="Durum">
                       <Tag tone={s.durum === 'AKTIF' ? 'accent' : 'neutral'}>
                         {s.durum === 'AKTIF' ? 'Aktif' : 'Pasif'}
                       </Tag>
                     </Td>
-                    <Td className="text-right tabular-nums">{tl(s.saatlikUcret)}</Td>
-                    <Td className="text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
-                        Güncelle
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="ml-1"
-                        disabled={kontrolEdilenId === s.id}
-                        onClick={() => silBaslat(s)}
-                      >
-                        Sil
-                      </Button>
+                    <Td etiket="Saatlik ücret" className="text-right tabular-nums">{tl(s.saatlikUcret)}</Td>
+                    <Td tam className="text-right">
+                      <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
+                        <Button variant="secondary" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
+                          Güncelle
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={kontrolEdilenId === s.id}
+                          onClick={() => silBaslat(s)}
+                        >
+                          Sil
+                        </Button>
+                      </div>
                     </Td>
                   </Tr>
                 ))

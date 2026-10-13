@@ -211,7 +211,7 @@ export default function RezervasyonDetayPage() {
       <PageHeader kicker="Rezervasyon" baslik="Rezervasyon detayı" />
       <Hata mesaj={hata} />
 
-      <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+      <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]">
         <div className="grid content-start gap-5">
           <Card>
             <div className="flex flex-wrap items-baseline gap-2.5">
