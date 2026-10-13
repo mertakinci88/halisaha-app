@@ -64,7 +64,7 @@ class OgrenciOdemeFiltreTest {
     }
 
     private List<OgrenciResponse> liste(boolean odemeBekleyen) {
-        PageResponse<OgrenciResponse> sayfa = ogrenciService.list(null, null, odemeBekleyen, 0, 50);
+        PageResponse<OgrenciResponse> sayfa = ogrenciService.list(null, null, odemeBekleyen, false, 0, 50);
         return sayfa.icerik();
     }
 

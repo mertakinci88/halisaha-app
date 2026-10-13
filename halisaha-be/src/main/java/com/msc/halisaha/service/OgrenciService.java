@@ -41,11 +41,14 @@ public class OgrenciService {
     private final EnvanterSatisRepository envanterSatisRepository;
     private final OgrenciOdemeRepository ogrenciOdemeRepository;
 
-    /** odemeBekleyen: yalnızca içinde bulunulan ayda ödemesi girilmemiş (Ödeme bekliyor / Ödenmedi) öğrenciler. */
-    public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean odemeBekleyen, int sayfa, int boyut) {
+    /**
+     * odemeBekleyen: yalnızca içinde bulunulan ayda ödemesi girilmemiş (Ödeme bekliyor / Ödenmedi) öğrenciler.
+     * envanterEksik: yalnızca ödemesi alınmış ama teslim edilmemiş envanteri olan öğrenciler.
+     */
+    public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean odemeBekleyen, boolean envanterEksik, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
         LocalDate bugun = AppZaman.bugun();
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, odemeBekleyen,
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, odemeBekleyen, envanterEksik,
                 bugun.getYear(), bugun.getMonthValue(), pageRequest);
         Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
         return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));

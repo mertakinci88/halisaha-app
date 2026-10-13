@@ -327,4 +327,22 @@ class EnvanterSatisServiceTest {
                 hareketler.stream().map(EnvanterStokHareket::getTip).toList());
         assertEquals(List.of(40, 39, 40), hareketler.stream().map(EnvanterStokHareket::getKalanAdet).toList());
     }
+
+    @Test
+    void ogrenciListesiEksikEnvanterFiltresiYalnizcaOdenipTeslimEdilmeyenleriGetirir() {
+        var isletme = k.ogrenciA.getIsletme();
+        Long teslimEdilmis = ogrenciRepository.save(com.msc.halisaha.entity.Ogrenci.builder().isletme(isletme).adSoyad("Teslim Edilmiş")
+                .durum(com.msc.halisaha.entity.OgrenciDurum.AKTIF).build()).getId();
+        ogrenciRepository.save(com.msc.halisaha.entity.Ogrenci.builder().isletme(isletme).adSoyad("Envanteri Yok")
+                .durum(com.msc.halisaha.entity.OgrenciDurum.AKTIF).build());
+
+        // Ahmet Test: tozluk ödenmiş ama teslim edilmemiş -> eksik
+        satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), null));
+        // Teslim Edilmiş: tozluk hem ödenmiş hem teslim edilmiş -> eksik değil
+        satisService.olustur(teslimEdilmis, set("140", "164", List.of(TOZLUK), List.of(TOZLUK), null));
+
+        var eksikler = ogrenciService.list(null, null, false, true, 0, 50).icerik();
+        assertEquals(List.of("Ahmet Test"), eksikler.stream().map(com.msc.halisaha.dto.OgrenciResponse::adSoyad).toList());
+        assertEquals(3, ogrenciService.list(null, null, false, false, 0, 50).toplamKayit());
+    }
 }

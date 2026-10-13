@@ -23,6 +23,8 @@ export default function OgrenciListePage() {
   const [params, setParams] = useSearchParams();
   // Panelden gelen /ogrenciler?odeme=bekleyen bağlantısı yalnızca ödeme bekleyenleri listeler
   const odemeBekleyen = params.get('odeme') === 'bekleyen';
+  // ?envanter=eksik: ödemesi alınmış ama teslim edilmemiş envanteri olan öğrenciler
+  const envanterEksik = params.get('envanter') === 'eksik';
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
@@ -51,19 +53,22 @@ export default function OgrenciListePage() {
     setYukleniyor(true);
     setHata('');
     ogrenciService
-      .list({ q: aramaAktif || undefined, odemeBekleyen: odemeBekleyen || undefined, sayfa, boyut: BOYUT })
+      .list({ q: aramaAktif || undefined, odemeBekleyen: odemeBekleyen || undefined, envanterEksik: envanterEksik || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [aramaAktif, odemeBekleyen, sayfa]);
+  }, [aramaAktif, odemeBekleyen, envanterEksik, sayfa]);
 
   useEffect(() => {
     yukle();
   }, [yukle]);
 
-  const filtreSec = (bekleyen) => {
+  const filtreSec = (filtre) => {
     setSayfa(0);
-    setParams(bekleyen ? { odeme: 'bekleyen' } : {}, { replace: true });
+    setParams(
+      filtre === 'odeme' ? { odeme: 'bekleyen' } : filtre === 'envanter' ? { envanter: 'eksik' } : {},
+      { replace: true },
+    );
   };
 
   const toplamSayfa = Math.max(1, veri.toplamSayfa);
@@ -89,11 +94,14 @@ export default function OgrenciListePage() {
             </Button>
           </form>
           <Seg>
-            <SegOpt active={!odemeBekleyen} onClick={() => filtreSec(false)}>
+            <SegOpt active={!odemeBekleyen && !envanterEksik} onClick={() => filtreSec(null)}>
               Tümü
             </SegOpt>
-            <SegOpt active={odemeBekleyen} onClick={() => filtreSec(true)}>
+            <SegOpt active={odemeBekleyen} onClick={() => filtreSec('odeme')}>
               Ödeme bekleyen
+            </SegOpt>
+            <SegOpt active={envanterEksik} onClick={() => filtreSec('envanter')}>
+              Eksik envanter
             </SegOpt>
           </Seg>
           <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
@@ -122,7 +130,7 @@ export default function OgrenciListePage() {
               </thead>
               <tbody>
                 {veri.icerik.length === 0 ? (
-                  <Bos colSpan={8}>{odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
+                  <Bos colSpan={8}>{odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : envanterEksik ? 'Eksik envanteri olan öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
                 ) : (
                   veri.icerik.map((o) => (
                     <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>
@@ -159,11 +167,11 @@ export default function OgrenciListePage() {
               </tbody>
             </Table>
 
-            <div className="relative flex items-center justify-center gap-3 pt-1">
-              <span className="absolute left-0 text-[13.5px] text-ink/55">
+            <div className="relative flex flex-col items-center gap-2 pt-1 sm:flex-row sm:justify-center sm:gap-3">
+              <span className="order-2 text-[13.5px] text-ink/55 sm:absolute sm:left-0 sm:order-none">
                 Sayfa {veri.sayfa + 1} / {toplamSayfa}
               </span>
-              <div className="flex gap-1.5">
+              <div className="order-1 flex gap-1.5 sm:order-none">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -183,6 +191,9 @@ export default function OgrenciListePage() {
                   <ChevronRight size={15} strokeWidth={1.5} />
                 </Button>
               </div>
+              <span className="order-3 text-[13.5px] text-ink/55 sm:absolute sm:right-0 sm:order-none">
+                Toplam öğrenci sayısı : {veri.toplamKayit}
+              </span>
             </div>
           </>
         )}
