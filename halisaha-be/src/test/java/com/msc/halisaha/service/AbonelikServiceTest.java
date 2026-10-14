@@ -84,22 +84,22 @@ class AbonelikServiceTest {
     }
 
     @Test
-    void abonelikBirYilHaftalikRezervasyonOlusturur() {
+    void abonelik52HaftalikRezervasyonOlusturur() {
         AbonelikResponse r = abonelikService.olustur(istek("10000", "4000"));
 
-        assertEquals(baslangic.plusYears(1), r.bitisTarih());
+        assertEquals(baslangic.plusWeeks(51), r.bitisTarih());
         assertEquals(AbonelikDurum.AKTIF, r.durum());
         assertEquals(0, new BigDecimal("6000").compareTo(r.kalanTutar()));
         assertEquals(OdemeDurumu.KISMI_ODENDI, r.odemeDurumu());
         assertEquals(1, r.odemeler().size());
 
-        // Her hafta bir rezervasyon: 52 ya da 53, ilki başlangıç günü, haftalık aralıklı, saat 19:00
+        // Her hafta bir rezervasyon: tam 52, ilki başlangıç günü, haftalık aralıklı, saat 19:00
         List<AbonelikResponse.HaftaResponse> haftalar = r.haftalar();
-        assertTrue(haftalar.size() == 52 || haftalar.size() == 53);
+        assertEquals(52, haftalar.size());
         assertEquals(baslangic.atTime(19, 0), haftalar.get(0).baslangicTarih());
         assertEquals(baslangic.atTime(20, 0), haftalar.get(0).bitisTarih());
         assertEquals(baslangic.plusWeeks(1).atTime(19, 0), haftalar.get(1).baslangicTarih());
-        assertFalse(haftalar.get(haftalar.size() - 1).baslangicTarih().toLocalDate().isAfter(r.bitisTarih()));
+        assertEquals(r.bitisTarih(), haftalar.get(haftalar.size() - 1).baslangicTarih().toLocalDate());
 
         // Haftalık rezervasyonlar normal rezervasyon gibi saha takviminde görünür; saha ücreti 0, abonelikle ilişkili
         Rezervasyon ilk = rezervasyonRepository.findById(haftalar.get(0).rezervasyonId()).orElseThrow();

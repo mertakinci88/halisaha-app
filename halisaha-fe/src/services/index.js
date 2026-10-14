@@ -211,7 +211,7 @@ export const aboneService = {
   ayarKaydet: (body) => api.put('/api/abonelikler/ayar', body).then((r) => r.data),
   /** body: { sahaId, haftaGunu (1=Pzt..7=Paz), baslangicSaat (12..25), sureSaat, baslangicTarih } — { rezervasyonSayisi, bitisTarih, cakismalar: [{ tarih, adSoyad }] } */
   onizle: (body) => api.post('/api/abonelikler/onizleme', body).then((r) => r.data),
-  /** body: { sahaId, adSoyad, telNo (05…), haftaGunu, baslangicSaat, sureSaat, baslangicTarih, ucret, odenenTutar, odemeSekli, hesapId, odemeTarihi, not } — bitiş tarihi sunucuda başlangıçtan 1 yıl sonrası olarak hesaplanır */
+  /** body: { sahaId, adSoyad, telNo (05…), haftaGunu, baslangicSaat, sureSaat, baslangicTarih, ucret, odenenTutar, odemeSekli, hesapId, odemeTarihi, not } — bitiş tarihi sunucuda 52. haftanın tarihi olarak hesaplanır */
   create: (body) => api.post('/api/abonelikler', body).then((r) => r.data),
   /** body: { adSoyad, telNo, ucret, not } */
   update: (id, body) => api.put('/api/abonelikler/' + id, body).then((r) => r.data),

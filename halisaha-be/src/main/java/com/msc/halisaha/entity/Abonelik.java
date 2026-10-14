@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Bir sahanın haftanın belli günü ve saatinde, başlangıç ile bitiş tarihi arasında (1 yıl) abone müşteriye ayrılması. */
+/** Bir sahanın haftanın belli günü ve saatinde, başlangıç ile bitiş tarihi arasında (52 hafta) abone müşteriye ayrılması. */
 @Entity
 @Table(name = "abonelik")
 @Getter
@@ -70,7 +70,7 @@ public class Abonelik {
     @Column(name = "baslangic_tarih", nullable = false)
     private LocalDate baslangicTarih;
 
-    /** Başlangıç tarihinden 1 yıl sonrası; kayıtta otomatik hesaplanır. */
+    /** Son (52.) haftanın tarihi; kayıtta otomatik hesaplanır. */
     @Column(name = "bitis_tarih", nullable = false)
     private LocalDate bitisTarih;
 

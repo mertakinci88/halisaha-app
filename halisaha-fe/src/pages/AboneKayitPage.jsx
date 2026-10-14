@@ -11,7 +11,7 @@ import { aboneService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { kisaTarih, ODEME_YONTEMI_LABEL, telMaske, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
-import { BASLANGIC_SECENEKLERI, EN_UZUN_SURE_SAAT, HAFTA_GUNLERI, KAPANIS_DAKIKA, birYilSonra, dakikaSaat, gunAdi, haftaGunuOf } from '@/lib/abone';
+import { BASLANGIC_SECENEKLERI, EN_UZUN_SURE_SAAT, HAFTA_GUNLERI, KAPANIS_DAKIKA, abonelikBitis, dakikaSaat, gunAdi, haftaGunuOf } from '@/lib/abone';
 
 const BUGUN = toIsoDate(new Date());
 
@@ -99,7 +99,7 @@ export default function AboneKayitPage() {
 
   // Süre tam saat olarak seçilir; kapanışı (02:00) aşamaz
   const enUzunSaat = Math.min(EN_UZUN_SURE_SAAT, Math.floor((KAPANIS_DAKIKA - Number(form.baslangicDakika)) / 60));
-  const bitis = onizleme?.bitisTarih || birYilSonra(form.baslangic);
+  const bitis = onizleme?.bitisTarih || abonelikBitis(form.baslangic, form.haftaGunu);
   const ucret = Number(String(form.ucret).replace(',', '.')) || 0;
   const odenen = Number(String(form.odenen).replace(',', '.')) || 0;
   const cakisma = onizleme?.cakismalar?.length > 0;
@@ -189,7 +189,7 @@ export default function AboneKayitPage() {
               <Input type="date" min={BUGUN} value={form.baslangic} onChange={(e) => set('baslangic', e.target.value)} required />
             </Field>
             <Field label="Bitiş tarihi">
-              <Input type="text" value={kisaTarih(bitis)} readOnly disabled aria-readonly="true" title="Başlangıçtan 1 yıl sonrası; otomatik hesaplanır" />
+              <Input type="text" value={kisaTarih(bitis)} readOnly disabled aria-readonly="true" title="52. haftanın tarihi; otomatik hesaplanır" />
             </Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
