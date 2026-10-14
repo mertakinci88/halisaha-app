@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
 import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
+import IadeBolumu from '@/components/IadeBolumu';
 import { Table, Th, Td, Tr } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { hesapService, ogrenciOdemeService } from '@/services';
@@ -254,8 +255,9 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
 
       {veri ? (
         <>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[14.5px] text-ink/70">
-            <span>{yil} toplam ödenen: <b className="tabular-nums text-ink">{tl(veri.toplamOdenen)}</b></span>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-l-4 border-accent bg-accent-100 px-3 py-2">
+            <span className="text-[15.5px] font-semibold text-ink/80">{yil} toplam ödenen:</span>
+            <b className="font-heading text-[26px] font-semibold tabular-nums text-accent-700">{tl(veri.toplamOdenen)}</b>
           </div>
 
           {mobil ? (
@@ -332,7 +334,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
             </Button>
             {degisenler.length > 0 ? (
               <>
-                <Button variant="secondary" disabled={kaydediyor} onClick={() => uygula(veri)}>
+                <Button variant="danger" disabled={kaydediyor} onClick={() => uygula(veri)}>
                   Vazgeç
                 </Button>
                 <span className="text-[13.5px] text-ink/60">
@@ -342,6 +344,13 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
               </>
             ) : null}
           </div>
+
+          <IadeBolumu
+            listeParams={{ ogrenciId, yil }}
+            kaynaklar={veri.aylar
+              .filter((a) => a.id != null && Number(a.odenenTutar) > 0)
+              .map((a) => ({ id: a.id, alan: 'ogrenciOdemeId', etiket: AYLAR[a.ay - 1] + ' ' + yil, odenen: Number(a.odenenTutar) }))}
+          />
         </>
       ) : null}
     </Card>

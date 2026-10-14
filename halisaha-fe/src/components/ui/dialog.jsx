@@ -11,6 +11,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   isim,
+  children,
+  tehlikeli = false,
 }) {
   useEffect(() => {
     if (!open) return;
@@ -43,11 +45,13 @@ export function ConfirmDialog({
           {isim ? <p className="m-0 mt-2 font-heading text-[17px]">{isim}</p> : null}
         </div>
 
+        {children}
+
         <div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={onCancel}>
+          <Button variant={tehlikeli ? 'secondary' : 'danger'} className="flex-1" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant="primary" className="flex-1" onClick={onConfirm}>
+          <Button variant={tehlikeli ? 'danger' : 'primary'} className="flex-1" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

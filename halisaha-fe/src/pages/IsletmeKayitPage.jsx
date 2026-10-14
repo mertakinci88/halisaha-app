@@ -121,7 +121,7 @@ export default function IsletmeKayitPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'İşletmeyi oluştur'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/isletmeler')}>
+            <Button variant="danger" onClick={() => navigate('/isletmeler')}>
               Vazgeç
             </Button>
           </div>

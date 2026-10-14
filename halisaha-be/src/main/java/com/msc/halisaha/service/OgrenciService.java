@@ -48,8 +48,15 @@ public class OgrenciService {
     public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean odemeBekleyen, boolean envanterEksik, int sayfa, int boyut) {
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
         LocalDate bugun = AppZaman.bugun();
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeContext.id(), grupId, q, odemeBekleyen, envanterEksik,
-                bugun.getYear(), bugun.getMonthValue(), pageRequest);
+        Long isletmeId = isletmeContext.id();
+        // Grup adıyla eşleşme ayrı bulunur: arama koşulunun tüm dalları öğrenci kolonlarında kalır ve trigram indeksleri kullanılır.
+        // Eşleşen grup yoksa listeye hiçbir grupla eşleşmeyen bir id (-1) konur (boş liste IN koşulunda hata verir).
+        List<Long> arananGruplar = q == null || q.isEmpty() ? List.of(-1L) : grupRepository.adaGoreIdler(isletmeId, q);
+        if (arananGruplar.isEmpty()) {
+            arananGruplar = List.of(-1L);
+        }
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeId, grupId, q, odemeBekleyen, envanterEksik,
+                bugun.getYear(), bugun.getMonthValue(), arananGruplar, pageRequest);
         Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
         return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));
     }

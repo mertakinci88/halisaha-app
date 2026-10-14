@@ -163,7 +163,7 @@ export default function OgrenciKayitPage() {
             <Button type="submit" variant="primary" className="flex-1 md:flex-none" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Öğrenciyi kaydet'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/ogrenciler')}>
+            <Button variant="danger" onClick={() => navigate('/ogrenciler')}>
               Vazgeç
             </Button>
           </div>

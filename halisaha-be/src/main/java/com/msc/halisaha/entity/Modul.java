@@ -8,5 +8,9 @@ public enum Modul {
     URUN,
     YOKLAMA,
     ENVANTER,
-    HESAP
+    HESAP,
+    /** Öğrenci grup transfer taleplerini onaylama / reddetme ekranı. */
+    TRANSFER,
+    /** Abonelik (haftalık sabit rezervasyon) kayıt ve takip ekranı. */
+    ABONELIK
 }

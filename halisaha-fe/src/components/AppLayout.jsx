@@ -11,6 +11,9 @@ import {
   Package,
   Layers,
   LogOut,
+  ArrowRightLeft,
+  BarChart3,
+  CalendarClock,
   Plus,
   ShieldCheck,
   Square,
@@ -32,6 +35,8 @@ const NAV = [
   { to: '/urunler', ad: 'Kafeterya', Icon: CupSoda, modul: 'URUN' },
   { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
   { to: '/hesaplar', ad: 'Hesaplar', Icon: Landmark, modul: 'HESAP' },
+  { to: '/transferler', ad: 'Transferler', Icon: ArrowRightLeft, modul: 'TRANSFER' },
+  { to: '/aboneler', ad: 'Aboneler', Icon: CalendarClock, modul: 'ABONELIK' },
 ];
 
 export default function AppLayout() {
@@ -43,6 +48,7 @@ export default function AppLayout() {
     ? [{ to: '/isletmeler', ad: 'İşletmeler', Icon: Building2, modul: null }]
     : NAV.filter((m) => !m.modul || yetkiVar(m.modul));
   if (isAdmin) {
+    nav.push({ to: '/raporlar', ad: 'Rapor', Icon: BarChart3, modul: null });
     nav.push({ to: '/personel', ad: 'Personel', Icon: ShieldCheck, modul: null });
   }
 

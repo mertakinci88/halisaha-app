@@ -11,6 +11,7 @@ import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import EnvanterSatisKarti from '@/components/EnvanterSatisKarti';
+import OgrenciTransferKarti from '@/components/OgrenciTransferKarti';
 import OgrenciOdemeKarti from '@/components/OgrenciOdemeKarti';
 
 const BOS = {
@@ -32,6 +33,7 @@ export default function OgrenciDetayPage() {
   const navigate = useNavigate();
   const [gruplar, setGruplar] = useState([]);
   const [form, setForm] = useState(BOS);
+  const [grupId, setGrupId] = useState(''); // kayıtlı grup (form alanı değil; transfer kartı bunu kullanır)
   const [hata, setHata] = useHata();
   const toast = useToast();
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -49,7 +51,8 @@ export default function OgrenciDetayPage() {
   useEffect(() => {
     ogrenciService
       .get(id)
-      .then((o) =>
+      .then((o) => {
+        setGrupId(o.grupId ? String(o.grupId) : '');
         setForm({
           grupId: o.grupId ? String(o.grupId) : '',
           adSoyad: o.adSoyad || '',
@@ -59,8 +62,8 @@ export default function OgrenciDetayPage() {
           durum: o.durum || 'AKTIF',
           antrenmanGunSayisi: o.antrenmanGunSayisi || 2,
           not: o.not || '',
-        }),
-      )
+        });
+      })
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
   }, [id]);
@@ -120,7 +123,13 @@ export default function OgrenciDetayPage() {
                   <Input type="date" value={form.dogumTarih} onChange={(e) => set('dogumTarih', e.target.value)} />
                 </Field>
                 <Field label="Grup">
-                  <Select value={form.grupId} onChange={(e) => set('grupId', e.target.value)}>
+                  <Select
+                    value={form.grupId}
+                    onChange={(e) => set('grupId', e.target.value)}
+                    disabled={Boolean(grupId)}
+                    title={grupId ? 'Grup değişikliği için aşağıdaki Transfer bilgileri bölümünü kullanın' : undefined}
+                    className="disabled:bg-neutral-200 disabled:text-ink/60"
+                  >
                     <option value="">Grup seçilmedi</option>
                     {gruplar.map((g) => (
                       <option key={g.id} value={g.id}>
@@ -192,12 +201,14 @@ export default function OgrenciDetayPage() {
             <Button type="submit" variant="primary" className="flex-1 md:flex-none" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Kaydet'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/ogrenciler')}>
+            <Button variant="danger" onClick={() => navigate('/ogrenciler')}>
               Vazgeç
             </Button>
           </div>
         </Card>
       </form>
+
+      <OgrenciTransferKarti ogrenciId={id} grupId={grupId} />
 
       <OgrenciOdemeKarti ogrenciId={id} />
 

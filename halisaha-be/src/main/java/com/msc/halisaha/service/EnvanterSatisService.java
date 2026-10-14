@@ -1,5 +1,6 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.EnvanterSatisRequest;
@@ -9,6 +10,7 @@ import com.msc.halisaha.entity.Envanter;
 import com.msc.halisaha.entity.EnvanterBeden;
 import com.msc.halisaha.entity.EnvanterSatis;
 import com.msc.halisaha.entity.EnvanterSatisKalem;
+import com.msc.halisaha.entity.EnvanterSatisOdeme;
 import com.msc.halisaha.entity.EnvanterSet;
 import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.Ogrenci;
@@ -16,6 +18,7 @@ import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.EnvanterSatisKalemRepository;
 import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.EnvanterSetRepository;
+import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -49,6 +52,8 @@ public class EnvanterSatisService {
     private final EnvanterSetRepository setRepository;
     private final OgrenciRepository ogrenciRepository;
     private final EnvanterStokService stokService;
+    private final HesapService hesapService;
+    private final IadeRepository iadeRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
 
@@ -83,17 +88,19 @@ public class EnvanterSatisService {
         Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
         for (EnvanterTur tur : istekler.keySet()) {
             Envanter envanter = envanterler.get(tur);
-            fiyatlar.put(tur, envanter.getSatisFiyati());
+            BigDecimal fiyat = fiyatBelirle(istekler.get(tur), envanter.getSatisFiyati());
+            fiyatlar.put(tur, fiyat);
             satis.getKalemler().add(EnvanterSatisKalem.builder()
                     .satis(satis)
                     .envanter(envanter)
-                    .birimFiyat(envanter.getSatisFiyati())
+                    .birimFiyat(fiyat)
                     .odendi(istekler.get(tur).odendi())
                     .build());
         }
         BigDecimal toplam = toplam(fiyatlar);
         satis.setSetTutari(toplam);
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, toplam));
+        odemeleriEsitle(satis, request);
         satisRepository.save(satis);
 
         for (EnvanterSatisKalem kalem : satis.getKalemler()) {
@@ -145,7 +152,7 @@ public class EnvanterSatisService {
                 kalem = EnvanterSatisKalem.builder()
                         .satis(satis)
                         .envanter(hedef)
-                        .birimFiyat(hedef.getSatisFiyati())
+                        .birimFiyat(fiyatBelirle(istek, hedef.getSatisFiyati()))
                         .odendi(istek.odendi())
                         .build();
                 satis.getKalemler().add(kalem);
@@ -171,6 +178,9 @@ public class EnvanterSatisService {
                 }
             }
             kalem.setOdendi(istek.odendi());
+            if (istek.birimFiyat() != null) {
+                kalem.setBirimFiyat(fiyatBelirle(istek, kalem.getBirimFiyat()));   // elle girilen fiyat geçerli olur
+            }
         }
 
         Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
@@ -178,6 +188,65 @@ public class EnvanterSatisService {
         BigDecimal set = toplam(fiyatlar);
         satis.setSetTutari(set);
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, set));
+        odemeleriEsitle(satis, request);
+        satis.setKullanici(mevcutKullanici.getir());
+        satisRepository.flush();   // yeni ödeme satırlarının id'si yanıtta dolu gelsin
+        return EnvanterSatisResponse.from(satis);
+    }
+
+    /**
+     * Ödeme satırlarını satışın toplam ödenen tutarına eşitler. Toplam artmışsa fark, istekteki yöntemle yeni bir ödeme olarak
+     * bugünün tarihine yazılır (yöntem zorunlu; Havale / EFT'de hesap da); azalmışsa en son ödemelerden düşülür.
+     */
+    private void odemeleriEsitle(EnvanterSatis satis, EnvanterSatisRequest request) {
+        BigDecimal mevcut = satis.getOdemeler().stream().map(EnvanterSatisOdeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal hedef = satis.getOdenenTutar();
+        if (satis.getId() != null && hedef.compareTo(iadeRepository.envanterSatisToplami(satis.getId())) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu satış için iade kaydı var; ödenen tutar iade tutarının altına düşürülemez");
+        }
+        int fark = hedef.compareTo(mevcut);
+        if (fark > 0) {
+            if (request.odemeSekli() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme şekli seçilmelidir");
+            }
+            satis.getOdemeler().add(EnvanterSatisOdeme.builder()
+                    .satis(satis)
+                    .tutar(hedef.subtract(mevcut))
+                    .odemeSekli(request.odemeSekli())
+                    .hesap(hesapService.coz(request.hesapId(), request.odemeSekli(), null))
+                    .odemeTarihi(AppZaman.simdi())
+                    .kullanici(mevcutKullanici.getir())
+                    .build());
+        } else if (fark < 0) {
+            BigDecimal dusulecek = mevcut.subtract(hedef);
+            for (int i = satis.getOdemeler().size() - 1; i >= 0 && dusulecek.signum() > 0; i--) {
+                EnvanterSatisOdeme odeme = satis.getOdemeler().get(i);
+                if (odeme.getTutar().compareTo(dusulecek) <= 0) {
+                    dusulecek = dusulecek.subtract(odeme.getTutar());
+                    satis.getOdemeler().remove(i);
+                } else {
+                    odeme.setTutar(odeme.getTutar().subtract(dusulecek));
+                    dusulecek = BigDecimal.ZERO;
+                }
+            }
+        }
+    }
+
+    /** Yanlış girilmiş bir ödemeyi siler. Satışın en az bir ödemesi kalmalıdır. */
+    @Transactional
+    public EnvanterSatisResponse odemeSil(Long ogrenciId, Long satisId, Long odemeId) {
+        EnvanterSatis satis = satisGetir(ogrenciId, satisId, isletmeContext.id());
+        EnvanterSatisOdeme odeme = satis.getOdemeler().stream().filter(o -> o.getId().equals(odemeId)).findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ödeme bulunamadı: " + odemeId));
+        if (satis.getOdemeler().size() == 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Satışın en az bir ödemesi olmalıdır; ödemeyi silmek yerine satışı silin");
+        }
+        BigDecimal kalanOdeme = satis.getOdenenTutar().subtract(odeme.getTutar());
+        if (kalanOdeme.compareTo(iadeRepository.envanterSatisToplami(satis.getId())) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu satış için iade kaydı var; ödeme silinirse ödenen tutar iade tutarının altına düşer");
+        }
+        satis.getOdemeler().remove(odeme);
+        satis.setOdenenTutar(kalanOdeme);
         satis.setKullanici(mevcutKullanici.getir());
         return EnvanterSatisResponse.from(satis);
     }
@@ -186,6 +255,9 @@ public class EnvanterSatisService {
     @Transactional
     public void sil(Long ogrenciId, Long satisId) {
         EnvanterSatis satis = satisGetir(ogrenciId, satisId, isletmeContext.id());
+        if (iadeRepository.envanterSatisToplami(satisId).signum() > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "İadesi yapılmış satış silinemez");
+        }
         for (EnvanterSatisKalem kalem : satis.getKalemler()) {
             if (kalem.isTeslimEdildi()) {
                 stokService.iade(kalem.getEnvanter(), satis, "satış silindi");
@@ -239,6 +311,11 @@ public class EnvanterSatisService {
                             tur.getAd() + " · " + aranan + " için envanter kaydı yok; önce Envanter menüsünden ekleyin")));
         }
         return sonuc;
+    }
+
+    /** İstekte fiyat varsa o, yoksa varsayılan (envanter fiyatı ya da kalemin mevcut fiyatı). */
+    private BigDecimal fiyatBelirle(EnvanterSatisRequest.Kalem istek, BigDecimal varsayilan) {
+        return istek.birimFiyat() != null ? istek.birimFiyat().setScale(2, RoundingMode.HALF_UP) : varsayilan;
     }
 
     private BigDecimal toplam(Map<EnvanterTur, BigDecimal> fiyatlar) {

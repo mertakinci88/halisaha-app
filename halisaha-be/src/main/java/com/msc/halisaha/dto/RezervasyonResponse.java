@@ -31,6 +31,12 @@ public record RezervasyonResponse(
         BigDecimal kalanTutar,
         BigDecimal kaporaTutar,
         List<RezervasyonUrunResponse> urunler,
-        List<OdemeResponse> odemeler
+        List<OdemeResponse> odemeler,
+        /** Bir aboneliğin haftalık rezervasyonuysa o aboneliğin id'si; normal rezervasyonda null. */
+        Long abonelikId,
+        /** İptal edilmişse: zaman, iptal eden kullanıcının adı ve neden (eski kayıtlarda boş olabilir). */
+        LocalDateTime iptalTarih,
+        String iptalEdenAd,
+        String iptalNeden
 ) {
 }

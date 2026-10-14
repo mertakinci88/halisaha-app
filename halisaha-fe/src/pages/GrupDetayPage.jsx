@@ -64,7 +64,7 @@ export default function GrupDetayPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Grubu güncelle'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/gruplar')}>
+            <Button variant="danger" onClick={() => navigate('/gruplar')}>
               Vazgeç
             </Button>
           </div>

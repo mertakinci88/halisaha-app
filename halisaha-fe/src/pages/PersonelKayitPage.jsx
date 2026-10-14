@@ -125,7 +125,7 @@ export default function PersonelKayitPage() {
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
               {kaydediyor ? 'Kaydediliyor…' : 'Kullanıcıyı kaydet'}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/personel')}>
+            <Button variant="danger" onClick={() => navigate('/personel')}>
               Vazgeç
             </Button>
           </div>

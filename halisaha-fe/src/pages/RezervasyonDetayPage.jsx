@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -8,18 +8,21 @@ import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { Input, Select } from '@/components/ui/input';
+import IadeBolumu from '@/components/IadeBolumu';
 import HesapSecimi, { HESAP_SECIM_UYARISI, HESAP_TANIMSIZ_UYARISI } from '@/components/HesapSecimi';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { rezervasyonService, urunService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 import {
   ODEME_DURUMU_LABEL,
   ODEME_TIPI_LABEL,
   ODEME_YONTEMI_LABEL,
   kisaTarih,
   saatOf,
+  saatYazi,
   sureSaat,
   tarihSaat,
   telGoster,
@@ -46,6 +49,7 @@ function OzetSatir({ etiket, alt, tutar, eylem, vurgu }) {
 export default function RezervasyonDetayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { yetkiVar } = useAuth();
   const [rez, setRez] = useState(null);
   const [urunler, setUrunler] = useState([]);
   const [hata, setHata] = useHata();
@@ -53,6 +57,7 @@ export default function RezervasyonDetayPage() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [islemde, setIslemde] = useState(false);
   const [iptalOnay, setIptalOnay] = useState(false);
+  const [iptalNeden, setIptalNeden] = useState('');
   const [odemeYontemi, setOdemeYontemi] = useState('');
   const [hesapId, setHesapId] = useState('');
   const [hesapSecenekSayisi, setHesapSecenekSayisi] = useState(0);
@@ -114,7 +119,7 @@ export default function RezervasyonDetayPage() {
     setIptalOnay(false);
     setIslemde(true);
     try {
-      await rezervasyonService.iptal(id);
+      await rezervasyonService.iptal(id, iptalNeden.trim());
       toast.basari('Rezervasyon iptal edildi.');
       navigate('/takvim');
     } catch (e) {
@@ -201,15 +206,31 @@ export default function RezervasyonDetayPage() {
     { etiket: 'Saat', deger: saatOf(rez.baslangicTarih) + ' – ' + saatOf(rez.bitisTarih) },
     { etiket: 'Telefon', deger: telGoster(rez.telNo) },
     { etiket: 'Son ödeme yöntemi', deger: ODEME_YONTEMI_LABEL[rez.odemeYontemi] || '—' },
-    { etiket: 'Ödeme durumu', deger: ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
+    { etiket: 'Ödeme durumu', deger: rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Abonelik kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
     { etiket: 'Kayıt tarihi', deger: tarihSaat(rez.kayitTarih) },
     { etiket: 'Kaydeden', deger: rez.kaydedenAd || '—' },
+    ...(rez.durum === 'IPTAL'
+      ? [
+          { etiket: 'İptal eden', deger: rez.iptalEdenAd || 'Kayıt yok' },
+          { etiket: 'İptal zamanı', deger: rez.iptalTarih ? tarihSaat(rez.iptalTarih) : 'Kayıt yok' },
+          ...(rez.iptalNeden ? [{ etiket: 'İptal nedeni', deger: rez.iptalNeden }] : []),
+        ]
+      : []),
   ];
 
   return (
     <div>
       <PageHeader kicker="Rezervasyon" baslik="Rezervasyon detayı" />
       <Hata mesaj={hata} />
+      {rez.abonelikId ? (
+        <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 border border-basari-300 bg-basari-100 px-4 py-2.5 text-[14.5px] text-basari-800">
+          <b>Abone rezervasyonu</b>
+          <span>Bu rezervasyon, haftalık sabit rezervasyon (abonelik) kapsamındadır; saha ücreti abonelik ödemesiyle alınır.</span>
+          {yetkiVar('ABONELIK') ? (
+            <Link to={'/aboneler/' + rez.abonelikId} className="ml-auto text-basari-800 underline">Aboneliği aç</Link>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]">
         <div className="grid content-start gap-5">
@@ -272,7 +293,7 @@ export default function RezervasyonDetayPage() {
         <Card className="gap-3">
           <h4 className="text-[22px]">Ödeme özeti</h4>
           <div className="grid gap-y-2">
-            <OzetSatir etiket={rez.sahaAd + ' · ' + sure + ' saat'} tutar={tl(sahaTutar)} />
+            <OzetSatir etiket={rez.sahaAd + ' · ' + saatYazi(sure) + ' saat'} tutar={tl(sahaTutar)} />
 
             {urunGruplari.map((g) => (
               <OzetSatir
@@ -323,6 +344,13 @@ export default function RezervasyonDetayPage() {
                 <OzetSatir etiket="Kalan" tutar={tl(kalan)} vurgu />
               </div>
             </div>
+          )}
+
+          {odemeler.length > 0 && (
+            <IadeBolumu
+              listeParams={{ rezervasyonId: rez.id }}
+              kaynaklar={[{ id: rez.id, alan: 'rezervasyonId', etiket: 'Rezervasyon', odenen: Number(rez.odenenTutar) }]}
+            />
           )}
 
           {aktif && kalan > 0 && (
@@ -402,9 +430,12 @@ export default function RezervasyonDetayPage() {
                   : 'Ödemeyi tamamla · ' + tl(kalan)}
             </Button>
             <Button
-              variant="secondary"
+              variant="danger"
               disabled={islemde || rez.durum !== 'AKTIF'}
-              onClick={() => setIptalOnay(true)}
+              onClick={() => {
+                setIptalNeden('');
+                setIptalOnay(true);
+              }}
             >
               Rezervasyonu iptal et
             </Button>
@@ -423,7 +454,15 @@ export default function RezervasyonDetayPage() {
         confirmLabel="İptal et"
         onConfirm={iptalEt}
         onCancel={() => setIptalOnay(false)}
-      />
+      >
+        <Input
+          value={iptalNeden}
+          onChange={(e) => setIptalNeden(e.target.value)}
+          maxLength={255}
+          placeholder="İptal nedeni (isteğe bağlı)"
+          aria-label="İptal nedeni"
+        />
+      </ConfirmDialog>
     </div>
   );
 }

@@ -12,7 +12,7 @@ import com.msc.halisaha.dto.RezervasyonUrunRequest;
 import com.msc.halisaha.dto.RezervasyonUrunResponse;
 import com.msc.halisaha.entity.KalemTip;
 import com.msc.halisaha.entity.Hesap;
-import com.msc.halisaha.entity.Odeme;
+import com.msc.halisaha.entity.RezervasyonOdeme;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.OdemeTipi;
 import com.msc.halisaha.entity.OdemeYontemi;
@@ -21,7 +21,7 @@ import com.msc.halisaha.entity.RezervasyonDurum;
 import com.msc.halisaha.entity.RezervasyonKalem;
 import com.msc.halisaha.entity.Saha;
 import com.msc.halisaha.entity.Urun;
-import com.msc.halisaha.repository.OdemeRepository;
+import com.msc.halisaha.repository.RezervasyonOdemeRepository;
 import com.msc.halisaha.repository.RezervasyonKalemRepository;
 import com.msc.halisaha.repository.RezervasyonRepository;
 import com.msc.halisaha.repository.SahaRepository;
@@ -52,7 +52,7 @@ public class RezervasyonService {
     private final RezervasyonRepository rezervasyonRepository;
     private final SahaRepository sahaRepository;
     private final RezervasyonKalemRepository kalemRepository;
-    private final OdemeRepository odemeRepository;
+    private final RezervasyonOdemeRepository rezervasyonOdemeRepository;
     private final UrunRepository urunRepository;
     private final StokService stokService;
     private final MevcutKullanici mevcutKullanici;
@@ -130,9 +130,11 @@ public class RezervasyonService {
         Saha saha = getSaha(request.sahaId());
         checkOverlap(request.sahaId(), request.baslangicTarih(), request.bitisTarih(), id);
 
-        boolean fiyatlamaDegisti = !rezervasyon.getSaha().getId().equals(saha.getId())
+        // Abonelik rezervasyonunun saha ücreti 0'dır (abonelik ücretiyle tahsil edilir); saha ya da süre değişse de yeniden fiyatlanmaz
+        boolean fiyatlamaDegisti = rezervasyon.getAbonelik() == null
+                && (!rezervasyon.getSaha().getId().equals(saha.getId())
                 || dakika(rezervasyon.getBaslangicTarih(), rezervasyon.getBitisTarih())
-                != dakika(request.baslangicTarih(), request.bitisTarih());
+                != dakika(request.baslangicTarih(), request.bitisTarih()));
 
         rezervasyon.setSaha(saha);
         rezervasyon.setAdSoyad(request.adSoyad());
@@ -161,19 +163,28 @@ public class RezervasyonService {
 
     @Transactional
     public RezervasyonResponse cancel(Long id) {
+        return cancel(id, null);
+    }
+
+    /** İptal; iptal eden kullanıcı, zaman ve (varsa) neden kaydedilir. */
+    @Transactional
+    public RezervasyonResponse cancel(Long id, String neden) {
         Rezervasyon rezervasyon = getEntity(id);
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             return toResponse(rezervasyon);
         }
         stokIadeEt(rezervasyon, kalemRepository.findByRezervasyonIdOrderByIdAsc(id), "rezervasyon iptali");
         rezervasyon.setDurum(RezervasyonDurum.IPTAL);
+        rezervasyon.setIptalTarih(AppZaman.simdi());
+        rezervasyon.setIptalEden(mevcutKullanici.getir());
+        rezervasyon.setIptalNeden(neden != null && !neden.isBlank() ? neden.trim() : null);
         return toResponse(rezervasyon);
     }
 
     @Transactional
     public void delete(Long id) {
         Rezervasyon rezervasyon = getEntity(id);
-        if (odemeRepository.existsByRezervasyonId(id)) {
+        if (rezervasyonOdemeRepository.existsByRezervasyonId(id)) {
             throw new ApiException(HttpStatus.CONFLICT, "Ödemesi alınmış rezervasyon silinemez, iptal edin");
         }
         List<RezervasyonKalem> kalemler = kalemRepository.findByRezervasyonIdOrderByIdAsc(id);
@@ -266,7 +277,7 @@ public class RezervasyonService {
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyon için ödeme alınamaz");
         }
-        List<Odeme> mevcutOdemeler = odemeRepository.findByRezervasyonId(rezervasyon.getId());
+        List<RezervasyonOdeme> mevcutOdemeler = rezervasyonOdemeRepository.findByRezervasyonId(rezervasyon.getId());
         BigDecimal kalan = rezervasyon.getOdenecekTutar().subtract(odenenToplam(mevcutOdemeler));
         if (kalan.signum() <= 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Rezervasyonun ödemesi zaten tamamlanmış");
@@ -279,7 +290,7 @@ public class RezervasyonService {
         }
 
         Hesap hesap = hesapService.coz(hesapId, yontem, null);
-        odemeRepository.save(Odeme.builder()
+        rezervasyonOdemeRepository.save(RezervasyonOdeme.builder()
                 .rezervasyon(rezervasyon)
                 .tip(tip)
                 .tutar(tutar)
@@ -298,7 +309,7 @@ public class RezervasyonService {
                 .map(RezervasyonKalem::getTutar)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal odenen = odenenToplam(odemeRepository.findByRezervasyonId(rezervasyon.getId()));
+        BigDecimal odenen = odenenToplam(rezervasyonOdemeRepository.findByRezervasyonId(rezervasyon.getId()));
         if (odenen.compareTo(toplam) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST,
                     "Rezervasyon tutarı alınan ödemenin (" + odenen + ") altına düşürülemez");
@@ -307,8 +318,8 @@ public class RezervasyonService {
         rezervasyon.setOdemeDurumu(OdemeDurumu.hesapla(odenen, toplam));
     }
 
-    private BigDecimal odenenToplam(Collection<Odeme> odemeler) {
-        return odemeler.stream().map(Odeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
+    private BigDecimal odenenToplam(Collection<RezervasyonOdeme> odemeler) {
+        return odemeler.stream().map(RezervasyonOdeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private RezervasyonKalem sahaKalemi(Rezervasyon rezervasyon, Saha saha, LocalDateTime baslangic, LocalDateTime bitis) {
@@ -339,6 +350,11 @@ public class RezervasyonService {
     }
 
     private void validateTarihAraligi(LocalDateTime baslangic, LocalDateTime bitis) {
+        // Rezervasyonlar tam saat ya da buçuklu saatte (12:00, 12:30 ...) başlar ve biter
+        if (baslangic.getMinute() % 30 != 0 || bitis.getMinute() % 30 != 0
+                || baslangic.getSecond() != 0 || bitis.getSecond() != 0 || baslangic.getNano() != 0 || bitis.getNano() != 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Rezervasyon saatleri tam saat ya da buçuklu olmalıdır (örn. 12:00, 12:30)");
+        }
         if (!bitis.isAfter(baslangic)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bitiş tarihi başlangıç tarihinden sonra olmalıdır");
         }
@@ -373,7 +389,7 @@ public class RezervasyonService {
         List<Long> ids = rezervasyonlar.stream().map(Rezervasyon::getId).toList();
         Map<Long, List<RezervasyonKalem>> kalemler = kalemRepository.findByRezervasyonIdInOrderByIdAsc(ids).stream()
                 .collect(Collectors.groupingBy(k -> k.getRezervasyon().getId()));
-        Map<Long, List<Odeme>> odemeler = odemeRepository.findByRezervasyonIdIn(ids).stream()
+        Map<Long, List<RezervasyonOdeme>> odemeler = rezervasyonOdemeRepository.findByRezervasyonIdIn(ids).stream()
                 .collect(Collectors.groupingBy(o -> o.getRezervasyon().getId()));
 
         return rezervasyonlar.stream()
@@ -381,10 +397,10 @@ public class RezervasyonService {
                 .toList();
     }
 
-    private RezervasyonResponse toResponse(Rezervasyon r, List<RezervasyonKalem> kalemler, List<Odeme> odemeler) {
+    private RezervasyonResponse toResponse(Rezervasyon r, List<RezervasyonKalem> kalemler, List<RezervasyonOdeme> odemeler) {
         BigDecimal sahaTutar = toplam(kalemler, k -> k.getTip() == KalemTip.SAHA, RezervasyonKalem::getTutar);
         BigDecimal odenen = odenenToplam(odemeler);
-        BigDecimal kapora = toplam(odemeler, o -> o.getTip() == OdemeTipi.KAPORA, Odeme::getTutar);
+        BigDecimal kapora = toplam(odemeler, o -> o.getTip() == OdemeTipi.KAPORA, RezervasyonOdeme::getTutar);
 
         List<RezervasyonUrunResponse> urunler = kalemler.stream()
                 .filter(k -> k.getTip() == KalemTip.URUN)
@@ -428,7 +444,11 @@ public class RezervasyonService {
                 r.getOdenecekTutar().subtract(odenen).max(BigDecimal.ZERO),
                 kapora,
                 urunler,
-                odemeResponses
+                odemeResponses,
+                r.getAbonelik() != null ? r.getAbonelik().getId() : null,
+                r.getIptalTarih(),
+                r.getIptalEden() != null ? r.getIptalEden().getAdSoyad() : null,
+                r.getIptalNeden()
         );
     }
 

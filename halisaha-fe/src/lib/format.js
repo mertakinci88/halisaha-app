@@ -37,7 +37,11 @@ export const ibanMaske = (deger) =>
     .replace(/(.{4})/g, '$1 ')
     .trim();
 
-export const hh = (h) => String(h % 24).padStart(2, '0') + ':00';
+/** Saat (ondalıklı olabilir: 12.5 = 12:30) -> "12:30"; 24 ve üzeri ertesi güne taşar (25 -> "01:00"). */
+export const hh = (h) => {
+  const toplamDakika = Math.round(h * 60);
+  return String(Math.floor(toplamDakika / 60) % 24).padStart(2, '0') + ':' + String(toplamDakika % 60).padStart(2, '0');
+};
 
 /** Date -> "2026-09-12" (backend @DateTimeFormat ISO.DATE) */
 export const toIsoDate = (date) => {
@@ -51,7 +55,8 @@ export const toIsoDate = (date) => {
 export const toIsoDateTime = (date, hour) => {
   const gun = new Date(date);
   gun.setDate(gun.getDate() + Math.floor(hour / 24));
-  return toIsoDate(gun) + 'T' + String(hour % 24).padStart(2, '0') + ':00:00';
+  const dakika = Math.round((hour % 24) * 60);
+  return toIsoDate(gun) + 'T' + String(Math.floor(dakika / 60)).padStart(2, '0') + ':' + String(dakika % 60).padStart(2, '0') + ':00';
 };
 
 export const uzunTarih = (date) =>
@@ -74,8 +79,17 @@ export const saatSayisi = (isoDateTime) => {
   return Number(hhmm || 0);
 };
 
-export const sureSaat = (baslangic, bitis) =>
-  Math.max(1, Math.round((new Date(bitis) - new Date(baslangic)) / 3600000));
+/** "2026-10-11T12:30:00" -> 12.5 (saat + dakika/60) */
+export const gunSaati = (isoDateTime) => {
+  const s = String(isoDateTime || '');
+  return Number(s.slice(11, 13) || 0) + Number(s.slice(14, 16) || 0) / 60;
+};
+
+/** İki zaman arasındaki süre, saat olarak (1.5 = bir buçuk saat). */
+export const sureSaat = (baslangic, bitis) => Math.max(0, (new Date(bitis) - new Date(baslangic)) / 3600000);
+
+/** 1 -> "1", 1.5 -> "1,5" */
+export const saatYazi = (n) => Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
 
 export const ODEME_DURUMU_LABEL = {
   ODENDI: 'Ödendi',
@@ -112,4 +126,11 @@ export const ODEME_YONTEMI_LABEL = {
   NAKIT: 'Nakit',
   KART: 'Kart',
   HAVALE_EFT: 'Havale / EFT',
+};
+
+export const TRANSFER_DURUM = {
+  BEKLIYOR: { ad: 'Onay bekliyor', tone: 'warning' },
+  ONAYLANDI: { ad: 'Onaylandı', tone: 'accent' },
+  REDDEDILDI: { ad: 'Reddedildi', tone: 'danger' },
+  IPTAL: { ad: 'İptal edildi', tone: 'neutral' },
 };

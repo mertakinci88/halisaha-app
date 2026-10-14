@@ -18,46 +18,65 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/** Alınan bir ödemenin geri verilmesi; rezervasyon, öğrenci aylık ödemesi, envanter satışı ya da abonelikten tam olarak birine bağlıdır. */
 @Entity
-@Table(name = "odeme")
+@Table(name = "iade")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Odeme {
+public class Iade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rezervasyon_id", nullable = false)
+    @JoinColumn(name = "isletme_id", nullable = false)
+    private Isletme isletme;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rezervasyon_id")
     private Rezervasyon rezervasyon;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tip", nullable = false, length = 10)
-    private OdemeTipi tip;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ogrenci_odeme_id")
+    private OgrenciOdeme ogrenciOdeme;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "envanter_satis_id")
+    private EnvanterSatis envanterSatis;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "abonelik_id")
+    private Abonelik abonelik;
 
     @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal tutar;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "yontem", nullable = false, length = 20)
-    private OdemeYontemi yontem;
+    @Column(name = "iade_sekli", nullable = false, length = 20)
+    private OdemeYontemi iadeSekli;
 
-    /** Havale / EFT ile alınan ödemede paranın yattığı hesap (diğer yöntemlerde null). */
+    /** Havale / EFT iadede paranın çıktığı hesap (diğer yöntemlerde null). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hesap_id")
     private Hesap hesap;
 
-    @Column(name = "odeme_tarihi", nullable = false)
-    private LocalDateTime odemeTarihi;
+    @Column(name = "iade_tarihi", nullable = false)
+    private LocalDate iadeTarihi;
 
-    /** Ödemeyi alan kullanıcı. */
+    @Column(name = "neden", length = 255)
+    private String neden;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kullanici_id")
     private Kullanici kullanici;
+
+    @Column(name = "kayit_tarih", nullable = false, updatable = false)
+    private LocalDateTime kayitTarih;
 }

@@ -12,6 +12,7 @@ import com.msc.halisaha.entity.Hesap;
 import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciOdeme;
+import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.OgrenciOdemeRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class OgrenciOdemeService {
     private final OgrenciOdemeRepository odemeRepository;
     private final OgrenciRepository ogrenciRepository;
     private final HesapService hesapService;
+    private final IadeRepository iadeRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
 
@@ -74,6 +76,13 @@ public class OgrenciOdemeService {
     private void aySakla(Ogrenci ogrenci, int yil, OgrenciOdemeAyRequest istek, OgrenciOdeme kayit) {
         BigDecimal odenen = istek.odenenTutar() != null ? istek.odenenTutar().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         String not = istek.not() != null && !istek.not().isBlank() ? istek.not().trim() : null;
+        // İadesi yapılmış ayın ödemesi, iade edilen tutarın altına düşürülemez ve silinemez
+        if (kayit != null) {
+            BigDecimal iade = iadeRepository.ogrenciOdemeToplami(kayit.getId());
+            if (odenen.compareTo(iade) < 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Bu ay için " + iade + " iade kaydı var; ödeme iade tutarının altına düşürülemez (ay: " + istek.ay() + ")");
+            }
+        }
         if (odenen.signum() == 0 && not == null) {
             if (kayit != null) {
                 odemeRepository.delete(kayit);
@@ -117,10 +126,10 @@ public class OgrenciOdemeService {
         for (int ay = 1; ay <= 12; ay++) {
             OgrenciOdeme k = kayitlar.get(ay);
             if (k == null) {
-                aylar.add(new OgrenciOdemeAyResponse(yil, ay, BigDecimal.ZERO, OgrenciOdemeDurumu.hesapla(false, yil, ay, bugun), null, null, null, null, null));
+                aylar.add(new OgrenciOdemeAyResponse(null, yil, ay, BigDecimal.ZERO, OgrenciOdemeDurumu.hesapla(false, yil, ay, bugun), null, null, null, null, null));
             } else {
                 toplam = toplam.add(k.getOdenenTutar());
-                aylar.add(new OgrenciOdemeAyResponse(yil, ay, k.getOdenenTutar(),
+                aylar.add(new OgrenciOdemeAyResponse(k.getId(), yil, ay, k.getOdenenTutar(),
                         OgrenciOdemeDurumu.hesapla(k.getOdenenTutar().signum() > 0, yil, ay, bugun), k.getOdemeSekli(),
                         k.getHesap() != null ? k.getHesap().getId() : null,
                         k.getHesap() != null ? k.getHesap().getAd() : null, k.getOdemeTarihi(), k.getNot()));

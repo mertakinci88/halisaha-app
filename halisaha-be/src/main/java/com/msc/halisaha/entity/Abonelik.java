@@ -1,0 +1,117 @@
+package com.msc.halisaha.entity;
+
+import com.msc.halisaha.common.AppZaman;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Bir sahanın haftanın belli günü ve saatinde, başlangıç ile bitiş tarihi arasında (52 hafta) abone müşteriye ayrılması. */
+@Entity
+@Table(name = "abonelik")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Abonelik {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "isletme_id", nullable = false)
+    private Isletme isletme;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "saha_id", nullable = false)
+    private Saha saha;
+
+    @Column(name = "ad_soyad", nullable = false)
+    private String adSoyad;
+
+    @Column(name = "tel_no", nullable = false, length = 11)
+    private String telNo;
+
+    /** 1 = Pazartesi ... 7 = Pazar. */
+    @Column(name = "hafta_gunu", nullable = false)
+    private int haftaGunu;
+
+    /** İşletme gününün 00:00'ından itibaren dakika: 12:00 = 720, 20:30 = 1230, 00:00 (ertesi gün) = 1440. Tam saat ya da buçuklu. */
+    @Column(name = "baslangic_dakika", nullable = false)
+    private int baslangicDakika;
+
+    @Column(name = "sure_dakika", nullable = false)
+    private int sureDakika;
+
+    @Column(name = "baslangic_tarih", nullable = false)
+    private LocalDate baslangicTarih;
+
+    /** Son (52.) haftanın tarihi; kayıtta otomatik hesaplanır. */
+    @Column(name = "bitis_tarih", nullable = false)
+    private LocalDate bitisTarih;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "durum", nullable = false, length = 20)
+    private AbonelikDurum durum;
+
+    /** Abonelik için anlaşılan toplam tutar. */
+    @Column(name = "ucret", nullable = false, precision = 10, scale = 2)
+    private BigDecimal ucret;
+
+    @Column(name = "iptal_tarih")
+    private LocalDateTime iptalTarih;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "iptal_eden_id")
+    private Kullanici iptalEden;
+
+    @Column(name = "iptal_neden", length = 255)
+    private String iptalNeden;
+
+    @Column(name = "\"not\"", length = 255)
+    private String not;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kullanici_id")
+    private Kullanici kullanici;
+
+    @Column(name = "kayit_tarih", nullable = false, updatable = false)
+    private LocalDateTime kayitTarih;
+
+    @OneToMany(mappedBy = "abonelik", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("odemeTarihi, id")
+    @Builder.Default
+    private List<AbonelikOdeme> odemeler = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        kayitTarih = AppZaman.simdi();
+        if (durum == null) {
+            durum = AbonelikDurum.AKTIF;
+        }
+    }
+}
