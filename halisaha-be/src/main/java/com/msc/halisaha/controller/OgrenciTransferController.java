@@ -30,27 +30,28 @@ public class OgrenciTransferController {
 
     /** Öğrencinin transfer geçmişi (öğrenci detayı). */
     @GetMapping("/ogrenciler/{ogrenciId}/transferler")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_TRANSFER')")
     public List<TransferResponse> gecmis(@PathVariable Long ogrenciId) {
         return transferService.ogrenciGecmisi(ogrenciId);
     }
 
     /** Transfer talebi açar; admin onaylayana kadar öğrenci eski grubunda kalır. */
     @PostMapping("/ogrenciler/{ogrenciId}/transferler")
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_TRANSFER')")
     public ResponseEntity<TransferResponse> talepEt(@PathVariable Long ogrenciId, @Valid @RequestBody TransferTalepRequest request) {
         return ResponseEntity.status(201).body(transferService.talepEt(ogrenciId, request));
     }
 
     /** Bekleyen talebin hedef grubunu / açıklamasını günceller. */
     @PutMapping("/transferler/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_TRANSFER')")
     public TransferResponse guncelle(@PathVariable Long id, @Valid @RequestBody TransferTalepRequest request) {
         return transferService.guncelle(id, request);
     }
 
     /** Bekleyen talebi geri çeker. */
     @PutMapping("/transferler/{id}/iptal")
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_TRANSFER')")
     public TransferResponse iptal(@PathVariable Long id, @Valid @RequestBody(required = false) TransferKararRequest request) {
         return transferService.iptalEt(id, request);
     }

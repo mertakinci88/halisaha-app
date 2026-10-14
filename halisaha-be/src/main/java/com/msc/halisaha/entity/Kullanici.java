@@ -72,6 +72,20 @@ public class Kullanici {
     @Builder.Default
     private Set<Modul> yetkiler = new HashSet<>();
 
+    /**
+     * true ise PERSONEL yalnızca {@link #izinliGruplar} içindeki grupların öğrencilerini görür/yönetir;
+     * false ise tüm gruplar (varsayılan). ADMIN için dikkate alınmaz. Kısıtlı ve liste boşsa hiçbir grup görünmez.
+     */
+    @Column(name = "grup_kisitli", nullable = false)
+    @Builder.Default
+    private boolean grupKisitli = false;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "kullanici_grup", joinColumns = @JoinColumn(name = "kullanici_id"))
+    @Column(name = "grup_id")
+    @Builder.Default
+    private Set<Long> izinliGruplar = new HashSet<>();
+
     @PrePersist
     void prePersist() {
         if (kayitTarih == null) {

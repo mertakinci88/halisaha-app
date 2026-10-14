@@ -13,6 +13,13 @@ public record KullaniciOlusturRequest(
         @NotBlank(message = "Şifre zorunludur") @Size(min = 6, message = "Şifre en az 6 karakter olmalıdır") String sifre,
         @NotBlank(message = "Ad soyad zorunludur") String adSoyad,
         @NotNull(message = "Rol zorunludur") Rol rol,
-        Set<Modul> yetkiler
+        Set<Modul> yetkiler,
+        /** true ise personel yalnızca {@code grupIdleri}'ndeki grupları görür; boş/false = tüm gruplar. */
+        Boolean grupKisitli,
+        Set<Long> grupIdleri
 ) {
+
+    public KullaniciOlusturRequest(String kullaniciAdi, String sifre, String adSoyad, Rol rol, Set<Modul> yetkiler) {
+        this(kullaniciAdi, sifre, adSoyad, rol, yetkiler, null, null);
+    }
 }

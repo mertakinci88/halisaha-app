@@ -30,6 +30,7 @@ public class EnvanterController {
     private final EnvanterSatisService satisService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_ENVANTER') or hasAuthority('MODUL_OGRENCI_ENVANTER')")
     public List<EnvanterResponse> list() {
         return envanterService.list();
     }

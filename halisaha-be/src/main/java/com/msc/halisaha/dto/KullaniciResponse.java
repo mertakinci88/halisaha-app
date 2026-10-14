@@ -17,7 +17,9 @@ public record KullaniciResponse(
         Set<Modul> yetkiler,
         LocalDateTime kayitTarih,
         Long isletmeId,
-        String isletmeAd
+        String isletmeAd,
+        boolean grupKisitli,
+        Set<Long> grupIdleri
 ) {
 
     public static KullaniciResponse from(Kullanici kullanici) {
@@ -31,7 +33,9 @@ public record KullaniciResponse(
                         : kullanici.getRol() == Rol.SUPER_ADMIN ? Set.of() : kullanici.getYetkiler(),
                 kullanici.getKayitTarih(),
                 kullanici.getIsletme() != null ? kullanici.getIsletme().getId() : null,
-                kullanici.getIsletme() != null ? kullanici.getIsletme().getAd() : null
+                kullanici.getIsletme() != null ? kullanici.getIsletme().getAd() : null,
+                kullanici.getRol() == Rol.PERSONEL && kullanici.isGrupKisitli(),
+                kullanici.getRol() == Rol.PERSONEL && kullanici.isGrupKisitli() ? Set.copyOf(kullanici.getIzinliGruplar()) : Set.of()
         );
     }
 }

@@ -27,6 +27,7 @@ public class EnvanterSetController {
     private final EnvanterSetService setService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_ENVANTER') or hasAuthority('MODUL_OGRENCI_ENVANTER')")
     public List<EnvanterSetResponse> list() {
         return setService.list();
     }

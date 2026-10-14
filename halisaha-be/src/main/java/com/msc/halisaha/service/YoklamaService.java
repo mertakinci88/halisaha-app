@@ -35,6 +35,7 @@ public class YoklamaService {
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
+    private final GrupKapsami grupKapsami;
 
     /** Grubun aktif öğrencileri ve o günkü yoklamaları (öğrenci adına göre alfabetik). */
     public List<YoklamaSatir> listele(LocalDate tarih, Long grupId) {
@@ -112,6 +113,7 @@ public class YoklamaService {
     }
 
     private List<Ogrenci> aktifOgrenciler(Long isletmeId, Long grupId) {
+        grupKapsami.kontrolGrup(grupId);
         grupRepository.findByIdAndIsletmeId(grupId, isletmeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grup bulunamadı: " + grupId));
         return ogrenciRepository.findByIsletmeIdAndGrupIdAndDurum(isletmeId, grupId, OgrenciDurum.AKTIF).stream()

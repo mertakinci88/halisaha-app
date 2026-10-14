@@ -209,12 +209,12 @@ export default function OgrenciDetayPage() {
         </Card>
       </form>
 
-      <OgrenciTransferKarti ogrenciId={id} grupId={grupId} />
+      {/* Kartlar personelin öğrenci işlem yetkisine göre görünür (admin hepsini görür) */}
+      {yetkiVar('OGRENCI_TRANSFER') ? <OgrenciTransferKarti ogrenciId={id} grupId={grupId} /> : null}
 
-      <OgrenciOdemeKarti ogrenciId={id} />
+      {yetkiVar('OGRENCI_ODEME') ? <OgrenciOdemeKarti ogrenciId={id} /> : null}
 
-      {/* Envanter seti satışı: yalnızca ADMIN ya da Envanter yetkisi olanlar görür */}
-      {yetkiVar('ENVANTER') ? <EnvanterSatisKarti ogrenciId={id} /> : null}
+      {yetkiVar('OGRENCI_ENVANTER') ? <EnvanterSatisKarti ogrenciId={id} /> : null}
     </div>
   );
 }

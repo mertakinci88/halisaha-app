@@ -12,5 +12,11 @@ public enum Modul {
     /** Öğrenci grup transfer taleplerini onaylama / reddetme ekranı. */
     TRANSFER,
     /** Abonelik (haftalık sabit rezervasyon) kayıt ve takip ekranı. */
-    ABONELIK
+    ABONELIK,
+    /** Öğrenci detayındaki grup transferi kartı (Öğrenciler menüsü ile birlikte anlamlıdır). */
+    OGRENCI_TRANSFER,
+    /** Öğrenci detayındaki aylık ödemeler kartı. */
+    OGRENCI_ODEME,
+    /** Öğrenci detayındaki envanter satışları kartı. */
+    OGRENCI_ENVANTER
 }
