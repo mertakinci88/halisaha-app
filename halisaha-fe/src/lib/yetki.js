@@ -1,4 +1,4 @@
-export const TUM_MODULLER = ['OGRENCI', 'GRUP', 'YOKLAMA', 'SAHA', 'URUN', 'ENVANTER', 'HESAP', 'TRANSFER'];
+export const TUM_MODULLER = ['OGRENCI', 'GRUP', 'YOKLAMA', 'SAHA', 'URUN', 'ENVANTER', 'HESAP', 'TRANSFER', 'ABONELIK'];
 
 export const MODUL_LABEL = {
   OGRENCI: 'Öğrenciler',
@@ -9,4 +9,5 @@ export const MODUL_LABEL = {
   ENVANTER: 'Envanter',
   HESAP: 'Hesaplar',
   TRANSFER: 'Transferler',
+  ABONELIK: 'Aboneler',
 };

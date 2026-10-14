@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
 import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
+import IadeBolumu from '@/components/IadeBolumu';
 import { Table, Th, Td, Tr } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { hesapService, ogrenciOdemeService } from '@/services';
@@ -343,6 +344,13 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
               </>
             ) : null}
           </div>
+
+          <IadeBolumu
+            listeParams={{ ogrenciId, yil }}
+            kaynaklar={veri.aylar
+              .filter((a) => a.id != null && Number(a.odenenTutar) > 0)
+              .map((a) => ({ id: a.id, alan: 'ogrenciOdemeId', etiket: AYLAR[a.ay - 1] + ' ' + yil, odenen: Number(a.odenenTutar) }))}
+          />
         </>
       ) : null}
     </Card>

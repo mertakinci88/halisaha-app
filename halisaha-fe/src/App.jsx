@@ -31,6 +31,9 @@ import HesapListePage from '@/pages/HesapListePage';
 import HesapKayitPage from '@/pages/HesapKayitPage';
 import HesapDetayPage from '@/pages/HesapDetayPage';
 import RaporPage from '@/pages/RaporPage';
+import AboneListePage from '@/pages/AboneListePage';
+import AboneKayitPage from '@/pages/AboneKayitPage';
+import AboneDetayPage from '@/pages/AboneDetayPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
 import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
@@ -172,6 +175,9 @@ export default function App() {
           path="/transferler"
           element={<YetkiliRota modul="TRANSFER"><TransferListePage /></YetkiliRota>}
         />
+        <Route path="/aboneler" element={<YetkiliRota modul="ABONELIK"><AboneListePage /></YetkiliRota>} />
+        <Route path="/aboneler/yeni" element={<YetkiliRota modul="ABONELIK"><AboneKayitPage /></YetkiliRota>} />
+        <Route path="/aboneler/:id" element={<YetkiliRota modul="ABONELIK"><AboneDetayPage /></YetkiliRota>} />
         <Route
           path="/raporlar"
           element={<YetkiliRota sadeceAdmin><RaporPage /></YetkiliRota>}

@@ -36,6 +36,10 @@ public class OgrenciOdeme {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Bağlı olduğu kaydın işletmesi (raporların işletmeye göre hızlı okunması için); kayıt eklenirken otomatik doldurulur. */
+    @Column(name = "isletme_id", nullable = false, updatable = false)
+    private Long isletmeId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "ogrenci_id", nullable = false)
     private Ogrenci ogrenci;
@@ -78,6 +82,9 @@ public class OgrenciOdeme {
     void prePersist() {
         if (kayitTarih == null) {
             kayitTarih = LocalDateTime.now();
+        }
+        if (isletmeId == null) {
+            isletmeId = getOgrenci().getIsletme().getId();
         }
     }
 }

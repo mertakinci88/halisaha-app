@@ -9,6 +9,9 @@ import com.msc.halisaha.entity.Hesap;
 import com.msc.halisaha.entity.HesapDurum;
 import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.repository.HesapRepository;
+import com.msc.halisaha.repository.AbonelikOdemeRepository;
+import com.msc.halisaha.repository.EnvanterSatisOdemeRepository;
+import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.RezervasyonOdemeRepository;
 import com.msc.halisaha.repository.OgrenciOdemeRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,9 @@ public class HesapService {
 
     private final HesapRepository hesapRepository;
     private final RezervasyonOdemeRepository rezervasyonOdemeRepository;
+    private final EnvanterSatisOdemeRepository envanterSatisOdemeRepository;
+    private final AbonelikOdemeRepository abonelikOdemeRepository;
+    private final IadeRepository iadeRepository;
     private final OgrenciOdemeRepository ogrenciOdemeRepository;
     private final IsletmeContext isletmeContext;
 
@@ -65,11 +71,13 @@ public class HesapService {
         return HesapResponse.from(hesap);
     }
 
-    /** Hiç kullanılmamış hesap silinir; ödeme ya da öğrenci kaydında kullanılmışsa pasife alınır. */
+    /** Hiç kullanılmamış hesap silinir; rezervasyon, öğrenci, envanter ya da abonelik ödemesinde kullanılmışsa pasife alınır. */
     @Transactional
     public void delete(Long id) {
         Hesap hesap = getEntity(id);
-        if (rezervasyonOdemeRepository.existsByHesapId(id) || ogrenciOdemeRepository.existsByHesapId(id)) {
+        if (rezervasyonOdemeRepository.existsByHesapId(id) || ogrenciOdemeRepository.existsByHesapId(id)
+                || envanterSatisOdemeRepository.existsByHesapId(id) || abonelikOdemeRepository.existsByHesapId(id)
+                || iadeRepository.existsByHesapId(id)) {
             hesap.setDurum(HesapDurum.PASIF);
             return;
         }

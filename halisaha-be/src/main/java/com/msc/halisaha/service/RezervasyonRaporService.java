@@ -47,9 +47,9 @@ public class RezervasyonRaporService {
                        COALESCE(SUM(g.tutar) FILTER (WHERE r.durum = 'AKTIF'), 0) AS gelir
                 FROM saha s
                 LEFT JOIN rezervasyon r ON r.saha_id = s.id
-                     AND r.baslangic_tarih - %1$s >= :bas AND r.baslangic_tarih - %1$s < :bit
-                LEFT JOIN (SELECT rezervasyon_id, SUM(tutar) AS tutar FROM rezervasyon_kalem
-                           WHERE tip = 'SAHA' GROUP BY rezervasyon_id) g ON g.rezervasyon_id = r.id
+                     AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
+                LEFT JOIN LATERAL (SELECT SUM(k.tutar) AS tutar FROM rezervasyon_kalem k
+                                   WHERE k.rezervasyon_id = r.id AND k.tip = 'SAHA') g ON TRUE
                 WHERE s.isletme_id = :isletmeId
                 GROUP BY s.id, s.ad
                 ORDER BY s.ad
@@ -76,7 +76,7 @@ public class RezervasyonRaporService {
                 SELECT EXTRACT(HOUR FROM r.baslangic_tarih)::int AS saat, COUNT(*) AS adet
                 FROM rezervasyon r
                 WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF'
-                  AND r.baslangic_tarih - %1$s >= :bas AND r.baslangic_tarih - %1$s < :bit
+                  AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY 1
                 """.formatted(ISLETME_GUNU), params, rs -> {
             int saat = rs.getInt("saat");
@@ -94,7 +94,7 @@ public class RezervasyonRaporService {
                 SELECT EXTRACT(ISODOW FROM r.baslangic_tarih - %1$s)::int AS gun, COUNT(*) AS adet
                 FROM rezervasyon r
                 WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF'
-                  AND r.baslangic_tarih - %1$s >= :bas AND r.baslangic_tarih - %1$s < :bit
+                  AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY 1
                 """.formatted(ISLETME_GUNU), params, rs -> {
             sayilar.put(rs.getInt("gun"), rs.getLong("adet"));

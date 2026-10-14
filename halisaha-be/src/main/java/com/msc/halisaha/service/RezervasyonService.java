@@ -130,9 +130,11 @@ public class RezervasyonService {
         Saha saha = getSaha(request.sahaId());
         checkOverlap(request.sahaId(), request.baslangicTarih(), request.bitisTarih(), id);
 
-        boolean fiyatlamaDegisti = !rezervasyon.getSaha().getId().equals(saha.getId())
+        // Abonelik rezervasyonunun saha ücreti 0'dır (abonelik ücretiyle tahsil edilir); saha ya da süre değişse de yeniden fiyatlanmaz
+        boolean fiyatlamaDegisti = rezervasyon.getAbonelik() == null
+                && (!rezervasyon.getSaha().getId().equals(saha.getId())
                 || dakika(rezervasyon.getBaslangicTarih(), rezervasyon.getBitisTarih())
-                != dakika(request.baslangicTarih(), request.bitisTarih());
+                != dakika(request.baslangicTarih(), request.bitisTarih()));
 
         rezervasyon.setSaha(saha);
         rezervasyon.setAdSoyad(request.adSoyad());
@@ -428,7 +430,8 @@ public class RezervasyonService {
                 r.getOdenecekTutar().subtract(odenen).max(BigDecimal.ZERO),
                 kapora,
                 urunler,
-                odemeResponses
+                odemeResponses,
+                r.getAbonelik() != null ? r.getAbonelik().getId() : null
         );
     }
 

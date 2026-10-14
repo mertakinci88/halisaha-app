@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,10 +29,11 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
               AND (:q IS NULL OR :q = ''
                    OR LOWER(o.adSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(o.veliAdSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
-                   OR LOWER(g.ad) LIKE LOWER(CONCAT('%', :q, '%')))
+                   OR o.grup.id IN :arananGruplar)
             """)
     Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q,
                       @Param("odemeBekleyen") boolean odemeBekleyen, @Param("envanterEksik") boolean envanterEksik,
                       @Param("yil") int yil, @Param("ay") int ay,
+                      @Param("arananGruplar") Collection<Long> arananGruplar,
                       Pageable pageable);
 }

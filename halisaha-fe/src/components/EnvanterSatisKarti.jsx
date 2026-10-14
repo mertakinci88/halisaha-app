@@ -9,6 +9,7 @@ import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { Yukleniyor } from '@/components/ui/durum';
 import HesapSecimi from '@/components/HesapSecimi';
+import IadeBolumu from '@/components/IadeBolumu';
 import { envanterService, envanterSetService, envanterSatisService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
@@ -599,6 +600,12 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     ))}
                   </div>
                 </div>
+              ) : null}
+              {duzenlenen ? (
+                <IadeBolumu
+                  listeParams={{ envanterSatisId: duzenlenen.id }}
+                  kaynaklar={[{ id: duzenlenen.id, alan: 'envanterSatisId', etiket: 'Envanter satışı', odenen: Number(duzenlenen.odenenTutar) }]}
+                />
               ) : null}
               <div>
                 <label htmlFor="envanter-odenen" className="mb-1 block text-[13.5px] text-ink/70">{duzenlenen ? 'Ek ödeme (bu işlemde alınan)' : 'Ödenen tutar'}</label>

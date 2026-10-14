@@ -18,6 +18,7 @@ import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.EnvanterSatisKalemRepository;
 import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.EnvanterSetRepository;
+import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,7 @@ public class EnvanterSatisService {
     private final OgrenciRepository ogrenciRepository;
     private final EnvanterStokService stokService;
     private final HesapService hesapService;
+    private final IadeRepository iadeRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
 
@@ -199,6 +201,9 @@ public class EnvanterSatisService {
     private void odemeleriEsitle(EnvanterSatis satis, EnvanterSatisRequest request) {
         BigDecimal mevcut = satis.getOdemeler().stream().map(EnvanterSatisOdeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal hedef = satis.getOdenenTutar();
+        if (satis.getId() != null && hedef.compareTo(iadeRepository.envanterSatisToplami(satis.getId())) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu satış için iade kaydı var; ödenen tutar iade tutarının altına düşürülemez");
+        }
         int fark = hedef.compareTo(mevcut);
         if (fark > 0) {
             if (request.odemeSekli() == null) {
@@ -236,8 +241,12 @@ public class EnvanterSatisService {
         if (satis.getOdemeler().size() == 1) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Satışın en az bir ödemesi olmalıdır; ödemeyi silmek yerine satışı silin");
         }
+        BigDecimal kalanOdeme = satis.getOdenenTutar().subtract(odeme.getTutar());
+        if (kalanOdeme.compareTo(iadeRepository.envanterSatisToplami(satis.getId())) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu satış için iade kaydı var; ödeme silinirse ödenen tutar iade tutarının altına düşer");
+        }
         satis.getOdemeler().remove(odeme);
-        satis.setOdenenTutar(satis.getOdenenTutar().subtract(odeme.getTutar()));
+        satis.setOdenenTutar(kalanOdeme);
         satis.setKullanici(mevcutKullanici.getir());
         return EnvanterSatisResponse.from(satis);
     }
@@ -246,6 +255,9 @@ public class EnvanterSatisService {
     @Transactional
     public void sil(Long ogrenciId, Long satisId) {
         EnvanterSatis satis = satisGetir(ogrenciId, satisId, isletmeContext.id());
+        if (iadeRepository.envanterSatisToplami(satisId).signum() > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "İadesi yapılmış satış silinemez");
+        }
         for (EnvanterSatisKalem kalem : satis.getKalemler()) {
             if (kalem.isTeslimEdildi()) {
                 stokService.iade(kalem.getEnvanter(), satis, "satış silindi");

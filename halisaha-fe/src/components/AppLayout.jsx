@@ -13,6 +13,7 @@ import {
   LogOut,
   ArrowRightLeft,
   BarChart3,
+  CalendarClock,
   Plus,
   ShieldCheck,
   Square,
@@ -35,6 +36,7 @@ const NAV = [
   { to: '/envanter', ad: 'Envanter', Icon: Package, modul: 'ENVANTER' },
   { to: '/hesaplar', ad: 'Hesaplar', Icon: Landmark, modul: 'HESAP' },
   { to: '/transferler', ad: 'Transferler', Icon: ArrowRightLeft, modul: 'TRANSFER' },
+  { to: '/aboneler', ad: 'Aboneler', Icon: CalendarClock, modul: 'ABONELIK' },
 ];
 
 export default function AppLayout() {

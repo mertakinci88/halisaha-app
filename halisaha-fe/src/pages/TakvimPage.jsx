@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Seg, SegOpt } from '@/components/ui/seg';
+import { cn } from '@/lib/utils';
 import { Yukleniyor, Hata } from '@/components/ui/durum';
 import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
@@ -123,6 +124,10 @@ export default function TakvimPage() {
             <span>Dolu</span>
           </div>
           <div className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 border border-basari-300 bg-basari-100" />
+            <span>Abone</span>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="h-3.5 w-3.5 border border-divider" />
             <span>Boş</span>
           </div>
@@ -188,17 +193,27 @@ export default function TakvimPage() {
                         <button
                           type="button"
                           onClick={() => navigate('/rezervasyon/' + rez.id)}
-                          className="flex min-h-[52px] w-full flex-1 cursor-pointer flex-col justify-center gap-0.5 border border-accent-400 bg-accent-200 px-2.5 py-1 text-left font-body text-accent-900"
+                          className={cn(
+                            'flex min-h-[52px] w-full flex-1 cursor-pointer flex-col justify-center gap-0.5 border px-2.5 py-1 text-left font-body',
+                            rez.abonelikId
+                              ? 'border-basari-300 bg-basari-100 text-basari-800'
+                              : 'border-accent-400 bg-accent-200 text-accent-900',
+                          )}
                         >
                           <span className="max-w-full truncate text-[14.5px] font-medium">{rez.adSoyad}</span>
-                          <span className="text-[12.5px] tabular-nums opacity-75">
-                            {tl(rez.odenecekTutar)} ·{' '}
-                            {rez.odemeDurumu === 'ODENDI'
-                              ? 'Ödendi'
-                              : rez.odemeDurumu === 'KISMI_ODENDI'
-                                ? 'Ödenen ' + tl(rez.odenenTutar)
-                                : 'Ödenmedi'}
-                          </span>
+                          {rez.abonelikId && Number(rez.odenecekTutar) === 0 ? (
+                            <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em]">Abone</span>
+                          ) : (
+                            <span className="text-[12.5px] tabular-nums opacity-75">
+                              {rez.abonelikId ? 'Abone · ' : ''}
+                              {tl(rez.odenecekTutar)} ·{' '}
+                              {rez.odemeDurumu === 'ODENDI'
+                                ? 'Ödendi'
+                                : rez.odemeDurumu === 'KISMI_ODENDI'
+                                  ? 'Ödenen ' + tl(rez.odenenTutar)
+                                  : 'Ödenmedi'}
+                            </span>
+                          )}
                         </button>
                       </div>
                     ) : (
