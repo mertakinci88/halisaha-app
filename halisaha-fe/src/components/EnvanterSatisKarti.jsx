@@ -592,10 +592,11 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                           type="button"
                           disabled={duzenlenen.odemeler.length === 1}
                           onClick={() => setSilinecekOdeme(o)}
-                          className="ml-auto cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-hata-800 underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+                          className="ml-auto inline-flex items-center gap-1 cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-hata-800 underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
                           title={duzenlenen.odemeler.length === 1 ? 'Satışın en az bir ödemesi olmalı' : undefined}
                         >
-                          Sil
+                          <Trash2 size={13} strokeWidth={1.5} />
+                          <span>Sil</span>
                         </button>
                       </div>
                     ))}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Pencil, Plus, Save, X } from 'lucide-react';
+import { Ban, CircleCheck, Eye, List, Pencil, Plus, Save, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -135,9 +135,18 @@ export default function AboneListePage() {
       <Card className="gap-3.5">
         <div className="flex flex-wrap items-center gap-2.5">
           <Seg>
-            <SegOpt active={durum === 'AKTIF'} onClick={() => setDurum('AKTIF')}>Aktif</SegOpt>
-            <SegOpt active={durum === 'IPTAL'} onClick={() => setDurum('IPTAL')}>İptal</SegOpt>
-            <SegOpt active={durum === ''} onClick={() => setDurum('')}>Tümü</SegOpt>
+            <SegOpt active={durum === 'AKTIF'} onClick={() => setDurum('AKTIF')}>
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>Aktif</span>
+            </SegOpt>
+            <SegOpt active={durum === 'IPTAL'} onClick={() => setDurum('IPTAL')}>
+              <Ban size={16} strokeWidth={1.5} />
+              <span>İptal</span>
+            </SegOpt>
+            <SegOpt active={durum === ''} onClick={() => setDurum('')}>
+              <List size={16} strokeWidth={1.5} />
+              <span>Tümü</span>
+            </SegOpt>
           </Seg>
           <Input
             type="search"

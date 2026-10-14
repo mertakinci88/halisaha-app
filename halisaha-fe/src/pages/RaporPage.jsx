@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { createElement, useMemo, useState } from 'react';
+import { Banknote, Calendar, CalendarCheck, CalendarDays, CalendarMinus, CalendarRange, CalendarSearch, ClipboardCheck, Package, UserRound, Users } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Input, Field } from '@/components/ui/input';
@@ -10,13 +11,15 @@ import EnvanterSekmesi from '@/components/rapor/EnvanterSekmesi';
 import KullaniciSekmesi from '@/components/rapor/KullaniciSekmesi';
 import { DONEMLER } from '@/lib/rapor';
 
+const DONEM_IKON = { BUGUN: CalendarCheck, HAFTA: CalendarRange, AY: CalendarDays, GECEN_AY: CalendarMinus, YIL: Calendar };
+
 const SEKMELER = [
-  { kod: 'FINANS', ad: 'Finans' },
-  { kod: 'OGRENCI', ad: 'Öğrenci' },
-  { kod: 'YOKLAMA', ad: 'Yoklama' },
-  { kod: 'REZERVASYON', ad: 'Rezervasyon' },
-  { kod: 'ENVANTER', ad: 'Envanter' },
-  { kod: 'KULLANICI', ad: 'Kullanıcı' },
+  { kod: 'FINANS', Ikon: Banknote, ad: 'Finans' },
+  { kod: 'OGRENCI', Ikon: Users, ad: 'Öğrenci' },
+  { kod: 'YOKLAMA', Ikon: ClipboardCheck, ad: 'Yoklama' },
+  { kod: 'REZERVASYON', Ikon: CalendarDays, ad: 'Rezervasyon' },
+  { kod: 'ENVANTER', Ikon: Package, ad: 'Envanter' },
+  { kod: 'KULLANICI', Ikon: UserRound, ad: 'Kullanıcı' },
 ];
 
 export default function RaporPage() {
@@ -41,7 +44,8 @@ export default function RaporPage() {
           <Seg>
             {SEKMELER.map((s) => (
               <SegOpt className="whitespace-nowrap" key={s.kod} active={sekme === s.kod} onClick={() => setSekme(s.kod)}>
-                {s.ad}
+                <s.Ikon size={16} strokeWidth={1.5} />
+                <span>{s.ad}</span>
               </SegOpt>
             ))}
           </Seg>
@@ -52,11 +56,13 @@ export default function RaporPage() {
             <Seg>
               {DONEMLER.map((d) => (
                 <SegOpt className="whitespace-nowrap" key={d.kod} active={donem === d.kod} onClick={() => setDonem(d.kod)}>
-                  {d.ad}
+                  {createElement(DONEM_IKON[d.kod] || Calendar, { size: 16, strokeWidth: 1.5 })}
+                  <span>{d.ad}</span>
                 </SegOpt>
               ))}
               <SegOpt className="whitespace-nowrap" active={donem === 'OZEL'} onClick={() => setDonem('OZEL')}>
-                Özel
+                <CalendarSearch size={16} strokeWidth={1.5} />
+                <span>Özel</span>
               </SegOpt>
             </Seg>
           </div>

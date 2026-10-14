@@ -93,7 +93,9 @@ public class RezervasyonService {
 
         boolean tamOdeme = Boolean.TRUE.equals(request.tamOdeme());
         BigDecimal kapora = request.kapora() != null && !tamOdeme ? request.kapora().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        BigDecimal sahaTutari = hesaplaSahaUcreti(saha, request.baslangicTarih(), request.bitisTarih());
+        BigDecimal sahaTutari = request.sahaTutar() != null
+                ? request.sahaTutar().setScale(2, RoundingMode.HALF_UP)
+                : hesaplaSahaUcreti(saha, request.baslangicTarih(), request.bitisTarih());
         if (kapora.compareTo(sahaTutari) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Kapora rezervasyon tutarını (" + sahaTutari + ") aşamaz");
         }
@@ -111,7 +113,13 @@ public class RezervasyonService {
                 .odenecekTutar(BigDecimal.ZERO)
                 .build());
 
-        kalemRepository.save(sahaKalemi(rezervasyon, saha, request.baslangicTarih(), request.bitisTarih()));
+        RezervasyonKalem sahaKalemi = sahaKalemi(rezervasyon, saha, request.baslangicTarih(), request.bitisTarih());
+        if (request.sahaTutar() != null) {
+            // Ücret elle girildi: kalem tutarı girilen değer, birim fiyat buna göre türetilir
+            sahaKalemi.setTutar(sahaTutari);
+            sahaKalemi.setBirimFiyat(sahaTutari.divide(sahaKalemi.getMiktar(), 2, RoundingMode.HALF_UP));
+        }
+        kalemRepository.save(sahaKalemi);
         recalculate(rezervasyon);
 
         OdemeYontemi yontem = request.odemeYontemi() != null ? request.odemeYontemi() : OdemeYontemi.NAKIT;

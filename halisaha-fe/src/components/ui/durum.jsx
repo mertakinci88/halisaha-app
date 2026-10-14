@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { RotateCw } from 'lucide-react';
 
 export function Yukleniyor({ metin = 'Yükleniyor…' }) {
   return (
@@ -21,8 +22,9 @@ export function Hata({ mesaj, onTekrar }) {
       <div className="font-heading text-[20px] text-hata-800">Bir şeyler ters gitti</div>
       <p className="m-0 text-[15px] text-hata-800">{mesaj}</p>
       {onTekrar ? (
-        <button type="button" onClick={onTekrar} className="self-start text-hata-800 underline cursor-pointer bg-transparent border-0 p-0 font-body text-[15px]">
-          Tekrar dene
+        <button type="button" onClick={onTekrar} className="inline-flex items-center gap-1.5 self-start text-hata-800 underline cursor-pointer bg-transparent border-0 p-0 font-body text-[15px]">
+          <RotateCw size={15} strokeWidth={1.5} />
+          <span>Tekrar dene</span>
         </button>
       ) : null}
     </Card>

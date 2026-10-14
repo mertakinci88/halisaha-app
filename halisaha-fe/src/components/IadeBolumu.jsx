@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, Undo2, X } from 'lucide-react';
+import { Save, Trash2, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/dialog';
@@ -133,9 +133,10 @@ export default function IadeBolumu({ listeParams, kaynaklar }) {
                 <button
                   type="button"
                   onClick={() => setSilinecek(i)}
-                  className="ml-auto cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-hata-800 underline"
+                  className="ml-auto inline-flex items-center gap-1 cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-hata-800 underline"
                 >
-                  Sil
+                  <Trash2 size={13} strokeWidth={1.5} />
+                  <span>Sil</span>
                 </button>
               ) : null}
             </div>
