@@ -34,11 +34,13 @@ export const haftaGunuOf = (isoDate) => {
   return d === 0 ? 7 : d;
 };
 
-/** Başlangıçtan 1 yıl sonrası (29 Şubat'ta ayın son gününe düşer); backend ile aynı kural. */
-export const birYilSonra = (isoDate) => {
+/** Aboneliğin son haftasının tarihi: başlangıçtan sonraki ilk seçili gün + 51 hafta (toplam 52 hafta); backend ile aynı kural. */
+export const abonelikBitis = (isoDate, haftaGunu) => {
   if (!isoDate) return '';
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const sonGun = new Date(y + 1, m, 0).getDate();
-  return toIsoDate(new Date(y + 1, m - 1, Math.min(d, sonGun)));
+  const d = new Date(isoDate + 'T00:00:00');
+  const hedef = haftaGunu % 7; // getDay: 0 = Pazar
+  d.setDate(d.getDate() + ((hedef - d.getDay() + 7) % 7) + 51 * 7);
+  return toIsoDate(d);
 };
+
 

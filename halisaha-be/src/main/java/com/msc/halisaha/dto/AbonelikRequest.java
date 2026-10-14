@@ -13,8 +13,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Yeni abonelik: sahada haftanın belli günü ve saatinde, başlangıç tarihinden 1 yıl boyunca her hafta için rezervasyon oluşturulur.
- * Bitiş tarihi gönderilmez, başlangıçtan 1 yıl sonrası olarak hesaplanır. Kayıtta ilk ödeme de alınır.
+ * Yeni abonelik: sahada haftanın belli günü ve saatinde, başlangıç tarihinden itibaren 52 hafta boyunca her hafta için rezervasyon oluşturulur.
+ * Bitiş tarihi gönderilmez, 52. haftanın tarihi olarak hesaplanır. Kayıtta ilk ödeme de alınır.
  */
 public record AbonelikRequest(
         @NotNull(message = "Saha seçimi zorunludur") Long sahaId,

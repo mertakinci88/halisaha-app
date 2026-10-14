@@ -46,7 +46,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
- * Abonelik: sahanın haftanın belli günü ve saatinde, başlangıç tarihinden 1 yıl boyunca bir müşteriye ayrılması.
+ * Abonelik: sahanın haftanın belli günü ve saatinde, başlangıçtan itibaren 52 hafta boyunca bir müşteriye ayrılması.
  * Kayıtta her hafta için bir rezervasyon oluşturulur (takvimde görünür, çakışma kontrolü normal rezervasyonlarla ortaktır);
  * bu rezervasyonların saha ücreti 0'dır, abonelik tutarı abonelik ödemeleriyle tahsil edilir.
  * Abonelik iptalinde henüz gerçekleşmemiş haftalık rezervasyonlar iptal edilir.
@@ -56,6 +56,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AbonelikService {
 
+    /** Bir abonelik 52 haftadır (1 yıl 52 hafta + 1 gün olduğundan haftalık sayım bazı günlerde 53'e çıkmasın). */
+    static final int HAFTA_SAYISI = 52;
     private static final Locale TR = Locale.forLanguageTag("tr-TR");
     private static final DateTimeFormatter TARIH = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final int KAPANIS_DAKIKA = 26 * 60;
@@ -109,8 +111,8 @@ public class AbonelikService {
     public AbonelikOnizlemeResponse onizle(AbonelikOnizlemeRequest request) {
         Saha saha = getSaha(request.sahaId());
         saatiDogrula(request.baslangicDakika(), request.sureDakika());
-        LocalDate bitis = request.baslangicTarih().plusYears(1);
-        List<LocalDate> tarihler = tarihler(request.baslangicTarih(), bitis, request.haftaGunu());
+        List<LocalDate> tarihler = tarihler(request.baslangicTarih(), request.haftaGunu());
+        LocalDate bitis = tarihler.get(tarihler.size() - 1);
         return new AbonelikOnizlemeResponse(request.baslangicTarih(), bitis, tarihler.size(),
                 tarihler.isEmpty() ? null : tarihler.get(0), tarihler.isEmpty() ? null : tarihler.get(tarihler.size() - 1),
                 cakismalar(saha, tarihler, request.baslangicDakika(), request.sureDakika()));
@@ -131,8 +133,8 @@ public class AbonelikService {
         }
         LocalDate odemeTarihi = odemeTarihi(request.odemeTarihi(), bugun);
 
-        LocalDate bitis = request.baslangicTarih().plusYears(1);
-        List<LocalDate> tarihler = tarihler(request.baslangicTarih(), bitis, request.haftaGunu());
+        List<LocalDate> tarihler = tarihler(request.baslangicTarih(), request.haftaGunu());
+        LocalDate bitis = tarihler.get(tarihler.size() - 1);
         List<AbonelikOnizlemeResponse.Cakisma> cakismalar = cakismalar(saha, tarihler, request.baslangicDakika(), request.sureDakika());
         if (!cakismalar.isEmpty()) {
             String liste = cakismalar.stream().limit(GOSTERILEN_CAKISMA)
@@ -304,11 +306,11 @@ public class AbonelikService {
                 .toList();
     }
 
-    /** İlk tarih, başlangıçtan itibaren (başlangıç dahil) seçilen güne denk gelen ilk gündür; bitiş tarihi dahildir. */
-    private List<LocalDate> tarihler(LocalDate baslangic, LocalDate bitis, int haftaGunu) {
-        List<LocalDate> tarihler = new ArrayList<>();
+    /** İlk tarih, başlangıçtan itibaren (başlangıç dahil) seçilen güne denk gelen ilk gündür; ardından haftalık, toplam {@link #HAFTA_SAYISI} hafta. */
+    private List<LocalDate> tarihler(LocalDate baslangic, int haftaGunu) {
+        List<LocalDate> tarihler = new ArrayList<>(HAFTA_SAYISI);
         LocalDate tarih = baslangic.with(TemporalAdjusters.nextOrSame(DayOfWeek.of(haftaGunu)));
-        while (!tarih.isAfter(bitis)) {
+        for (int i = 0; i < HAFTA_SAYISI; i++) {
             tarihler.add(tarih);
             tarih = tarih.plusWeeks(1);
         }
