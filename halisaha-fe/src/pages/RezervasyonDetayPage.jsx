@@ -22,6 +22,7 @@ import {
   ODEME_YONTEMI_LABEL,
   kisaTarih,
   saatOf,
+  saatYazi,
   sureSaat,
   tarihSaat,
   telGoster,
@@ -284,7 +285,7 @@ export default function RezervasyonDetayPage() {
         <Card className="gap-3">
           <h4 className="text-[22px]">Ödeme özeti</h4>
           <div className="grid gap-y-2">
-            <OzetSatir etiket={rez.sahaAd + ' · ' + sure + ' saat'} tutar={tl(sahaTutar)} />
+            <OzetSatir etiket={rez.sahaAd + ' · ' + saatYazi(sure) + ' saat'} tutar={tl(sahaTutar)} />
 
             {urunGruplari.map((g) => (
               <OzetSatir
@@ -421,7 +422,7 @@ export default function RezervasyonDetayPage() {
                   : 'Ödemeyi tamamla · ' + tl(kalan)}
             </Button>
             <Button
-              variant="secondary"
+              variant="danger"
               disabled={islemde || rez.durum !== 'AKTIF'}
               onClick={() => setIptalOnay(true)}
             >

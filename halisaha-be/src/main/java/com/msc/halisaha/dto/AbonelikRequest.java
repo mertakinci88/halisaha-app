@@ -24,9 +24,11 @@ public record AbonelikRequest(
         String telNo,
         @NotNull(message = "Gün seçimi zorunludur") @Min(value = 1, message = "Gün 1-7 arasında olmalıdır") @Max(value = 7, message = "Gün 1-7 arasında olmalıdır")
         Integer haftaGunu,
-        @NotNull(message = "Saat seçimi zorunludur") @Min(value = 12, message = "Başlangıç saati 12:00 - 01:00 arasında olmalıdır") @Max(value = 25, message = "Başlangıç saati 12:00 - 01:00 arasında olmalıdır")
-        Integer baslangicSaat,
-        @NotNull(message = "Süre zorunludur") @Min(value = 1, message = "Süre en az 1 saat olmalıdır") Integer sureSaat,
+        /** Gün başından itibaren dakika (12:00 = 720, 20:30 = 1230, 01:30 ertesi gün = 1530); tam saat ya da buçuklu olmalıdır. */
+        @NotNull(message = "Saat seçimi zorunludur") @Min(value = 720, message = "Başlangıç saati 12:00 ile 01:30 arasında olmalıdır") @Max(value = 1530, message = "Başlangıç saati 12:00 ile 01:30 arasında olmalıdır")
+        Integer baslangicDakika,
+        /** Dakika; 30'un katı (1 saat = 60). */
+        @NotNull(message = "Süre zorunludur") @Min(value = 30, message = "Süre en az 30 dakika olmalıdır") Integer sureDakika,
         @NotNull(message = "Başlangıç tarihi zorunludur") LocalDate baslangicTarih,
         /** Abonelik için anlaşılan toplam tutar (standart ücretten gelir, elle değiştirilebilir). */
         @NotNull(message = "Abonelik ücreti zorunludur") @DecimalMin(value = "0.01", message = "Abonelik ücreti sıfırdan büyük olmalıdır") BigDecimal ucret,

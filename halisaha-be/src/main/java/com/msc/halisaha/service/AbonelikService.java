@@ -58,7 +58,7 @@ public class AbonelikService {
 
     private static final Locale TR = Locale.forLanguageTag("tr-TR");
     private static final DateTimeFormatter TARIH = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final int KAPANIS_SAATI = 26;
+    private static final int KAPANIS_DAKIKA = 26 * 60;
     private static final int GOSTERILEN_CAKISMA = 5;
 
     private final AbonelikRepository abonelikRepository;
@@ -106,18 +106,18 @@ public class AbonelikService {
     /** Kayıttan önce: oluşacak rezervasyon sayısı ve çakışan tarihler. */
     public AbonelikOnizlemeResponse onizle(AbonelikOnizlemeRequest request) {
         Saha saha = getSaha(request.sahaId());
-        saatiDogrula(request.baslangicSaat(), request.sureSaat());
+        saatiDogrula(request.baslangicDakika(), request.sureDakika());
         LocalDate bitis = request.baslangicTarih().plusYears(1);
         List<LocalDate> tarihler = tarihler(request.baslangicTarih(), bitis, request.haftaGunu());
         return new AbonelikOnizlemeResponse(request.baslangicTarih(), bitis, tarihler.size(),
                 tarihler.isEmpty() ? null : tarihler.get(0), tarihler.isEmpty() ? null : tarihler.get(tarihler.size() - 1),
-                cakismalar(saha, tarihler, request.baslangicSaat(), request.sureSaat()));
+                cakismalar(saha, tarihler, request.baslangicDakika(), request.sureDakika()));
     }
 
     @Transactional
     public AbonelikResponse olustur(AbonelikRequest request) {
         Saha saha = getSaha(request.sahaId());
-        saatiDogrula(request.baslangicSaat(), request.sureSaat());
+        saatiDogrula(request.baslangicDakika(), request.sureDakika());
         LocalDate bugun = AppZaman.bugun();
         if (request.baslangicTarih().isBefore(bugun)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Başlangıç tarihi geçmişte olamaz");
@@ -131,7 +131,7 @@ public class AbonelikService {
 
         LocalDate bitis = request.baslangicTarih().plusYears(1);
         List<LocalDate> tarihler = tarihler(request.baslangicTarih(), bitis, request.haftaGunu());
-        List<AbonelikOnizlemeResponse.Cakisma> cakismalar = cakismalar(saha, tarihler, request.baslangicSaat(), request.sureSaat());
+        List<AbonelikOnizlemeResponse.Cakisma> cakismalar = cakismalar(saha, tarihler, request.baslangicDakika(), request.sureDakika());
         if (!cakismalar.isEmpty()) {
             String liste = cakismalar.stream().limit(GOSTERILEN_CAKISMA)
                     .map(c -> c.tarih().format(TARIH) + " (" + c.adSoyad() + ")").collect(Collectors.joining(", "));
@@ -147,8 +147,8 @@ public class AbonelikService {
                 .adSoyad(request.adSoyad().trim())
                 .telNo(request.telNo())
                 .haftaGunu(request.haftaGunu())
-                .baslangicSaat(request.baslangicSaat())
-                .sureSaat(request.sureSaat())
+                .baslangicDakika(request.baslangicDakika())
+                .sureDakika(request.sureDakika())
                 .baslangicTarih(request.baslangicTarih())
                 .bitisTarih(bitis)
                 .durum(AbonelikDurum.AKTIF)
@@ -162,14 +162,14 @@ public class AbonelikService {
         LocalDateTime simdi = AppZaman.simdi();
         List<Rezervasyon> rezervasyonlar = new ArrayList<>();
         for (LocalDate tarih : tarihler) {
-            LocalDateTime baslangic = baslangic(tarih, request.baslangicSaat());
+            LocalDateTime baslangic = baslangic(tarih, request.baslangicDakika());
             rezervasyonlar.add(Rezervasyon.builder()
                     .isletme(abonelik.getIsletme())
                     .saha(saha)
                     .adSoyad(abonelik.getAdSoyad())
                     .telNo(abonelik.getTelNo())
                     .baslangicTarih(baslangic)
-                    .bitisTarih(baslangic.plusHours(request.sureSaat()))
+                    .bitisTarih(baslangic.plusMinutes(request.sureDakika()))
                     .durum(RezervasyonDurum.AKTIF)
                     .odemeDurumu(OdemeDurumu.ODENMEDI)
                     .odenecekTutar(BigDecimal.ZERO)
@@ -183,7 +183,7 @@ public class AbonelikService {
                 .rezervasyon(r)
                 .tip(KalemTip.SAHA)
                 .aciklama(saha.getAd() + " · Abonelik")
-                .miktar(BigDecimal.valueOf(request.sureSaat()))
+                .miktar(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP))
                 .birimFiyat(BigDecimal.ZERO)
                 .tutar(BigDecimal.ZERO)
                 .build()).toList());
@@ -305,16 +305,16 @@ public class AbonelikService {
         return tarihler;
     }
 
-    /** İşletme günü 12:00'da başlar; 24 ve 25 ertesi gün 00:00 ve 01:00'dır. */
-    private LocalDateTime baslangic(LocalDate tarih, int saat) {
-        return tarih.atStartOfDay().plusHours(saat);
+    /** Gün başından itibaren dakika: 720 = 12:00, 1440 = ertesi gün 00:00. */
+    private LocalDateTime baslangic(LocalDate tarih, int dakika) {
+        return tarih.atStartOfDay().plusMinutes(dakika);
     }
 
-    private List<AbonelikOnizlemeResponse.Cakisma> cakismalar(Saha saha, List<LocalDate> tarihler, int saat, int sure) {
+    private List<AbonelikOnizlemeResponse.Cakisma> cakismalar(Saha saha, List<LocalDate> tarihler, int dakika, int sure) {
         List<AbonelikOnizlemeResponse.Cakisma> cakismalar = new ArrayList<>();
         for (LocalDate tarih : tarihler) {
-            LocalDateTime baslangic = baslangic(tarih, saat);
-            List<Rezervasyon> cakisan = rezervasyonRepository.findOverlapping(saha.getId(), baslangic, baslangic.plusHours(sure), null);
+            LocalDateTime baslangic = baslangic(tarih, dakika);
+            List<Rezervasyon> cakisan = rezervasyonRepository.findOverlapping(saha.getId(), baslangic, baslangic.plusMinutes(sure), null);
             if (!cakisan.isEmpty()) {
                 cakismalar.add(new AbonelikOnizlemeResponse.Cakisma(tarih, cakisan.get(0).getAdSoyad()));
             }
@@ -322,8 +322,11 @@ public class AbonelikService {
         return cakismalar;
     }
 
-    private void saatiDogrula(int baslangicSaat, int sureSaat) {
-        if (baslangicSaat + sureSaat > KAPANIS_SAATI) {
+    private void saatiDogrula(int baslangicDakika, int sureDakika) {
+        if (baslangicDakika % 30 != 0 || sureDakika % 30 != 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Saat ve süre tam saat ya da buçuklu olmalıdır (örn. 20:00, 20:30)");
+        }
+        if (baslangicDakika + sureDakika > KAPANIS_DAKIKA) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Seçilen saat ve süre kapanış saatini (02:00) aşıyor");
         }
     }

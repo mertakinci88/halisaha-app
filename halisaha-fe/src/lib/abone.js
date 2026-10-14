@@ -13,10 +13,20 @@ export const HAFTA_GUNLERI = [
 
 export const gunAdi = (no) => HAFTA_GUNLERI.find((g) => g.no === Number(no))?.ad || '—';
 
-/** İşletme saatleri: 12:00'da açılır, 02:00'de kapanır; başlangıç saati 12-25 (24 = 00:00, 25 = 01:00). */
-export const ACILIS = 12;
-export const KAPANIS = 26;
-export const EN_UZUN_SURE = 4;
+/** İşletme saatleri: 12:00'da açılır, 02:00'de kapanır. Başlangıç, gün başından itibaren dakika olarak tutulur (12:00 = 720, 20:30 = 1230). */
+export const ACILIS_DAKIKA = 12 * 60;
+export const KAPANIS_DAKIKA = 26 * 60;
+export const EN_UZUN_SURE_SAAT = 4;
+
+/** Seçilebilir başlangıçlar: 12:00, 12:30, ... 01:00 (dakika olarak); süre tam saat olduğundan en geç kapanışa 1 saat kala başlanır */
+export const BASLANGIC_SECENEKLERI = Array.from({ length: (KAPANIS_DAKIKA - 60 - ACILIS_DAKIKA) / 30 + 1 }, (_, i) => ACILIS_DAKIKA + i * 30);
+
+/** "dakika" (720 = 12:00, 1230 = 20:30, 1440 = 00:00) -> "20:30" */
+export const dakikaSaat = (dakika) =>
+  String(Math.floor(dakika / 60) % 24).padStart(2, '0') + ':' + String(dakika % 60).padStart(2, '0');
+
+/** "20:30 – 21:30" */
+export const saatAraligi = (baslangicDakika, sureDakika) => dakikaSaat(baslangicDakika) + ' – ' + dakikaSaat(baslangicDakika + sureDakika);
 
 /** "2026-10-14" -> haftanın günü (1 = Pazartesi ... 7 = Pazar) */
 export const haftaGunuOf = (isoDate) => {
@@ -32,7 +42,3 @@ export const birYilSonra = (isoDate) => {
   return toIsoDate(new Date(y + 1, m - 1, Math.min(d, sonGun)));
 };
 
-export const saatAraligi = (baslangicSaat, sureSaat) => {
-  const hh = (h) => String(h % 24).padStart(2, '0') + ':00';
-  return hh(baslangicSaat) + ' – ' + hh(baslangicSaat + sureSaat);
-};

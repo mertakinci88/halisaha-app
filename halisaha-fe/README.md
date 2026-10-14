@@ -39,8 +39,8 @@ işletmesinin verisini görür (backend `isletme_id` ile filtreler, frontend'de 
 | --- | --- | --- |
 | `/giris` | Giriş | `POST /api/auth/login` |
 | `/panel` | Panel / özet | `GET /api/rezervasyonlar?tarih=`, `GET /api/sahalar`, `GET /api/ogrenciler`, `GET /api/urunler` |
-| `/takvim` | Tüm sahalar × saatler gün ızgarası | `GET /api/sahalar`, `GET /api/rezervasyonlar?tarih=` |
-| `/rezervasyon/yeni` | Yeni rezervasyon | `GET /api/sahalar`, `POST /api/rezervasyonlar` |
+| `/takvim` | Tüm sahalar × **30 dakikalık satırlar** gün ızgarası (12:00 – 02:30); rezervasyonlar başlangıç ve süresine göre yükseklikte bloklar (tam saat ya da buçuklu), iptaller sol kenarda şerit, aboneler yeşil; boş yarım saate tıklayınca o saatten başlayan rezervasyon açılır | `GET /api/sahalar`, `GET /api/rezervasyonlar?tarih=` |
+| `/rezervasyon/yeni` | Yeni rezervasyon: başlangıç tam saat ya da buçuklu (12:00, 12:30 ...), süre 1-3 saat; seçilen saatte saha doluysa kayıttan önce uyarılır | `GET /api/sahalar`, `POST /api/rezervasyonlar` |
 | `/rezervasyon/:id` | Rezervasyon detayı + kafeterya | `GET /api/rezervasyonlar/{id}`, `PUT /api/rezervasyonlar/{id}`, `PATCH /api/rezervasyonlar/{id}/iptal`, `POST /api/rezervasyonlar/{id}/urunler`, `DELETE /api/rezervasyonlar/{id}/urunler/{rezervasyonUrunId}` |
 | `/ogrenciler` | Öğrenci listesi (arama) | `GET /api/ogrenciler` |
 | `/ogrenciler/yeni` | Öğrenci kaydı | `GET /api/gruplar`, `POST /api/ogrenciler` |

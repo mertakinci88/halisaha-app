@@ -166,7 +166,7 @@ export default function AboneDetayPage() {
               <span className="ml-auto"><AboneDurumEtiketi abone={abone} /></span>
             </div>
             {bilgiSatiri('Saha', abone.sahaAd)}
-            {bilgiSatiri('Gün ve saat', gunAdi(abone.haftaGunu) + ' · ' + saatAraligi(abone.baslangicSaat, abone.sureSaat))}
+            {bilgiSatiri('Gün ve saat', gunAdi(abone.haftaGunu) + ' · ' + saatAraligi(abone.baslangicDakika, abone.sureDakika))}
             {bilgiSatiri('Dönem', kisaTarih(abone.baslangicTarih) + ' – ' + kisaTarih(abone.bitisTarih))}
             {bilgiSatiri('Kayıt', kisaTarih(abone.kayitTarih) + (abone.kaydedenAd ? ' · ' + abone.kaydedenAd : ''))}
             {abone.iptalTarih ? bilgiSatiri('İptal tarihi', kisaTarih(abone.iptalTarih)) : null}
@@ -334,7 +334,7 @@ export default function AboneDetayPage() {
         open={iptalOnay}
         title="Abonelik iptal edilsin mi?"
         description="Henüz gerçekleşmemiş haftalık rezervasyonların hepsi iptal edilir ve saha boşalır. Geçmiş haftalar ve alınan ödemeler silinmez. Bu işlem geri alınamaz."
-        isim={abone.adSoyad + ' · ' + gunAdi(abone.haftaGunu) + ' ' + saatAraligi(abone.baslangicSaat, abone.sureSaat)}
+        isim={abone.adSoyad + ' · ' + gunAdi(abone.haftaGunu) + ' ' + saatAraligi(abone.baslangicDakika, abone.sureDakika)}
         confirmLabel="Aboneliği iptal et"
         tehlikeli
         onConfirm={iptalEt}

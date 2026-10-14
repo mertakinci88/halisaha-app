@@ -10,8 +10,8 @@ import java.time.LocalDate;
 public record AbonelikOnizlemeRequest(
         @NotNull(message = "Saha seçimi zorunludur") Long sahaId,
         @NotNull(message = "Gün seçimi zorunludur") @Min(1) @Max(7) Integer haftaGunu,
-        @NotNull(message = "Saat seçimi zorunludur") @Min(12) @Max(25) Integer baslangicSaat,
-        @NotNull(message = "Süre zorunludur") @Min(1) Integer sureSaat,
+        @NotNull(message = "Saat seçimi zorunludur") @Min(720) @Max(1530) Integer baslangicDakika,
+        @NotNull(message = "Süre zorunludur") @Min(30) Integer sureDakika,
         @NotNull(message = "Başlangıç tarihi zorunludur") LocalDate baslangicTarih
 ) {
 }

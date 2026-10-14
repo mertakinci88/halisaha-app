@@ -60,12 +60,12 @@ public class Abonelik {
     @Column(name = "hafta_gunu", nullable = false)
     private int haftaGunu;
 
-    /** 12-25 (24 = 00:00, 25 = 01:00). */
-    @Column(name = "baslangic_saat", nullable = false)
-    private int baslangicSaat;
+    /** İşletme gününün 00:00'ından itibaren dakika: 12:00 = 720, 20:30 = 1230, 00:00 (ertesi gün) = 1440. Tam saat ya da buçuklu. */
+    @Column(name = "baslangic_dakika", nullable = false)
+    private int baslangicDakika;
 
-    @Column(name = "sure_saat", nullable = false)
-    private int sureSaat;
+    @Column(name = "sure_dakika", nullable = false)
+    private int sureDakika;
 
     @Column(name = "baslangic_tarih", nullable = false)
     private LocalDate baslangicTarih;

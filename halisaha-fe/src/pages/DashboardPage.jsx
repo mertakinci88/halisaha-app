@@ -11,7 +11,7 @@ import { apiHata } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useHata } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
-import { hh, saatOf, stokDurumu, sureSaat, tl, toIsoDate } from '@/lib/format';
+import { hh, saatOf, saatYazi, stokDurumu, sureSaat, tl, toIsoDate } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00 (Takvim ile aynı çalışma saatleri)
@@ -93,7 +93,7 @@ export default function DashboardPage() {
         deger: dolulukOrani + '%',
         oran: dolulukOrani,
         sahalar: sahaDoluluklari,
-        alt: doluSaat + ' / ' + kapasite + ' saat · ' + hh(ACILIS) + ' – ' + hh(KAPANIS),
+        alt: saatYazi(doluSaat) + ' / ' + kapasite + ' saat · ' + hh(ACILIS) + ' – ' + hh(KAPANIS),
       },
       { etiket: 'Bugünkü ciro', deger: tl(ciro), alt: 'Saha + kafeterya' },
     ];

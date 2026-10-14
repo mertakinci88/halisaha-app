@@ -19,8 +19,9 @@ public record AbonelikResponse(
         String adSoyad,
         String telNo,
         int haftaGunu,
-        int baslangicSaat,
-        int sureSaat,
+        /** Gün başından itibaren dakika (12:00 = 720). */
+        int baslangicDakika,
+        int sureDakika,
         LocalDate baslangicTarih,
         LocalDate bitisTarih,
         AbonelikDurum durum,
@@ -58,7 +59,7 @@ public record AbonelikResponse(
         BigDecimal odenen = a.getOdemeler().stream().map(AbonelikOdeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
         return new AbonelikResponse(
                 a.getId(), a.getSaha().getId(), a.getSaha().getAd(), a.getAdSoyad(), a.getTelNo(),
-                a.getHaftaGunu(), a.getBaslangicSaat(), a.getSureSaat(), a.getBaslangicTarih(), a.getBitisTarih(),
+                a.getHaftaGunu(), a.getBaslangicDakika(), a.getSureDakika(), a.getBaslangicTarih(), a.getBitisTarih(),
                 a.getDurum(),
                 a.getDurum() == AbonelikDurum.AKTIF && a.getBitisTarih().isBefore(bugun),
                 a.getUcret(), odenen, a.getUcret().subtract(odenen).max(BigDecimal.ZERO),
