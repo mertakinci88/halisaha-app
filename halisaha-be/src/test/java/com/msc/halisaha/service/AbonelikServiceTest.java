@@ -75,7 +75,7 @@ class AbonelikServiceTest {
     }
 
     private AbonelikRequest istek(String ucret, String odenen) {
-        return new AbonelikRequest(saha.getId(), "Ali Abone", "05469764613", baslangic.getDayOfWeek().getValue(), 19, 1,
+        return new AbonelikRequest(saha.getId(), "Ali Abone", "05469764613", baslangic.getDayOfWeek().getValue(), 1140, 60,
                 baslangic, new BigDecimal(ucret), new BigDecimal(odenen), OdemeYontemi.NAKIT, null, null, null);
     }
 
@@ -111,7 +111,7 @@ class AbonelikServiceTest {
 
     @Test
     void geceSaatindekiAbonelikErtesiGuneYazilir() {
-        AbonelikRequest istek = new AbonelikRequest(saha.getId(), "Gece Abone", "05469764613", baslangic.getDayOfWeek().getValue(), 24, 2,
+        AbonelikRequest istek = new AbonelikRequest(saha.getId(), "Gece Abone", "05469764613", baslangic.getDayOfWeek().getValue(), 1440, 120,
                 baslangic, new BigDecimal("1000"), new BigDecimal("1000"), OdemeYontemi.KART, null, null, null);
         AbonelikResponse r = abonelikService.olustur(istek);
         // 24 = ertesi gün 00:00; iki saat sürer (02:00'de kapanır)
@@ -123,13 +123,13 @@ class AbonelikServiceTest {
     @Test
     void ucretOdemeSaatVeSahaDogrulanir() {
         assertEquals(400, hata(() -> abonelikService.olustur(istek("1000", "1000.01"))).getStatus().value());
-        AbonelikRequest kapanisiAsan = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 25, 2,
+        AbonelikRequest kapanisiAsan = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 1500, 120,
                 baslangic, new BigDecimal("1000"), new BigDecimal("1000"), OdemeYontemi.NAKIT, null, null, null);
         assertEquals(400, hata(() -> abonelikService.olustur(kapanisiAsan)).getStatus().value());
-        AbonelikRequest havaleHesapsiz = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 19, 1,
+        AbonelikRequest havaleHesapsiz = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 1140, 60,
                 baslangic, new BigDecimal("1000"), new BigDecimal("500"), OdemeYontemi.HAVALE_EFT, null, null, null);
         assertEquals(400, hata(() -> abonelikService.olustur(havaleHesapsiz)).getStatus().value());
-        AbonelikRequest gecmis = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 19, 1,
+        AbonelikRequest gecmis = new AbonelikRequest(saha.getId(), "Ali", "05469764613", 1, 1140, 60,
                 AppZaman.bugun().minusDays(1), new BigDecimal("1000"), new BigDecimal("500"), OdemeYontemi.NAKIT, null, null, null);
         assertEquals(400, hata(() -> abonelikService.olustur(gecmis)).getStatus().value());
     }
@@ -142,7 +142,7 @@ class AbonelikServiceTest {
                 "05321234567", null, null, null, null));
 
         var onizleme = abonelikService.onizle(new AbonelikOnizlemeRequest(saha.getId(),
-                baslangic.getDayOfWeek().getValue(), 19, 1, baslangic));
+                baslangic.getDayOfWeek().getValue(), 1140, 60, baslangic));
         assertEquals(1, onizleme.cakismalar().size());
         assertEquals(baslangic.plusWeeks(2), onizleme.cakismalar().get(0).tarih());
         assertEquals("Mehmet", onizleme.cakismalar().get(0).adSoyad());
@@ -223,5 +223,30 @@ class AbonelikServiceTest {
         assertEquals(0, abonelikService.listele(null, null).size());
         // başka işletmenin sahasıyla abonelik açılamaz
         assertEquals(404, hata(() -> abonelikService.olustur(istek("1000", "500"))).getStatus().value());
+    }
+
+    @Test
+    void buckluSaatliAbonelikYarimSaatOlarakYazilirVeCakismaYarimSaattenHesaplanir() {
+        int gun = baslangic.getDayOfWeek().getValue();
+        // 20:30 - 21:30 abonelik
+        AbonelikResponse r = abonelikService.olustur(new AbonelikRequest(saha.getId(), "Buçuklu Abone", "05469764613", gun, 1230, 60,
+                baslangic, new BigDecimal("10000"), new BigDecimal("10000"), OdemeYontemi.NAKIT, null, null, null));
+        assertEquals(1230, r.baslangicDakika());
+        assertEquals(60, r.sureDakika());
+        assertEquals(baslangic.atTime(20, 30), r.haftalar().get(0).baslangicTarih());
+        assertEquals(baslangic.atTime(21, 30), r.haftalar().get(0).bitisTarih());
+
+        // 20:00-21:00 ile çakışır (20:30-21:00 ortak), 21:30-22:30 ile çakışmaz
+        var cakisan = abonelikService.onizle(new AbonelikOnizlemeRequest(saha.getId(), gun, 1200, 60, baslangic));
+        assertEquals(r.haftalar().size(), cakisan.cakismalar().size());
+        var bitisik = abonelikService.onizle(new AbonelikOnizlemeRequest(saha.getId(), gun, 1290, 60, baslangic));
+        assertEquals(0, bitisik.cakismalar().size());
+
+        // 30'un katı olmayan dakika kabul edilmez
+        assertEquals(400, hata(() -> abonelikService.olustur(new AbonelikRequest(saha.getId(), "Ali", "05469764613", gun, 1215, 60,
+                baslangic, new BigDecimal("1000"), new BigDecimal("500"), OdemeYontemi.NAKIT, null, null, null))).getStatus().value());
+        // Kapanışı (02:00) aşan buçuklu seçim: 01:30 + 1 saat
+        assertEquals(400, hata(() -> abonelikService.olustur(new AbonelikRequest(saha.getId(), "Ali", "05469764613", gun, 1530, 60,
+                baslangic, new BigDecimal("1000"), new BigDecimal("500"), OdemeYontemi.NAKIT, null, null, null))).getStatus().value());
     }
 }

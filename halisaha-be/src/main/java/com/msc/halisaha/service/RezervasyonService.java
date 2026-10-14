@@ -341,6 +341,11 @@ public class RezervasyonService {
     }
 
     private void validateTarihAraligi(LocalDateTime baslangic, LocalDateTime bitis) {
+        // Rezervasyonlar tam saat ya da buçuklu saatte (12:00, 12:30 ...) başlar ve biter
+        if (baslangic.getMinute() % 30 != 0 || bitis.getMinute() % 30 != 0
+                || baslangic.getSecond() != 0 || bitis.getSecond() != 0 || baslangic.getNano() != 0 || bitis.getNano() != 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Rezervasyon saatleri tam saat ya da buçuklu olmalıdır (örn. 12:00, 12:30)");
+        }
         if (!bitis.isAfter(baslangic)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bitiş tarihi başlangıç tarihinden sonra olmalıdır");
         }

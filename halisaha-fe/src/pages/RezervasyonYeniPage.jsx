@@ -12,12 +12,12 @@ import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { cn } from '@/lib/utils';
-import { hh, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
+import { hh, saatOf, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00
-// Saatler gerçek saat olarak tutulur: 12..23, sonra 00, 01, 02 (ertesi gün)
-const SAATLER = Array.from({ length: KAPANIS - ACILIS + 1 }, (_, i) => (ACILIS + i) % 24);
+// Saatler gerçek saat olarak tutulur (ondalıklı: 12.5 = 12:30): 12:00 ... 23:30, sonra 00:00 ... 02:30 (ertesi gün); tam saat ya da buçuklu
+const SAATLER = Array.from({ length: (KAPANIS - ACILIS + 1) * 2 }, (_, i) => (ACILIS + i / 2) % 24);
 const gece = (saat) => saat < ACILIS;
 
 const gunEkle = (isoTarih, fark) => {
@@ -82,6 +82,31 @@ export default function RezervasyonYeniPage() {
     [sahalar, form.sahaId],
   );
   const toplam = Number(secilenSaha?.saatlikUcret || 0) * form.sure;
+
+  // Seçilen sahanın o güne yakın rezervasyonları: seçilen saat aralığı doluysa kayıttan önce uyarılır.
+  // Gece yarısını aşan rezervasyonlar için bir önceki ve bir sonraki gün de çekilir.
+  const [mesgul, setMesgul] = useState([]);
+  useEffect(() => {
+    if (!form.sahaId || !form.tarih) {
+      setMesgul([]);
+      return undefined;
+    }
+    let iptal = false;
+    Promise.all([-1, 0, 1].map((f) => rezervasyonService.list({ sahaId: Number(form.sahaId), tarih: gunEkle(form.tarih, f) })))
+      .then((listeler) => !iptal && setMesgul(listeler.flat().filter((x) => x.durum === 'AKTIF')))
+      .catch(() => !iptal && setMesgul([]));
+    return () => {
+      iptal = true;
+    };
+  }, [form.sahaId, form.tarih]);
+
+  const cakisan = useMemo(() => {
+    if (!form.tarih) return null;
+    const gunDate = new Date(form.tarih + 'T00:00:00');
+    const bas = new Date(toIsoDateTime(gunDate, form.saat));
+    const bit = new Date(toIsoDateTime(gunDate, form.saat + form.sure));
+    return mesgul.find((r) => new Date(r.baslangicTarih) < bit && new Date(r.bitisTarih) > bas) || null;
+  }, [mesgul, form.tarih, form.saat, form.sure]);
   // Ödeme yalnızca "Ödeme al" işaretliyse geçerlidir; işaretsizse alanlar gizli ve değerleri yok sayılır
   const tamOdeme = form.kaporaAl && form.odemeTuru === 'TAM';
   const kapora = form.kaporaAl && !tamOdeme ? Number(String(form.kapora).replace(',', '.')) || 0 : 0;
@@ -177,6 +202,13 @@ export default function RezervasyonYeniPage() {
               </Select>
             </Field>
           </div>
+
+          {cakisan ? (
+            <div role="alert" className="border border-yellow-600 bg-yellow-100 px-3 py-2 text-[14px] text-yellow-800">
+              Bu saha seçilen saatte dolu: <b>{cakisan.adSoyad}</b> ({saatOf(cakisan.baslangicTarih)} – {saatOf(cakisan.bitisTarih)}).
+              Başka bir saat ya da saha seçin.
+            </div>
+          ) : null}
 
           <Field label="Süre">
             <Seg className="w-full">
@@ -329,7 +361,7 @@ export default function RezervasyonYeniPage() {
             Kafeterya ürünleri rezervasyon kaydedildikten sonra detay ekranından eklenir.
           </p>
           <div className="mt-1 flex gap-2">
-            <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
+            <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || Boolean(cakisan)}>
               {kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}
             </Button>
             <Button variant="danger" onClick={() => navigate('/takvim')}>

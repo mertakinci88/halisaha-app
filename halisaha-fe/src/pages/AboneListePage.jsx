@@ -176,7 +176,7 @@ export default function AboneListePage() {
                     </Td>
                     <Td etiket="Saha">{a.sahaAd}</Td>
                     <Td etiket="Gün ve saat">
-                      {gunAdi(a.haftaGunu)} · {saatAraligi(a.baslangicSaat, a.sureSaat)}
+                      {gunAdi(a.haftaGunu)} · {saatAraligi(a.baslangicDakika, a.sureDakika)}
                     </Td>
                     <Td etiket="Dönem" className="whitespace-nowrap">
                       {kisaTarih(a.baslangicTarih)} – {kisaTarih(a.bitisTarih)}

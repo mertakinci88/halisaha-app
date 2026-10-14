@@ -10,8 +10,8 @@ import HesapSecimi from '@/components/HesapSecimi';
 import { aboneService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { hh, kisaTarih, ODEME_YONTEMI_LABEL, telMaske, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
-import { ACILIS, EN_UZUN_SURE, HAFTA_GUNLERI, KAPANIS, birYilSonra, gunAdi, haftaGunuOf } from '@/lib/abone';
+import { kisaTarih, ODEME_YONTEMI_LABEL, telMaske, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
+import { BASLANGIC_SECENEKLERI, EN_UZUN_SURE_SAAT, HAFTA_GUNLERI, KAPANIS_DAKIKA, birYilSonra, dakikaSaat, gunAdi, haftaGunuOf } from '@/lib/abone';
 
 const BUGUN = toIsoDate(new Date());
 
@@ -30,8 +30,8 @@ export default function AboneKayitPage() {
     telNo: '',
     sahaId: '',
     haftaGunu: haftaGunuOf(BUGUN),
-    baslangicSaat: 19,
-    sureSaat: 1,
+    baslangicDakika: 19 * 60,
+    sureDakika: 60,
     baslangic: BUGUN,
     ucret: '',
     odenen: '',
@@ -84,8 +84,8 @@ export default function AboneKayitPage() {
         .onizle({
           sahaId: Number(form.sahaId),
           haftaGunu: Number(form.haftaGunu),
-          baslangicSaat: Number(form.baslangicSaat),
-          sureSaat: Number(form.sureSaat),
+          baslangicDakika: Number(form.baslangicDakika),
+          sureDakika: Number(form.sureDakika),
           baslangicTarih: form.baslangic,
         })
         .then((o) => !iptal && setOnizleme(o))
@@ -95,9 +95,10 @@ export default function AboneKayitPage() {
       iptal = true;
       clearTimeout(t);
     };
-  }, [form.sahaId, form.haftaGunu, form.baslangicSaat, form.sureSaat, form.baslangic]);
+  }, [form.sahaId, form.haftaGunu, form.baslangicDakika, form.sureDakika, form.baslangic]);
 
-  const enUzun = Math.min(EN_UZUN_SURE, KAPANIS - Number(form.baslangicSaat));
+  // Süre tam saat olarak seçilir; kapanışı (02:00) aşamaz
+  const enUzunSaat = Math.min(EN_UZUN_SURE_SAAT, Math.floor((KAPANIS_DAKIKA - Number(form.baslangicDakika)) / 60));
   const bitis = onizleme?.bitisTarih || birYilSonra(form.baslangic);
   const ucret = Number(String(form.ucret).replace(',', '.')) || 0;
   const odenen = Number(String(form.odenen).replace(',', '.')) || 0;
@@ -133,8 +134,8 @@ export default function AboneKayitPage() {
         adSoyad: form.adSoyad.trim(),
         telNo: '0' + form.telNo,
         haftaGunu: Number(form.haftaGunu),
-        baslangicSaat: Number(form.baslangicSaat),
-        sureSaat: Number(form.sureSaat),
+        baslangicDakika: Number(form.baslangicDakika),
+        sureDakika: Number(form.sureDakika),
         baslangicTarih: form.baslangic,
         ucret,
         odenenTutar: odenen,
@@ -207,22 +208,24 @@ export default function AboneKayitPage() {
             </Field>
             <Field label="Saat">
               <Select
-                value={form.baslangicSaat}
+                value={form.baslangicDakika}
                 onChange={(e) => {
-                  const saat = Number(e.target.value);
-                  set('baslangicSaat', saat);
-                  if (form.sureSaat > KAPANIS - saat) set('sureSaat', KAPANIS - saat);
+                  const dakika = Number(e.target.value);
+                  set('baslangicDakika', dakika);
+                  // Seçilen saatte süre kapanışı aşıyorsa en uzun uygun süreye çekilir
+                  const sinir = Math.floor((KAPANIS_DAKIKA - dakika) / 60) * 60;
+                  if (form.sureDakika > sinir) set('sureDakika', Math.max(60, sinir));
                 }}
               >
-                {Array.from({ length: KAPANIS - ACILIS }, (_, i) => ACILIS + i).map((s) => (
-                  <option key={s} value={s}>{hh(s)}</option>
+                {BASLANGIC_SECENEKLERI.map((d) => (
+                  <option key={d} value={d}>{dakikaSaat(d)}</option>
                 ))}
               </Select>
             </Field>
             <Field label="Süre">
-              <Select value={form.sureSaat} onChange={(e) => set('sureSaat', Number(e.target.value))}>
-                {Array.from({ length: enUzun }, (_, i) => i + 1).map((s) => (
-                  <option key={s} value={s}>{s} saat</option>
+              <Select value={form.sureDakika} onChange={(e) => set('sureDakika', Number(e.target.value))}>
+                {Array.from({ length: Math.max(1, enUzunSaat) }, (_, i) => (i + 1) * 60).map((d) => (
+                  <option key={d} value={d}>{d / 60} saat</option>
                 ))}
               </Select>
             </Field>
