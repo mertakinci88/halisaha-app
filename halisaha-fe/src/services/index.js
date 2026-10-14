@@ -26,6 +26,8 @@ export const kullaniciService = {
   rolGuncelle: (id, rol) => api.put('/api/kullanicilar/' + id + '/rol', { rol }).then((r) => r.data),
   yetkileriGuncelle: (id, yetkiler) =>
     api.put('/api/kullanicilar/' + id + '/yetkiler', { yetkiler }).then((r) => r.data),
+  /** body: { grupKisitli, grupIdleri } — kısıtsızsa personel tüm grupları görür */
+  grupYetkisiniGuncelle: (id, body) => api.put('/api/kullanicilar/' + id + '/gruplar', body).then((r) => r.data),
   durumGuncelle: (id, durum) =>
     api.patch('/api/kullanicilar/' + id + '/durum', null, { params: { durum } }).then((r) => r.data),
 };
@@ -235,6 +237,8 @@ export const iadeService = {
 /* ── /api/gruplar ──────────────────────────────────────────── */
 export const grupService = {
   list: () => api.get('/api/gruplar').then((r) => r.data),
+  /** Transfer hedefi için tüm gruplar (grup yetkisinden bağımsız) */
+  hedefler: () => api.get('/api/gruplar/hedefler').then((r) => r.data),
   get: (id) => api.get('/api/gruplar/' + id).then((r) => r.data),
   create: (body) => api.post('/api/gruplar', body).then((r) => r.data),
   update: (id, body) => api.put('/api/gruplar/' + id, body).then((r) => r.data),

@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/ogrenciler/{ogrenciId}/envanter-satislari")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_ENVANTER')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_ENVANTER')")
 public class EnvanterSatisController {
 
     private final EnvanterSatisService satisService;

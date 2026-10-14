@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AltBilgi from '@/components/AltBilgi';
 import { Card } from '@/components/ui/card';
@@ -67,7 +68,8 @@ export default function LoginPage() {
               {hata ? <div className="text-[14.5px] text-accent-800">{hata}</div> : null}
   
               <Button type="submit" variant="primary" size="block" disabled={bekliyor}>
-                {bekliyor ? 'Giriş yapılıyor…' : 'Giriş yap'}
+                <LogIn size={16} strokeWidth={1.5} />
+                <span>{bekliyor ? 'Giriş yapılıyor…' : 'Giriş yap'}</span>
               </Button>
             </form>
           </Card>

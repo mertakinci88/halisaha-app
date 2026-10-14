@@ -22,6 +22,7 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
             SELECT o FROM Ogrenci o LEFT JOIN o.grup g
             WHERE o.isletme.id = :isletmeId
               AND (:grupId IS NULL OR g.id = :grupId)
+              AND (:kisitli = FALSE OR g.id IN :izinliGruplar)
               AND (:odemeBekleyen = FALSE OR NOT EXISTS (
                      SELECT 1 FROM OgrenciOdeme p WHERE p.ogrenci = o AND p.yil = :yil AND p.ay = :ay AND p.odenenTutar > 0))
               AND (:envanterEksik = FALSE OR EXISTS (
@@ -35,5 +36,6 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
                       @Param("odemeBekleyen") boolean odemeBekleyen, @Param("envanterEksik") boolean envanterEksik,
                       @Param("yil") int yil, @Param("ay") int ay,
                       @Param("arananGruplar") Collection<Long> arananGruplar,
+                      @Param("kisitli") boolean kisitli, @Param("izinliGruplar") Collection<Long> izinliGruplar,
                       Pageable pageable);
 }

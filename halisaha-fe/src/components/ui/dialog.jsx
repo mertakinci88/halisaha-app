@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -49,10 +50,12 @@ export function ConfirmDialog({
 
         <div className="flex gap-2">
           <Button variant={tehlikeli ? 'secondary' : 'danger'} className="flex-1" onClick={onCancel}>
-            {cancelLabel}
+            <X size={16} strokeWidth={1.5} />
+            <span>{cancelLabel}</span>
           </Button>
           <Button variant={tehlikeli ? 'danger' : 'primary'} className="flex-1" onClick={onConfirm}>
-            {confirmLabel}
+            <Check size={16} strokeWidth={1.5} />
+            <span>{confirmLabel}</span>
           </Button>
         </div>
       </div>

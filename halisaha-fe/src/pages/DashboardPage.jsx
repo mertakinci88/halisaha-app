@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card, CardKicker } from '@/components/ui/card';
@@ -148,8 +149,9 @@ export default function DashboardPage() {
             <Card>
               <div className="flex items-baseline gap-2.5">
                 <h4 className="text-[22px]">Bugünün programı</h4>
-                <Button variant="ghost" className="ml-auto" onClick={() => navigate('/takvim')}>
-                  Tümü
+                <Button variant="gri" className="ml-auto" onClick={() => navigate('/takvim')}>
+                  <span>Tümü</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </div>
               <Table kart>
@@ -208,8 +210,9 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
-                  Tüm ödeme bekleyenler
+                <Button variant="gri" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
+                  <span>Tüm ödeme bekleyenler</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </Card>
               ) : null}
@@ -277,8 +280,9 @@ export default function DashboardPage() {
                     ) : null}
                   </div>
 
-                  <Button variant="secondary" className="self-start" onClick={() => navigate('/envanter')}>
-                    Envantere git
+                  <Button variant="gri" className="self-start" onClick={() => navigate('/envanter')}>
+                    <span>Envantere git</span>
+                    <ArrowRight size={16} strokeWidth={1.5} />
                   </Button>
                 </Card>
               ) : null}
@@ -308,8 +312,9 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
-                  Kafeteryaya git
+                <Button variant="gri" className="self-start" onClick={() => navigate('/urunler')}>
+                  <span>Kafeteryaya git</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </Card>
               ) : null}

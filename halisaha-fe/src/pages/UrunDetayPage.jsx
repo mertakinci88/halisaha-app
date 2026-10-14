@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Save, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -116,10 +117,12 @@ export default function UrunDetayPage() {
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Ürünü güncelle'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Ürünü güncelle'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/urunler')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/urunler')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

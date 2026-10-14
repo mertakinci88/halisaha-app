@@ -26,6 +26,14 @@ public record RezervasyonRequest(
         /** Kapora Havale / EFT ile alınıyorsa paranın yattığı hesap. */
         Long hesapId,
         /** true ise kapora yerine rezervasyon tutarının tamamı peşin tahsil edilir (tip ODEME); {@code kapora} yok sayılır. */
-        Boolean tamOdeme
+        Boolean tamOdeme,
+        /** Saha ücreti; verilmezse sahanın saatlik ücreti x süre kullanılır. Sadece oluşturma sırasında dikkate alınır. */
+        @DecimalMin(value = "0.00", message = "Ödenecek tutar negatif olamaz") BigDecimal sahaTutar
 ) {
+
+    /** Saha ücretini elle girmeden oluşturma (saha tutarı sahanın saatlik ücretinden hesaplanır). */
+    public RezervasyonRequest(Long sahaId, String adSoyad, LocalDateTime baslangicTarih, LocalDateTime bitisTarih,
+                              String telNo, OdemeYontemi odemeYontemi, BigDecimal kapora, Long hesapId, Boolean tamOdeme) {
+        this(sahaId, adSoyad, baslangicTarih, bitisTarih, telNo, odemeYontemi, kapora, hesapId, tamOdeme, null);
+    }
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, List, PackageX, Plus, Search, Wallet } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,20 +88,23 @@ export default function OgrenciListePage() {
               onChange={aramaDegisti}
               className="min-w-0 flex-1 sm:w-[340px] sm:flex-none"
             />
-            <Button type="submit" variant="secondary">
+            <Button type="submit" variant="gri">
               <Search size={16} strokeWidth={1.5} />
               <span>Ara</span>
             </Button>
           </form>
           <Seg>
             <SegOpt active={!odemeBekleyen && !envanterEksik} onClick={() => filtreSec(null)}>
-              Tümü
+              <List size={16} strokeWidth={1.5} />
+              <span>Tümü</span>
             </SegOpt>
             <SegOpt active={odemeBekleyen} onClick={() => filtreSec('odeme')}>
-              Ödeme bekleyen
+              <Wallet size={16} strokeWidth={1.5} />
+              <span>Ödeme bekleyen</span>
             </SegOpt>
             <SegOpt active={envanterEksik} onClick={() => filtreSec('envanter')}>
-              Eksik envanter
+              <PackageX size={16} strokeWidth={1.5} />
+              <span>Eksik envanter</span>
             </SegOpt>
           </Seg>
           <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
@@ -151,14 +154,15 @@ export default function OgrenciListePage() {
                       </Td>
                       <Td className="text-right">
                         <Button
-                          variant="primary"
+                          variant="cerceve"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate('/ogrenciler/' + o.id);
                           }}
                         >
-                          Detay
+                          <Eye size={14} strokeWidth={1.5} />
+                          <span>Detay</span>
                         </Button>
                       </Td>
                     </Tr>

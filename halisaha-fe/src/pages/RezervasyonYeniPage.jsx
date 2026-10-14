@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Banknote, Check, Clock, Coins, RotateCcw, Save, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input, Select, TelInput } from '@/components/ui/input';
 import HesapSecimi from '@/components/HesapSecimi';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
@@ -12,7 +12,7 @@ import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { cn } from '@/lib/utils';
-import { hh, saatOf, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
+import { hh, saatOf, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00
@@ -54,9 +54,14 @@ export default function RezervasyonYeniPage() {
     odemeYontemi: '',
     kapora: '',
     hesapId: '',
+    // Ödenecek tutar elle değiştirildiyse tutarElle=true ve tutar yazılan değerdir; aksi halde saha tutarı kullanılır
+    tutarElle: false,
+    tutar: '',
   }));
 
-  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  // Saha ya da süre değişince elle girilen tutar bırakılır, tutar yeniden sahanın tutarından hesaplanır
+  const set = (k, v) =>
+    setForm((p) => ({ ...p, [k]: v, ...(k === 'sahaId' || k === 'sure' ? { tutarElle: false, tutar: '' } : {}) }));
 
   // Gece 00:00'dan sonrası ertesi güne ait: saat gece dilimine geçince tarih +1, dönünce -1
   const saatSec = (yeni) =>
@@ -81,7 +86,10 @@ export default function RezervasyonYeniPage() {
     () => sahalar.find((s) => String(s.id) === String(form.sahaId)),
     [sahalar, form.sahaId],
   );
-  const toplam = Number(secilenSaha?.saatlikUcret || 0) * form.sure;
+  const sahaTutari = Number(secilenSaha?.saatlikUcret || 0) * form.sure;
+  const elleTutar = Number(String(form.tutar).replace(',', '.'));
+  const tutarGecerli = form.tutar !== '' && !Number.isNaN(elleTutar) && elleTutar >= 0;
+  const toplam = form.tutarElle ? (tutarGecerli ? elleTutar : 0) : sahaTutari;
 
   // Seçilen sahanın o güne yakın rezervasyonları: seçilen saat aralığı doluysa kayıttan önce uyarılır.
   // Gece yarısını aşan rezervasyonlar için bir önceki ve bir sonraki gün de çekilir.
@@ -124,6 +132,10 @@ export default function RezervasyonYeniPage() {
   const kaydet = async (e) => {
     e.preventDefault();
     setHata('');
+    if (form.tutarElle && !tutarGecerli) {
+      setHata('Ödenecek tutarı giriniz (0 veya daha büyük).');
+      return;
+    }
     if (form.kaporaAl && !(tahsilat > 0)) {
       setHata(tamOdeme ? 'Ödeme alınacak rezervasyon tutarı sıfırdan büyük olmalıdır.' : 'Kapora tutarını giriniz.');
       return;
@@ -152,6 +164,7 @@ export default function RezervasyonYeniPage() {
         odemeYontemi: tahsilat > 0 ? form.odemeYontemi : null,
         kapora: kapora > 0 ? kapora : null,
         tamOdeme: tamOdeme || null,
+        sahaTutar: form.tutarElle ? elleTutar : null,
         hesapId: tahsilat > 0 && form.odemeYontemi === 'HAVALE_EFT' && form.hesapId ? Number(form.hesapId) : null,
       };
       const olusan = await rezervasyonService.create(body);
@@ -214,10 +227,36 @@ export default function RezervasyonYeniPage() {
             <Seg className="w-full">
               {[1, 2, 3].map((s) => (
                 <SegOpt key={s} active={form.sure === s} onClick={() => set('sure', s)} className="flex-1">
-                  {s} saat
+                  <Clock size={16} strokeWidth={1.5} />
+                  <span>{s} saat</span>
                 </SegOpt>
               ))}
             </Seg>
+          </Field>
+
+          <Field label="Ödenecek tutar (₺)">
+            <Input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={form.tutarElle ? form.tutar : String(sahaTutari)}
+              onChange={(e) => setForm((p) => ({ ...p, tutarElle: true, tutar: e.target.value }))}
+              required
+            />
+            <p className="m-0 mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-ink/55">
+              <span>Sahanın tutarı: {tl(sahaTutari)}. Gerekirse değiştirebilirsiniz.</span>
+              {form.tutarElle && (!tutarGecerli || elleTutar !== sahaTutari) ? (
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, tutarElle: false, tutar: '' }))}
+                  className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] text-accent-700 underline"
+                >
+                  <RotateCcw size={13} strokeWidth={1.5} />
+                  <span>Sahanın tutarına dön</span>
+                </button>
+              ) : null}
+            </p>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
@@ -231,20 +270,7 @@ export default function RezervasyonYeniPage() {
               />
             </Field>
             <Field label="Telefon">
-              <div className="flex">
-                <span className="grid min-h-10 place-items-center border border-r-0 border-divider bg-surface px-3 text-[15.5px] text-ink/60">
-                  0
-                </span>
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="5__ ___ __ __"
-                  value={telMaske(form.telNo)}
-                  onChange={(e) => set('telNo', telRakam(e.target.value))}
-                  required
-                />
-              </div>
+              <TelInput value={form.telNo} onChange={(v) => set('telNo', v)} required />
             </Field>
           </div>
 
@@ -276,10 +302,12 @@ export default function RezervasyonYeniPage() {
             <>
               <Seg className="w-full">
                 <SegOpt active={form.odemeTuru === 'KAPORA'} onClick={() => set('odemeTuru', 'KAPORA')} className="flex-1">
-                  Kapora
+                  <Coins size={16} strokeWidth={1.5} />
+                  <span>Kapora</span>
                 </SegOpt>
                 <SegOpt active={form.odemeTuru === 'TAM'} onClick={() => set('odemeTuru', 'TAM')} className="flex-1">
-                  Tüm ödeme
+                  <Banknote size={16} strokeWidth={1.5} />
+                  <span>Tüm ödeme</span>
                 </SegOpt>
               </Seg>
 
@@ -342,7 +370,9 @@ export default function RezervasyonYeniPage() {
           </div>
           <div className="h-px bg-divider" />
           <div className="flex items-baseline justify-between">
-            <span className="font-heading text-[18px] font-semibold">Ödenecek tutar</span>
+            <span className="font-heading text-[18px] font-semibold">
+              Ödenecek tutar{form.tutarElle && tutarGecerli && elleTutar !== sahaTutari ? ' (elle girildi)' : ''}
+            </span>
             <span className="font-heading text-[32px] font-semibold tabular-nums">{tl(toplam)}</span>
           </div>
           {tahsilat > 0 && tahsilat <= toplam && (
@@ -362,10 +392,12 @@ export default function RezervasyonYeniPage() {
           </p>
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || Boolean(cakisan)}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/takvim')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/takvim')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

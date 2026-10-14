@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save, ShieldCheck, User, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -9,12 +10,15 @@ import { Hata } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
+import GrupYetkiSecici from '@/components/GrupYetkiSecici';
+import OgrenciIslemYetkileri from '@/components/OgrenciIslemYetkileri';
+import { grupYetkisiGecerli, MODUL_LABEL, ModulIkon, OGRENCI_ISLEM_YETKILERI, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelKayitPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ adSoyad: '', kullaniciAdi: '', sifre: '', rol: 'PERSONEL' });
   const [yetkiler, setYetkiler] = useState([]);
+  const [grupYetki, setGrupYetki] = useState({ kisitli: false, grupIdleri: [] });
   const [hata, setHata] = useHata();
   const toast = useToast();
   const [kaydediyor, setKaydediyor] = useState(false);
@@ -22,11 +26,20 @@ export default function PersonelKayitPage() {
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const yetkiSecTogla = (modul) =>
-    setYetkiler((p) => (p.includes(modul) ? p.filter((m) => m !== modul) : [...p, modul]));
+    setYetkiler((p) => {
+      const yeni = p.includes(modul) ? p.filter((m) => m !== modul) : [...p, modul];
+      // Öğrenciler menüsü kapanınca öğrenci işlem yetkileri de düşer
+      return yeni.includes('OGRENCI') ? yeni : yeni.filter((m) => !OGRENCI_ISLEM_YETKILERI.includes(m));
+    });
 
   const kaydet = async (e) => {
     e.preventDefault();
     setHata('');
+    const grupKisitli = form.rol === 'PERSONEL' && grupYetkisiGecerli(yetkiler) && grupYetki.kisitli;
+    if (grupKisitli && grupYetki.grupIdleri.length === 0) {
+      setHata('Seçili gruplar seçildiyse en az bir grup işaretleyin.');
+      return;
+    }
     setKaydediyor(true);
     try {
       await kullaniciService.create({
@@ -35,6 +48,8 @@ export default function PersonelKayitPage() {
         sifre: form.sifre,
         rol: form.rol,
         yetkiler: form.rol === 'PERSONEL' ? yetkiler : [],
+        grupKisitli,
+        grupIdleri: grupKisitli ? grupYetki.grupIdleri : [],
       });
       toast.basari('Personel oluşturuldu.');
       navigate('/personel', { replace: true });
@@ -89,16 +104,19 @@ export default function PersonelKayitPage() {
 
           <Field label="Rol">
             <Seg className="w-full">
-              <SegOpt active={form.rol === 'PERSONEL'} onClick={() => set('rol', 'PERSONEL')} className="flex-1">
-                Personel
+              <SegOpt active={form.rol === 'PERSONEL'} tone="notr" onClick={() => set('rol', 'PERSONEL')} className="flex-1">
+                <User size={16} strokeWidth={1.5} />
+                <span>Personel</span>
               </SegOpt>
               <SegOpt active={form.rol === 'ADMIN'} onClick={() => set('rol', 'ADMIN')} className="flex-1">
-                Admin
+                <ShieldCheck size={16} strokeWidth={1.5} />
+                <span>Admin</span>
               </SegOpt>
             </Seg>
           </Field>
 
           {form.rol === 'PERSONEL' ? (
+            <>
             <Field label="Başlangıç menü yetkileri">
               <p className="m-0 mb-1.5 text-[13px] text-ink/55">
                 Personel varsayılan olarak yalnızca rezervasyon alabilir. İhtiyaç oldukça buradan veya
@@ -112,21 +130,38 @@ export default function PersonelKayitPage() {
                     onClick={() => yetkiSecTogla(m)}
                     className="border border-divider border-l!"
                   >
-                    {MODUL_LABEL[m]}
+                    <ModulIkon modul={m} />
+                    <span>{MODUL_LABEL[m]}</span>
                   </SegOpt>
                 ))}
               </div>
             </Field>
+            {yetkiler.includes('OGRENCI') ? (
+              <Field label="Öğrenci işlem yetkileri">
+                <p className="m-0 mb-1.5 text-[13px] text-ink/55">
+                  Öğrenci detayında hangi kartları görüp işlem yapabileceği. İşaretlenmeyen kart hiç görünmez.
+                </p>
+                <OgrenciIslemYetkileri yetkiler={yetkiler} onTogla={yetkiSecTogla} />
+              </Field>
+            ) : null}
+            {grupYetkisiGecerli(yetkiler) ? (
+              <Field label="Grup yetkisi">
+                <GrupYetkiSecici value={grupYetki} onChange={setGrupYetki} />
+              </Field>
+            ) : null}
+            </>
           ) : (
             <p className="m-0 text-[13.5px] text-ink/55">Admin kullanıcılar tüm menülere otomatik erişir.</p>
           )}
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Kullanıcıyı kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Kullanıcıyı kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/personel')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/personel')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

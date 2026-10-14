@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, Hourglass, List, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,8 +81,14 @@ export default function TransferListePage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <h4 className="text-[22px]">Öğrenci transfer talepleri</h4>
           <Seg className="ml-auto">
-            <SegOpt active={filtre === 'BEKLIYOR'} onClick={() => setFiltre('BEKLIYOR')}>Bekleyenler</SegOpt>
-            <SegOpt active={filtre === ''} onClick={() => setFiltre('')}>Tümü</SegOpt>
+            <SegOpt active={filtre === 'BEKLIYOR'} onClick={() => setFiltre('BEKLIYOR')}>
+              <Hourglass size={16} strokeWidth={1.5} />
+              <span>Bekleyenler</span>
+            </SegOpt>
+            <SegOpt active={filtre === ''} onClick={() => setFiltre('')}>
+              <List size={16} strokeWidth={1.5} />
+              <span>Tümü</span>
+            </SegOpt>
           </Seg>
         </div>
 
@@ -138,11 +144,12 @@ export default function TransferListePage() {
                       <Td tam className="whitespace-nowrap text-right">
                         {t.durum === 'BEKLIYOR' ? (
                           <>
-                            <Button variant="primary" size="sm" onClick={() => setOnaylanacak(t)}>
-                              Onayla
+                            <Button variant="cerceve" size="sm" onClick={() => setOnaylanacak(t)}>
+                              <Check size={14} strokeWidth={1.5} />
+                              <span>Onayla</span>
                             </Button>
                             <Button
-                              variant="danger"
+                              variant="cerceveHata"
                               size="sm"
                               className="ml-1"
                               onClick={() => {
@@ -150,7 +157,8 @@ export default function TransferListePage() {
                                 setReddedilecek(t);
                               }}
                             >
-                              Reddet
+                              <X size={14} strokeWidth={1.5} />
+                              <span>Reddet</span>
                             </Button>
                           </>
                         ) : null}

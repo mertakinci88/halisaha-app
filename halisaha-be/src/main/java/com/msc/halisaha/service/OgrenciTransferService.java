@@ -34,13 +34,19 @@ public class OgrenciTransferService {
     private final GrupRepository grupRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
+    private final GrupKapsami grupKapsami;
 
     /** Admin ekranı: durum boşsa tüm talepler. */
     public List<TransferResponse> listele(TransferDurum durum) {
-        return transferRepository.listele(isletmeContext.id(), durum).stream().map(TransferResponse::from).toList();
+        return transferRepository.listele(isletmeContext.id(), durum).stream()
+                .filter(this::gorunur)
+                .map(TransferResponse::from).toList();
     }
 
     public long bekleyenSayisi() {
+        if (grupKapsami.kisitli()) {
+            return transferRepository.listele(isletmeContext.id(), TransferDurum.BEKLIYOR).stream().filter(this::gorunur).count();
+        }
         return transferRepository.countByIsletmeIdAndDurum(isletmeContext.id(), TransferDurum.BEKLIYOR);
     }
 
@@ -138,15 +144,26 @@ public class OgrenciTransferService {
     private OgrenciTransfer bekleyenGetir(Long transferId) {
         OgrenciTransfer transfer = transferRepository.findByIdAndIsletmeId(transferId, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Transfer talebi bulunamadı: " + transferId));
+        if (!gorunur(transfer)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Transfer talebi bulunamadı: " + transferId);
+        }
         if (transfer.getDurum() != TransferDurum.BEKLIYOR) {
             throw new ApiException(HttpStatus.CONFLICT, "Bu talep zaten sonuçlandırılmış");
         }
         return transfer;
     }
 
+    /** Grup kısıtlı personel yalnızca öğrencisi şu an izinli gruplarda olan talepleri görür. */
+    private boolean gorunur(OgrenciTransfer transfer) {
+        Grup grup = transfer.getOgrenci().getGrup();
+        return grupKapsami.grupIzinli(grup != null ? grup.getId() : null);
+    }
+
     private Ogrenci ogrenciGetir(Long ogrenciId, Long isletmeId) {
-        return ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
+        Ogrenci ogrenci = ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + ogrenciId));
+        grupKapsami.kontrol(ogrenci);
+        return ogrenci;
     }
 
     private static String bosIseNull(String s) {

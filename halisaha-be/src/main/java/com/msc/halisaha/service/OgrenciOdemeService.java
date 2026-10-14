@@ -49,6 +49,7 @@ public class OgrenciOdemeService {
     private final IadeRepository iadeRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
+    private final GrupKapsami grupKapsami;
 
     public OgrenciOdemeYilResponse getir(Long ogrenciId, int yil) {
         ogrenciGetir(ogrenciId);
@@ -148,7 +149,9 @@ public class OgrenciOdemeService {
     }
 
     private Ogrenci ogrenciGetir(Long id) {
-        return ogrenciRepository.findByIdAndIsletmeId(id, isletmeContext.id())
+        Ogrenci ogrenci = ogrenciRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + id));
+        grupKapsami.kontrol(ogrenci);
+        return ogrenci;
     }
 }

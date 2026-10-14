@@ -51,6 +51,8 @@ class KullaniciRaporServiceTest {
     private Kullanici personel;
     private Saha saha;
     private LocalDate bugun;
+    /** Ödemeler işletme gününe göre yazılır (00:00-02:00 arası bir önceki gün); iade ise takvim gününe. Kasa aralığı ikisini de kapsar. */
+    private LocalDate kasaBaslangic;
 
     @BeforeEach
     void hazirla() {
@@ -62,6 +64,7 @@ class KullaniciRaporServiceTest {
         saha = sahaRepository.save(Saha.builder().isletme(isletme).ad("Saha 1").durum(SahaDurum.AKTIF)
                 .saatlikUcret(new BigDecimal("1000")).build());
         bugun = AppZaman.bugun();
+        kasaBaslangic = AppZaman.simdi().minusHours(2).toLocalDate();
     }
 
     @AfterEach
@@ -88,7 +91,7 @@ class KullaniciRaporServiceTest {
         iadeService.yap(new IadeRequest(r1.id(), null, null, null, new BigDecimal("200"), OdemeYontemi.NAKIT, null, null, "Fazla alındı"));
         iadeRepository.flush();
 
-        var kasa = raporService.kasa(bugun, bugun);
+        var kasa = raporService.kasa(kasaBaslangic, bugun);
         var p = satir(kasa, personel);
         assertEquals(0, new BigDecimal("1000").compareTo(p.rezervasyon()));
         assertEquals(0, new BigDecimal("1000").compareTo(p.nakit()));
@@ -173,7 +176,7 @@ class KullaniciRaporServiceTest {
         rezervasyonService.create(new RezervasyonRequest(saha.getId(), "Havale 3", b3, b3.plusHours(1), "05469764613",
                 OdemeYontemi.HAVALE_EFT, new BigDecimal("200"), ziraat.getId(), false));
 
-        var kasa = raporService.kasa(bugun, bugun);
+        var kasa = raporService.kasa(kasaBaslangic, bugun);
         var p = satir(kasa, personel);
         assertEquals(0, new BigDecimal("1200").compareTo(p.havale()));
         // Hesaplar tutara göre büyükten küçüğe: Ziraat 900, Garanti 300

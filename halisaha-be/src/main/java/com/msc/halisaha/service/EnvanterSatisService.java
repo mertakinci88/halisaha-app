@@ -51,6 +51,7 @@ public class EnvanterSatisService {
     private final EnvanterRepository envanterRepository;
     private final EnvanterSetRepository setRepository;
     private final OgrenciRepository ogrenciRepository;
+    private final GrupKapsami grupKapsami;
     private final EnvanterStokService stokService;
     private final HesapService hesapService;
     private final IadeRepository iadeRepository;
@@ -65,7 +66,10 @@ public class EnvanterSatisService {
 
     /** Panel için: ödemesi alınmış, teslim edilmemiş envanterler (öğrenciye göre gruplu, en eski satış önce). */
     public EnvanterTeslimBekleyenResponse teslimBekleyenler() {
-        return EnvanterTeslimBekleyenResponse.from(kalemRepository.teslimBekleyenler(isletmeContext.id()));
+        return EnvanterTeslimBekleyenResponse.from(kalemRepository.teslimBekleyenler(isletmeContext.id()).stream()
+                .filter(k -> grupKapsami.grupIzinli(k.getSatis().getOgrenci().getGrup() != null
+                        ? k.getSatis().getOgrenci().getGrup().getId() : null))
+                .toList());
     }
 
     @Transactional
@@ -345,12 +349,16 @@ public class EnvanterSatisService {
     }
 
     private Ogrenci ogrenciGetir(Long ogrenciId, Long isletmeId) {
-        return ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
+        Ogrenci ogrenci = ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + ogrenciId));
+        grupKapsami.kontrol(ogrenci);
+        return ogrenci;
     }
 
     private EnvanterSatis satisGetir(Long ogrenciId, Long satisId, Long isletmeId) {
-        return satisRepository.bul(satisId, isletmeId, ogrenciId)
+        EnvanterSatis satis = satisRepository.bul(satisId, isletmeId, ogrenciId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Envanter satışı bulunamadı: " + satisId));
+        grupKapsami.kontrol(satis.getOgrenci());
+        return satis;
     }
 }

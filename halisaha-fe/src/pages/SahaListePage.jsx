@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -109,16 +109,18 @@ export default function SahaListePage() {
                     <Td etiket="Saatlik ücret" className="text-right tabular-nums">{tl(s.saatlikUcret)}</Td>
                     <Td tam className="text-right">
                       <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
-                        <Button variant="guncelle" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
-                          Güncelle
+                        <Button variant="cerceve" size="sm" onClick={() => navigate('/sahalar/' + s.id)}>
+                          <Pencil size={14} strokeWidth={1.5} />
+                          <span>Güncelle</span>
                         </Button>
                         <Button
-                          variant="danger"
+                          variant="cerceveHata"
                           size="sm"
                           disabled={kontrolEdilenId === s.id}
                           onClick={() => silBaslat(s)}
                         >
-                          Sil
+                          <Trash2 size={14} strokeWidth={1.5} />
+                          <span>Sil</span>
                         </Button>
                       </div>
                     </Td>

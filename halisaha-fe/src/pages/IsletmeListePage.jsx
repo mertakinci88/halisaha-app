@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Power, PowerOff, Settings } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,17 +92,19 @@ export default function IsletmeListePage() {
                       </Tag>
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/isletmeler/' + i.id)}>
-                        Yönet
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/isletmeler/' + i.id)}>
+                        <Settings size={14} strokeWidth={1.5} />
+                        <span>Yönet</span>
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant={i.durum === 'AKTIF' ? 'cerceveHata' : 'cerceve'}
                         size="sm"
                         className="ml-1"
                         disabled={islemde === i.id}
                         onClick={() => (i.durum === 'AKTIF' ? setPasifOnay(i) : durumDegistir(i))}
                       >
-                        {i.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}
+                        {i.durum === 'AKTIF' ? <PowerOff size={14} strokeWidth={1.5} /> : <Power size={14} strokeWidth={1.5} />}
+                        <span>{i.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}</span>
                       </Button>
                     </Td>
                   </Tr>

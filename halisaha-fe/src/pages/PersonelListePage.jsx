@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ShieldCheck } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck, User, UserCheck, UserX } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { MODUL_LABEL } from '@/lib/yetki';
+import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelListePage() {
   const navigate = useNavigate();
@@ -89,17 +89,20 @@ export default function PersonelListePage() {
                           Admin
                         </Tag>
                       ) : (
-                        <Tag tone="neutral">Personel</Tag>
+                        <Tag tone="neutral">
+                          <User size={13} strokeWidth={1.75} className="mr-1 inline" />
+                          Personel
+                        </Tag>
                       )}
                     </Td>
                     <Td tam etiket="Menü yetkileri">
                       {k.rol === 'ADMIN' ? (
                         <span className="text-ink/55">Tüm menüler</span>
-                      ) : k.yetkiler.length === 0 ? (
+                      ) : k.yetkiler.filter((m) => TUM_MODULLER.includes(m)).length === 0 ? (
                         <span className="text-ink/55">Sadece rezervasyon</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {k.yetkiler.map((m) => (
+                          {k.yetkiler.filter((m) => TUM_MODULLER.includes(m)).map((m) => (
                             <Tag key={m} tone="outline">
                               {MODUL_LABEL[m] || m}
                             </Tag>
@@ -113,17 +116,19 @@ export default function PersonelListePage() {
                       </Tag>
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="secondary" size="sm" onClick={() => navigate('/personel/' + k.id)}>
-                        Düzenle
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/personel/' + k.id)}>
+                        <Pencil size={14} strokeWidth={1.5} />
+                        <span>Düzenle</span>
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant={k.durum === 'AKTIF' ? 'cerceveHata' : 'cerceve'}
                         size="sm"
                         className="ml-1"
                         disabled={islemde === k.id}
                         onClick={() => durumDegistir(k)}
                       >
-                        {k.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}
+                        {k.durum === 'AKTIF' ? <UserX size={14} strokeWidth={1.5} /> : <UserCheck size={14} strokeWidth={1.5} />}
+                        <span>{k.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}</span>
                       </Button>
                     </Td>
                   </Tr>

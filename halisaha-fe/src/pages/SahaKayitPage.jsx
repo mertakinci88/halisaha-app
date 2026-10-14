@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CircleCheck, CirclePause, Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -69,11 +70,13 @@ export default function SahaKayitPage() {
             </Field>
             <Field label="Durum">
               <Seg className="w-full">
-                <SegOpt active={form.durum === 'AKTIF'} onClick={() => set('durum', 'AKTIF')} className="flex-1">
-                  Aktif
+                <SegOpt active={form.durum === 'AKTIF'} tone="basari" onClick={() => set('durum', 'AKTIF')} className="flex-1">
+                  <CircleCheck size={16} strokeWidth={1.5} />
+                  <span>Aktif</span>
                 </SegOpt>
-                <SegOpt active={form.durum === 'PASIF'} onClick={() => set('durum', 'PASIF')} className="flex-1">
-                  Pasif
+                <SegOpt active={form.durum === 'PASIF'} tone="notr" onClick={() => set('durum', 'PASIF')} className="flex-1">
+                  <CirclePause size={16} strokeWidth={1.5} />
+                  <span>Pasif</span>
                 </SegOpt>
               </Seg>
             </Field>
@@ -81,10 +84,12 @@ export default function SahaKayitPage() {
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Sahayı kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Sahayı kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/sahalar')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/sahalar')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

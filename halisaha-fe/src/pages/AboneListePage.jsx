@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Plus } from 'lucide-react';
+import { Ban, CircleCheck, Eye, List, Pencil, Plus, Save, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,13 +108,19 @@ export default function AboneListePage() {
                     aria-label="Standart abonelik ücreti"
                   />
                 </div>
-                <Button variant="primary" disabled={ucretKaydediyor || ucretDuzen === ''} onClick={ucretKaydet}>Kaydet</Button>
-                <Button variant="danger" onClick={() => setUcretDuzen(null)}>Vazgeç</Button>
+                <Button variant="primary" disabled={ucretKaydediyor || ucretDuzen === ''} onClick={ucretKaydet}>
+                  <Save size={16} strokeWidth={1.5} />
+                  <span>Kaydet</span>
+                </Button>
+                <Button variant="cerceveHata" onClick={() => setUcretDuzen(null)}>
+                  <X size={16} strokeWidth={1.5} />
+                  <span>Vazgeç</span>
+                </Button>
               </div>
             )}
           </div>
           {isAdmin && ucretDuzen === null ? (
-            <Button variant="secondary" size="sm" onClick={() => setUcretDuzen(standart === null ? '' : String(standart))}>
+            <Button variant="cerceve" size="sm" onClick={() => setUcretDuzen(standart === null ? '' : String(standart))}>
               <Pencil size={14} strokeWidth={1.5} />
               <span>Değiştir</span>
             </Button>
@@ -129,9 +135,18 @@ export default function AboneListePage() {
       <Card className="gap-3.5">
         <div className="flex flex-wrap items-center gap-2.5">
           <Seg>
-            <SegOpt active={durum === 'AKTIF'} onClick={() => setDurum('AKTIF')}>Aktif</SegOpt>
-            <SegOpt active={durum === 'IPTAL'} onClick={() => setDurum('IPTAL')}>İptal</SegOpt>
-            <SegOpt active={durum === ''} onClick={() => setDurum('')}>Tümü</SegOpt>
+            <SegOpt active={durum === 'AKTIF'} onClick={() => setDurum('AKTIF')}>
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>Aktif</span>
+            </SegOpt>
+            <SegOpt active={durum === 'IPTAL'} onClick={() => setDurum('IPTAL')}>
+              <Ban size={16} strokeWidth={1.5} />
+              <span>İptal</span>
+            </SegOpt>
+            <SegOpt active={durum === ''} onClick={() => setDurum('')}>
+              <List size={16} strokeWidth={1.5} />
+              <span>Tümü</span>
+            </SegOpt>
           </Seg>
           <Input
             type="search"
@@ -188,8 +203,9 @@ export default function AboneListePage() {
                     <Td etiket="Ödeme"><OdemeDurumuEtiketi durum={a.odemeDurumu} /></Td>
                     <Td etiket="Durum"><AboneDurumEtiketi abone={a} /></Td>
                     <Td tam className="text-right">
-                      <Button variant="guncelle" size="sm" onClick={() => navigate('/aboneler/' + a.id)}>
-                        Detay
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/aboneler/' + a.id)}>
+                        <Eye size={14} strokeWidth={1.5} />
+                        <span>Detay</span>
                       </Button>
                     </Td>
                   </Tr>

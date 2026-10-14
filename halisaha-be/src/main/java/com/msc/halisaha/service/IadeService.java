@@ -50,6 +50,7 @@ public class IadeService {
     private final HesapService hesapService;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
+    private final GrupKapsami grupKapsami;
 
     /** Tam olarak bir kaynak id'si verilmelidir. */
     public List<IadeResponse> liste(Long rezervasyonId, Long ogrenciOdemeId, Long envanterSatisId, Long abonelikId) {
@@ -78,8 +79,8 @@ public class IadeService {
     /** Bir öğrencinin seçili yıldaki aylık ödemelerine yapılmış tüm iadeler (kaynakId, aylık ödeme kaydının id'sidir). */
     public List<IadeResponse> ogrenciYilListe(Long ogrenciId, int yil) {
         Long isletmeId = isletmeContext.id();
-        ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + ogrenciId));
+        grupKapsami.kontrol(ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + ogrenciId)));
         return iadeRepository.ogrenciYilIadeleri(ogrenciId, yil, isletmeId).stream().map(IadeResponse::from).toList();
     }
 
@@ -156,12 +157,20 @@ public class IadeService {
     private OgrenciOdeme ogrenciOdemeBul(Long id, Long isletmeId) {
         return ogrenciOdemeRepository.findById(id)
                 .filter(o -> o.getOgrenci().getIsletme().getId().equals(isletmeId))
+                .map(o -> {
+                    grupKapsami.kontrol(o.getOgrenci());
+                    return o;
+                })
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci ödemesi bulunamadı: " + id));
     }
 
     private EnvanterSatis envanterSatisBul(Long id, Long isletmeId) {
         return envanterSatisRepository.findById(id)
                 .filter(s -> s.getIsletme().getId().equals(isletmeId))
+                .map(s -> {
+                    grupKapsami.kontrol(s.getOgrenci());
+                    return s;
+                })
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Envanter satışı bulunamadı: " + id));
     }
 

@@ -3,6 +3,7 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
+import com.msc.halisaha.dto.GrupYetkiGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
@@ -13,6 +14,7 @@ import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.KullaniciDurum;
 import com.msc.halisaha.entity.Modul;
 import com.msc.halisaha.entity.Rol;
+import com.msc.halisaha.repository.GrupRepository;
 import com.msc.halisaha.repository.IsletmeRepository;
 import com.msc.halisaha.repository.KullaniciRepository;
 import com.msc.halisaha.repository.RefreshTokenRepository;
@@ -41,6 +43,7 @@ public class KullaniciService {
     private final IsletmeContext isletmeContext;
     private final RefreshTokenRepository refreshTokenRepository;
     private final MevcutKullanici mevcutKullanici;
+    private final GrupRepository grupRepository;
 
     public List<KullaniciResponse> list() {
         return list(isletmeContext.id());
@@ -82,8 +85,11 @@ public class KullaniciService {
                 .durum(KullaniciDurum.AKTIF)
                 .yetkiler(request.rol() == Rol.ADMIN || request.yetkiler() == null
                         ? new HashSet<>()
-                        : new HashSet<>(request.yetkiler()))
+                        : yetkiTemizle(request.yetkiler()))
                 .build();
+        if (request.rol() == Rol.PERSONEL && Boolean.TRUE.equals(request.grupKisitli())) {
+            grupKisitiUygula(kullanici, isletmeId, true, request.grupIdleri());
+        }
         return KullaniciResponse.from(kullaniciRepository.save(kullanici));
     }
 
@@ -134,6 +140,9 @@ public class KullaniciService {
         kullanici.setRol(request.rol());
         // Admin tüm modüllere erişir; eski menü yetkileri kalıntı olmasın. Personel yetkisiz başlar.
         kullanici.getYetkiler().clear();
+        // Grup kısıtı yalnızca personelde anlamlıdır; rol değişince sıfırlanır (tüm gruplar)
+        kullanici.setGrupKisitli(false);
+        kullanici.getIzinliGruplar().clear();
         refreshTokenRepository.tumunuIptalEt(kullanici.getId());
         return KullaniciResponse.from(kullanici);
     }
@@ -146,8 +155,36 @@ public class KullaniciService {
         }
         Set<Modul> yeniYetkiler = kullanici.getYetkiler();
         yeniYetkiler.clear();
-        yeniYetkiler.addAll(request.yetkiler());
+        yeniYetkiler.addAll(yetkiTemizle(request.yetkiler()));
         return KullaniciResponse.from(kullanici);
+    }
+
+    /** Personelin hangi grupların öğrencilerini göreceği: kısıt yoksa tüm gruplar, varsa yalnızca seçilenler. */
+    @Transactional
+    public KullaniciResponse grupYetkisiniGuncelle(Long id, GrupYetkiGuncelleRequest request) {
+        Kullanici kullanici = getEntity(isletmeContext.id(), id);
+        if (kullanici.getRol() != Rol.PERSONEL) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Grup yetkisi yalnızca personel için tanımlanır");
+        }
+        grupKisitiUygula(kullanici, isletmeContext.id(), Boolean.TRUE.equals(request.grupKisitli()), request.grupIdleri());
+        return KullaniciResponse.from(kullanici);
+    }
+
+    private void grupKisitiUygula(Kullanici kullanici, Long isletmeId, boolean kisitli, Set<Long> grupIdleri) {
+        Set<Long> secilen = grupIdleri != null ? grupIdleri : Set.of();
+        if (kisitli && secilen.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "En az bir grup seçmelisiniz");
+        }
+        for (Long grupId : secilen) {
+            if (grupRepository.findByIdAndIsletmeId(grupId, isletmeId).isEmpty()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Grup bulunamadı: " + grupId);
+            }
+        }
+        kullanici.setGrupKisitli(kisitli);
+        kullanici.getIzinliGruplar().clear();
+        if (kisitli) {
+            kullanici.getIzinliGruplar().addAll(secilen);
+        }
     }
 
     @Transactional
@@ -176,6 +213,15 @@ public class KullaniciService {
     private void sifreDegistir(Kullanici kullanici, String yeniSifre) {
         kullanici.setSifre(passwordEncoder.encode(yeniSifre));
         refreshTokenRepository.tumunuIptalEt(kullanici.getId());
+    }
+
+    /** Öğrenci işlem yetkileri (transfer / ödeme / envanter kartları) Öğrenciler menüsü olmadan anlamsızdır; menü yoksa düşürülür. */
+    private static Set<Modul> yetkiTemizle(Set<Modul> yetkiler) {
+        Set<Modul> sonuc = new HashSet<>(yetkiler);
+        if (!sonuc.contains(Modul.OGRENCI)) {
+            sonuc.removeAll(Set.of(Modul.OGRENCI_TRANSFER, Modul.OGRENCI_ODEME, Modul.OGRENCI_ENVANTER));
+        }
+        return sonuc;
     }
 
     private Kullanici getEntity(Long isletmeId, Long id) {

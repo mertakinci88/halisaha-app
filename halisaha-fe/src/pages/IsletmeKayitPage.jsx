@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/input';
+import { Field, Input, TelInput } from '@/components/ui/input';
 import { Hata } from '@/components/ui/durum';
 import { isletmeService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { telMaske, telRakam } from '@/lib/format';
+
 import { useHata, useToast } from '@/context/ToastContext';
 
 export default function IsletmeKayitPage() {
@@ -71,13 +72,7 @@ export default function IsletmeKayitPage() {
               />
             </Field>
             <Field label="Yönetici telefon">
-              <Input
-                type="tel"
-                inputMode="numeric"
-                placeholder="546 976 46 13"
-                value={telMaske(form.yoneticiTelNo)}
-                onChange={(e) => set('yoneticiTelNo', telRakam(e.target.value))}
-              />
+              <TelInput value={form.yoneticiTelNo} onChange={(v) => set('yoneticiTelNo', v)} />
             </Field>
           </div>
 
@@ -119,10 +114,12 @@ export default function IsletmeKayitPage() {
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'İşletmeyi oluştur'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'İşletmeyi oluştur'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/isletmeler')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/isletmeler')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

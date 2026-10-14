@@ -30,6 +30,12 @@ public class GrupController {
         return grupService.list();
     }
 
+    /** Transfer hedefi olarak tüm gruplar; grup yetkisinden bağımsızdır (öğrenci başka bir gruba aktarılabilir). */
+    @GetMapping("/hedefler")
+    public List<GrupResponse> hedefler() {
+        return grupService.hedefListe();
+    }
+
     @GetMapping("/{id}")
     public GrupResponse getById(@PathVariable Long id) {
         return grupService.getById(id);

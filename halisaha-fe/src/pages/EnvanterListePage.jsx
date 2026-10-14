@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Layers, Package, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,14 @@ export default function EnvanterListePage() {
       <Hata mesaj={hata} onTekrar={yukle} />
 
       <Seg className="mb-3.5">
-        <SegOpt active={!setlerSekmesi} onClick={() => sekmeSec('envanterler')}>Envanterler</SegOpt>
-        <SegOpt active={setlerSekmesi} onClick={() => sekmeSec('setler')}>Setler</SegOpt>
+        <SegOpt active={!setlerSekmesi} onClick={() => sekmeSec('envanterler')}>
+          <Package size={16} strokeWidth={1.5} />
+          <span>Envanterler</span>
+        </SegOpt>
+        <SegOpt active={setlerSekmesi} onClick={() => sekmeSec('setler')}>
+          <Layers size={16} strokeWidth={1.5} />
+          <span>Setler</span>
+        </SegOpt>
       </Seg>
 
       <Card className="gap-3.5">
@@ -122,11 +128,13 @@ export default function EnvanterListePage() {
                     </Td>
                     <Td tam etiket="Toplam tutar" className="whitespace-nowrap text-right tabular-nums">{tl(s.toplamTutar)}</Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="guncelle" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
-                        Güncelle
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
+                        <Pencil size={14} strokeWidth={1.5} />
+                        <span>Güncelle</span>
                       </Button>
-                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecekSet(s)}>
-                        Sil
+                      <Button variant="cerceveHata" size="sm" className="ml-1" onClick={() => setSilinecekSet(s)}>
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span>Sil</span>
                       </Button>
                     </Td>
                   </Tr>
@@ -164,11 +172,13 @@ export default function EnvanterListePage() {
                       ) : null}
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="guncelle" size="sm" onClick={() => navigate('/envanter/' + e.id)}>
-                        Güncelle
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/envanter/' + e.id)}>
+                        <Pencil size={14} strokeWidth={1.5} />
+                        <span>Güncelle</span>
                       </Button>
-                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(e)}>
-                        Sil
+                      <Button variant="cerceveHata" size="sm" className="ml-1" onClick={() => setSilinecek(e)}>
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span>Sil</span>
                       </Button>
                     </Td>
                   </Tr>

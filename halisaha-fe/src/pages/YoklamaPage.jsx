@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, ClipboardCheck, Search } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardCheck, Save, Search } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -203,8 +203,9 @@ export default function YoklamaPage() {
               <ChevronRight size={16} strokeWidth={1.5} />
             </SegOpt>
           </Seg>
-          <Button variant="secondary" onClick={() => onayliDegistir(() => setGun(new Date()))} disabled={bugunMu(gun)}>
-            Bugün
+          <Button variant="gri" onClick={() => onayliDegistir(() => setGun(new Date()))} disabled={bugunMu(gun)}>
+            <CalendarDays size={16} strokeWidth={1.5} />
+            <span>Bugün</span>
           </Button>
         </div>
       </Card>
@@ -326,7 +327,8 @@ export default function YoklamaPage() {
                 {degisti ? ' · kaydedilmemiş değişiklik var' : ''}
               </span>
               <Button variant="primary" onClick={kaydet} disabled={kaydediyor || !degisti} className="max-sm:w-full">
-                {kaydediyor ? 'Kaydediliyor…' : 'Yoklamayı kaydet'}
+                <Save size={16} strokeWidth={1.5} />
+                <span>{kaydediyor ? 'Kaydediliyor…' : 'Yoklamayı kaydet'}</span>
               </Button>
             </div>
           </>

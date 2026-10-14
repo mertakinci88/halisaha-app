@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,11 +87,13 @@ export default function HesapListePage() {
                       </Tag>
                     </Td>
                     <Td tam className="text-right">
-                      <Button variant="guncelle" size="sm" onClick={() => navigate('/hesaplar/' + h.id)}>
-                        Güncelle
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/hesaplar/' + h.id)}>
+                        <Pencil size={14} strokeWidth={1.5} />
+                        <span>Güncelle</span>
                       </Button>
-                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(h)}>
-                        Sil
+                      <Button variant="cerceveHata" size="sm" className="ml-1" onClick={() => setSilinecek(h)}>
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span>Sil</span>
                       </Button>
                     </Td>
                   </Tr>
