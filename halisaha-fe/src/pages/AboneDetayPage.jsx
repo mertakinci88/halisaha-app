@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Ban, Plus, Save, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input, Select, TelInput } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/ui/dialog';
@@ -15,7 +16,7 @@ import { AboneDurumEtiketi } from '@/pages/AboneListePage';
 import { aboneService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { kisaTarih, ODEME_YONTEMI_LABEL, saatOf, telGoster, telMaske, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
+import { kisaTarih, ODEME_YONTEMI_LABEL, saatOf, telGoster, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
 import { gunAdi, saatAraligi } from '@/lib/abone';
 
 const BUGUN = toIsoDate(new Date());
@@ -155,7 +156,10 @@ export default function AboneDetayPage() {
   return (
     <div>
       <PageHeader kicker="Abonelik" baslik={abone.adSoyad}>
-        <Button variant="secondary" onClick={() => navigate('/aboneler')}>Aboneler</Button>
+        <Button variant="secondary" onClick={() => navigate('/aboneler')}>
+          <ArrowLeft size={16} strokeWidth={1.5} />
+          <span>Aboneler</span>
+        </Button>
       </PageHeader>
       <Hata mesaj={hata} />
 
@@ -185,7 +189,7 @@ export default function AboneDetayPage() {
                 <Input value={form.adSoyad} onChange={(e) => setForm({ ...form, adSoyad: e.target.value })} required maxLength={255} />
               </Field>
               <Field label="Telefon">
-                <Input type="tel" inputMode="numeric" value={telMaske(form.telNo)} onChange={(e) => setForm({ ...form, telNo: telRakam(e.target.value) })} required />
+                <TelInput value={form.telNo} onChange={(v) => setForm({ ...form, telNo: v })} required />
               </Field>
               <Field label="Abonelik ücreti (₺)">
                 <Input
@@ -206,7 +210,8 @@ export default function AboneDetayPage() {
               </p>
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" className="flex-1" disabled={!degisti || kaydediyor}>
-                  {kaydediyor ? 'Kaydediliyor…' : 'Kaydet'}
+                  <Save size={16} strokeWidth={1.5} />
+                  <span>{kaydediyor ? 'Kaydediliyor…' : 'Kaydet'}</span>
                 </Button>
                 {aktif ? (
                   <Button
@@ -217,7 +222,8 @@ export default function AboneDetayPage() {
                       setIptalOnay(true);
                     }}
                   >
-                    Aboneliği iptal et
+                    <Ban size={16} strokeWidth={1.5} />
+                    <span>Aboneliği iptal et</span>
                   </Button>
                 ) : null}
               </div>
@@ -249,13 +255,14 @@ export default function AboneDetayPage() {
                     <Td etiket="Ödeme şekli">{ODEME_YONTEMI_LABEL[o.odemeSekli]}{o.hesapAd ? ' (' + o.hesapAd + ')' : ''}</Td>
                     <Td tam className="text-right">
                       <Button
-                        variant="danger"
+                        variant="cerceveHata"
                         size="sm"
                         disabled={abone.odemeler.length === 1}
                         title={abone.odemeler.length === 1 ? 'Aboneliğin en az bir ödemesi olmalı' : undefined}
                         onClick={() => setSilinecekOdeme(o)}
                       >
-                        Sil
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span>Sil</span>
                       </Button>
                     </Td>
                   </Tr>
@@ -305,7 +312,10 @@ export default function AboneDetayPage() {
                   </Select>
                 </Field>
                 {odeme.sekil === 'HAVALE_EFT' ? <HesapSecimi value={odeme.hesapId} onChange={(v) => setOdeme({ ...odeme, hesapId: v })} /> : null}
-                <Button type="submit" variant="primary" disabled={odemeEkliyor}>{odemeEkliyor ? 'Ekleniyor…' : 'Ödeme ekle'}</Button>
+                <Button type="submit" variant="primary" disabled={odemeEkliyor}>
+                  <Plus size={16} strokeWidth={1.5} />
+                  <span>{odemeEkliyor ? 'Ekleniyor…' : 'Ödeme ekle'}</span>
+                </Button>
               </form>
             ) : null}
           </Card>

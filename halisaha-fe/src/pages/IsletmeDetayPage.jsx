@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ArrowLeft, KeyRound, Plus, Save, ShieldCheck, User, UserCheck, UserX, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/input';
+import { Field, Input, TelInput } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { isletmeService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { telMaske, telRakam } from '@/lib/format';
+import { telRakam } from '@/lib/format';
 import { useHata, useToast } from '@/context/ToastContext';
 
 const BOS_KULLANICI = { adSoyad: '', kullaniciAdi: '', sifre: '', rol: 'ADMIN' };
@@ -112,7 +112,8 @@ export default function IsletmeDetayPage() {
     <div>
       <PageHeader kicker="Platform" baslik={isletme.ad} sade>
         <Button variant="secondary" onClick={() => navigate('/isletmeler')}>
-          Listeye dön
+          <ArrowLeft size={16} strokeWidth={1.5} />
+          <span>Listeye dön</span>
         </Button>
       </PageHeader>
       <Hata mesaj={hata} />
@@ -143,16 +144,11 @@ export default function IsletmeDetayPage() {
                 />
               </Field>
               <Field label="Yönetici telefon">
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="546 976 46 13"
-                  value={telMaske(bilgi.yoneticiTelNo)}
-                  onChange={(e) => setBilgi((p) => ({ ...p, yoneticiTelNo: telRakam(e.target.value) }))}
-                />
+                <TelInput value={bilgi.yoneticiTelNo} onChange={(v) => setBilgi((p) => ({ ...p, yoneticiTelNo: v }))} />
               </Field>
               <Button type="submit" variant="primary" disabled={islemde || !bilgi.ad.trim()}>
-                Bilgileri güncelle
+                <Save size={16} strokeWidth={1.5} />
+                <span>Bilgileri güncelle</span>
               </Button>
             </Card>
           </form>
@@ -194,19 +190,23 @@ export default function IsletmeDetayPage() {
                     onClick={() => setYeni((p) => ({ ...p, rol: 'ADMIN' }))}
                     className="flex-1"
                   >
-                    Admin
+                    <ShieldCheck size={16} strokeWidth={1.5} />
+                    <span>Admin</span>
                   </SegOpt>
                   <SegOpt
                     active={yeni.rol === 'PERSONEL'}
+                    tone="notr"
                     onClick={() => setYeni((p) => ({ ...p, rol: 'PERSONEL' }))}
                     className="flex-1"
                   >
-                    Personel
+                    <User size={16} strokeWidth={1.5} />
+                    <span>Personel</span>
                   </SegOpt>
                 </Seg>
               </Field>
               <Button type="submit" variant="primary" disabled={islemde}>
-                Kullanıcıyı ekle
+                <Plus size={16} strokeWidth={1.5} />
+                <span>Kullanıcıyı ekle</span>
               </Button>
             </Card>
           </form>
@@ -239,7 +239,10 @@ export default function IsletmeDetayPage() {
                           Admin
                         </Tag>
                       ) : (
-                        <Tag tone="neutral">Personel</Tag>
+                        <Tag tone="neutral">
+                          <User size={13} strokeWidth={1.75} className="mr-1 inline" />
+                          Personel
+                        </Tag>
                       )}
                     </Td>
                     <Td>
@@ -249,17 +252,18 @@ export default function IsletmeDetayPage() {
                     </Td>
                     <Td className="whitespace-nowrap text-right">
                       <Button
-                        variant="secondary"
+                        variant="cerceve"
                         size="sm"
                         onClick={() => {
                           setSifreHedef(k);
                           setYeniSifre('');
                         }}
                       >
-                        Şifre sıfırla
+                        <KeyRound size={14} strokeWidth={1.5} />
+                        <span>Şifre sıfırla</span>
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant={k.durum === 'AKTIF' ? 'cerceveHata' : 'cerceve'}
                         size="sm"
                         className="ml-1"
                         disabled={islemde}
@@ -270,7 +274,8 @@ export default function IsletmeDetayPage() {
                           )
                         }
                       >
-                        {k.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}
+                        {k.durum === 'AKTIF' ? <UserX size={14} strokeWidth={1.5} /> : <UserCheck size={14} strokeWidth={1.5} />}
+                        <span>{k.durum === 'AKTIF' ? 'Pasife al' : 'Aktif et'}</span>
                       </Button>
                     </Td>
                   </Tr>
@@ -293,10 +298,12 @@ export default function IsletmeDetayPage() {
               />
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" className="flex-1" disabled={islemde}>
-                  Şifreyi kaydet
+                  <Save size={16} strokeWidth={1.5} />
+                  <span>Şifreyi kaydet</span>
                 </Button>
-                <Button variant="danger" onClick={() => setSifreHedef(null)}>
-                  Vazgeç
+                <Button variant="cerceveHata" onClick={() => setSifreHedef(null)}>
+                  <X size={16} strokeWidth={1.5} />
+                  <span>Vazgeç</span>
                 </Button>
               </div>
             </form>

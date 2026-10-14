@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Save, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input, Select, TelInput } from '@/components/ui/input';
 import HesapSecimi from '@/components/HesapSecimi';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
@@ -12,7 +12,7 @@ import { rezervasyonService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { cn } from '@/lib/utils';
-import { hh, saatOf, telMaske, telRakam, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
+import { hh, saatOf, tl, toIsoDate, toIsoDateTime, tutarSinirla, uzunTarih } from '@/lib/format';
 
 const ACILIS = 12;
 const KAPANIS = 26; // 26 = ertesi gün 02:00
@@ -231,20 +231,7 @@ export default function RezervasyonYeniPage() {
               />
             </Field>
             <Field label="Telefon">
-              <div className="flex">
-                <span className="grid min-h-10 place-items-center border border-r-0 border-divider bg-surface px-3 text-[15.5px] text-ink/60">
-                  0
-                </span>
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="5__ ___ __ __"
-                  value={telMaske(form.telNo)}
-                  onChange={(e) => set('telNo', telRakam(e.target.value))}
-                  required
-                />
-              </div>
+              <TelInput value={form.telNo} onChange={(v) => set('telNo', v)} required />
             </Field>
           </div>
 
@@ -362,10 +349,12 @@ export default function RezervasyonYeniPage() {
           </p>
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || Boolean(cakisan)}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Rezervasyonu kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/takvim')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/takvim')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

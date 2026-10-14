@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, X } from 'lucide-react';
+import { ArrowLeft, Ban, Check, CircleCheck, Plus, Wallet, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -275,12 +275,13 @@ export default function RezervasyonDetayPage() {
                     <Td className="text-right tabular-nums text-ink/55">{u.adet}</Td>
                     <Td className="text-right">
                       <Button
-                        variant="secondary"
+                        variant="cerceve"
                         size="sm"
                         disabled={islemde || rez.durum !== 'AKTIF' || u.adet <= 0}
                         onClick={() => urunEkle(u.id)}
                       >
-                        {u.adet <= 0 ? 'Tükendi' : '+ Ekle'}
+                        {u.adet <= 0 ? null : <Plus size={14} strokeWidth={1.5} />}
+                        <span>{u.adet <= 0 ? 'Tükendi' : 'Ekle'}</span>
                       </Button>
                     </Td>
                   </Tr>
@@ -409,8 +410,9 @@ export default function RezervasyonDetayPage() {
                     value={kapora}
                     onChange={(e) => setKapora(tutarSinirla(e.target.value, kalan))}
                   />
-                  <Button variant="secondary" disabled={islemde || !kapora} onClick={kismiAl}>
-                    {kismiEtiket} al
+                  <Button variant="primary" disabled={islemde || !kapora} onClick={kismiAl}>
+                    <Wallet size={16} strokeWidth={1.5} />
+                    <span>{kismiEtiket} al</span>
                   </Button>
                 </div>
               )}
@@ -423,11 +425,12 @@ export default function RezervasyonDetayPage() {
               disabled={islemde || kalan <= 0 || !aktif}
               onClick={() => odemeAl('ODEME', kalan)}
             >
-              {rez.odemeDurumu === 'ODENDI'
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>{rez.odemeDurumu === 'ODENDI'
                 ? 'Ödeme alındı'
                 : !aktif
                   ? 'İptal edildi · ödeme alınamaz'
-                  : 'Ödemeyi tamamla · ' + tl(kalan)}
+                  : 'Ödemeyi tamamla · ' + tl(kalan)}</span>
             </Button>
             <Button
               variant="danger"
@@ -437,10 +440,12 @@ export default function RezervasyonDetayPage() {
                 setIptalOnay(true);
               }}
             >
-              Rezervasyonu iptal et
+              <Ban size={16} strokeWidth={1.5} />
+              <span>Rezervasyonu iptal et</span>
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/takvim')}>
-              Takvime dön
+            <Button variant="gri" onClick={() => navigate('/takvim')}>
+              <ArrowLeft size={16} strokeWidth={1.5} />
+              <span>Takvime dön</span>
             </Button>
           </div>
         </Card>

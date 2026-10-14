@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -105,10 +106,12 @@ export default function EnvanterFormu({ baslangic, kaydetEtiketi, kaydediyor, on
 
         <div className="mt-1 flex gap-2">
           <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-            {kaydediyor ? 'Kaydediliyor…' : kaydetEtiketi}
+            <Save size={16} strokeWidth={1.5} />
+            <span>{kaydediyor ? 'Kaydediliyor…' : kaydetEtiketi}</span>
           </Button>
-          <Button variant="danger" onClick={() => navigate('/envanter')}>
-            Vazgeç
+          <Button variant="cerceveHata" onClick={() => navigate('/envanter')}>
+            <X size={16} strokeWidth={1.5} />
+            <span>Vazgeç</span>
           </Button>
         </div>
       </Card>

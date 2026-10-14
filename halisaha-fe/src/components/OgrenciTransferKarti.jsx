@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Pencil, Send, Undo2, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Field, Select, Textarea } from '@/components/ui/input';
@@ -129,11 +129,13 @@ export default function OgrenciTransferKarti({ ogrenciId, grupId }) {
                 {bekleyen.aciklama ? <span className="mt-0.5 block text-ink/70">Not: {bekleyen.aciklama}</span> : null}
               </span>
               <span className="ml-auto flex gap-2">
-                <Button variant="guncelle" size="sm" onClick={duzenlemeyeBasla}>
-                  Güncelle
+                <Button variant="cerceve" size="sm" onClick={duzenlemeyeBasla}>
+                  <Pencil size={14} strokeWidth={1.5} />
+                  <span>Güncelle</span>
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => setGeriCekilecek(bekleyen)}>
-                  Talebi geri çek
+                <Button variant="cerceveHata" size="sm" onClick={() => setGeriCekilecek(bekleyen)}>
+                  <Undo2 size={14} strokeWidth={1.5} />
+                  <span>Talebi geri çek</span>
                 </Button>
               </span>
             </div>
@@ -166,11 +168,13 @@ export default function OgrenciTransferKarti({ ogrenciId, grupId }) {
               ) : null}
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" variant="primary" disabled={!hedef || gonderiyor}>
-                  {gonderiyor ? 'Kaydediliyor…' : duzenleniyor ? 'Talebi güncelle' : 'Transfer talebi aç'}
+                  <Send size={16} strokeWidth={1.5} />
+                  <span>{gonderiyor ? 'Kaydediliyor…' : duzenleniyor ? 'Talebi güncelle' : 'Transfer talebi aç'}</span>
                 </Button>
                 {duzenleniyor ? (
-                  <Button type="button" variant="danger" disabled={gonderiyor} onClick={vazgec}>
-                    Vazgeç
+                  <Button type="button" variant="cerceveHata" disabled={gonderiyor} onClick={vazgec}>
+                    <X size={16} strokeWidth={1.5} />
+                    <span>Vazgeç</span>
                   </Button>
                 ) : (
                   <span className="text-[13px] text-ink/55">Talep admin onayına gider; onaylanana kadar öğrenci mevcut grubunda kalır.</span>

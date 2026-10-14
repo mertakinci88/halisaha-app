@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,11 +89,13 @@ export default function UrunListePage() {
                       ) : null}
                     </Td>
                     <Td tam className="whitespace-nowrap text-right">
-                      <Button variant="guncelle" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
-                        Güncelle
+                      <Button variant="cerceve" size="sm" onClick={() => navigate('/urunler/' + u.id)}>
+                        <Pencil size={14} strokeWidth={1.5} />
+                        <span>Güncelle</span>
                       </Button>
-                      <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(u)}>
-                        Sil
+                      <Button variant="cerceveHata" size="sm" className="ml-1" onClick={() => setSilinecek(u)}>
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span>Sil</span>
                       </Button>
                     </Td>
                   </Tr>

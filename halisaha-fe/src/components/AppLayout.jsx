@@ -72,11 +72,11 @@ export default function AppLayout() {
               <span className="border-l border-divider pl-2 text-ink/70">{kullanici.isletmeAd}</span>
             ) : null}
           </div>
-          <Button variant="secondary" onClick={() => navigate('/sifre-degistir')}>
+          <Button variant="gri" onClick={() => navigate('/sifre-degistir')}>
             <KeyRound size={16} strokeWidth={1.5} />
             <span>Şifre</span>
           </Button>
-          <Button variant="secondary" onClick={cikis}>
+          <Button variant="danger" onClick={cikis}>
             <LogOut size={16} strokeWidth={1.5} />
             <span>Çıkış</span>
           </Button>
@@ -130,7 +130,7 @@ export function PageHeader({ kicker, baslik, children, sade = false }) {
         {children}
         {sade ? null : (
           <>
-            <Button variant="secondary" onClick={() => navigate('/takvim')}>
+            <Button variant="gri" onClick={() => navigate('/takvim')}>
               <CalendarDays size={16} strokeWidth={1.5} />
               <span>Takvim</span>
             </Button>

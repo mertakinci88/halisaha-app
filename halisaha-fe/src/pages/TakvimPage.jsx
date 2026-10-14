@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Seg, SegOpt } from '@/components/ui/seg';
@@ -135,8 +135,9 @@ export default function TakvimPage() {
             <ChevronRight size={16} strokeWidth={1.5} />
           </SegOpt>
         </Seg>
-        <Button variant="secondary" onClick={() => setGun(new Date())}>
-          Bugün
+        <Button variant="gri" onClick={() => setGun(new Date())}>
+          <CalendarDays size={16} strokeWidth={1.5} />
+          <span>Bugün</span>
         </Button>
 
         <div className="ml-auto flex flex-wrap items-center gap-4 text-[13.5px]">

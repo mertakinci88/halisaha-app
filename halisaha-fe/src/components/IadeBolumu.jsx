@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Save, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/dialog';
@@ -112,7 +113,10 @@ export default function IadeBolumu({ listeParams, kaynaklar }) {
         <div className="font-heading text-[18px] font-semibold">İadeler</div>
         {toplam > 0 ? <span className="text-[14px] text-ink/60">Toplam iade {tl(toplam)}</span> : null}
         {isAdmin && secenekler.length > 0 && !acik ? (
-          <Button variant="secondary" size="sm" className="ml-auto" onClick={ac}>İade yap</Button>
+          <Button variant="cerceve" size="sm" className="ml-auto" onClick={ac}>
+            <Undo2 size={14} strokeWidth={1.5} />
+            <span>İade yap</span>
+          </Button>
         ) : null}
       </div>
 
@@ -193,8 +197,14 @@ export default function IadeBolumu({ listeParams, kaynaklar }) {
             İade, alınan ödemeyi silmez; raporlarda iade tarihinde tahsilattan düşülür. Yanlış girilen bir ödemeyi silmek için ödeme satırındaki Sil'i kullanın.
           </p>
           <div className="flex gap-2">
-            <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>{kaydediyor ? 'Kaydediliyor…' : 'İadeyi kaydet'}</Button>
-            <Button type="button" variant="danger" onClick={() => setAcik(false)}>Vazgeç</Button>
+            <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'İadeyi kaydet'}</span>
+            </Button>
+            <Button type="button" variant="cerceveHata" onClick={() => setAcik(false)}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
+            </Button>
           </div>
         </form>
       ) : null}
