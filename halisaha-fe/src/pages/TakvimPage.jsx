@@ -16,7 +16,7 @@ const KAPANIS = 26; // 26 = ertesi gün 02:00
 // Takvim 30 dakikalık satırlardan oluşur: 12:00, 12:30, ... 02:00, 02:30 (rezervasyon tam saatte ya da buçukta başlar)
 const YARIM_SAATLER = Array.from({ length: (KAPANIS - ACILIS + 1) * 2 }, (_, i) => ACILIS + i / 2);
 const SATIR_YUKSEKLIGI = 32; // px; 1 saatlik rezervasyon 2 satır (64px) kaplar
-const KENAR = 14; // sol kenar şeridi (iptal edilen rezervasyonlar burada işaretlenir)
+const KENAR = 14; // sol kenar şeridi: yalnızca o saatte iptal edilmiş rezervasyon varsa ayrılır
 const EN_KISA_SURE_SATIR = 2; // en kısa rezervasyon 1 saat = 2 satır
 // Boşluğu 1 saatten kısa (30 dakika) olan satırlarda rezervasyon yapılamaz: taralı gösterilir ve "30 DK BOŞ" yazar
 const TARAMA = 'repeating-linear-gradient(135deg, transparent 0, transparent 5px, rgba(29, 31, 32, 0.07) 5px, rgba(29, 31, 32, 0.07) 6px)';
@@ -93,6 +93,10 @@ export default function TakvimPage() {
     });
     return harita;
   }, [rezervasyonlar]);
+
+  /** Bu saha ve saat aralığında (başlangıç/bitiş, saat olarak) iptal edilmiş bir rezervasyon var mı? Varsa sol kenar şeridi için yer ayrılır. */
+  const iptalVar = (sahaId, bas, bit) =>
+    iptaller.some((r) => r.sahaId === sahaId && r.bas < bit && r.bas + sureSaat(r.baslangicTarih, r.bitisTarih) > bas);
 
   /** Rezervasyonun sütun içindeki konumu: 30 dakikalık satır sayısı üzerinden (üstten uzaklık ve yükseklik, px) */
   const konum = (r) => ({
@@ -221,7 +225,7 @@ export default function TakvimPage() {
                       key={saat}
                       type="button"
                       disabled={sigmaz}
-                      style={{ height: SATIR_YUKSEKLIGI, paddingLeft: KENAR, backgroundImage: sigmaz ? TARAMA : undefined }}
+                      style={{ height: SATIR_YUKSEKLIGI, paddingLeft: iptalVar(s.id, saat, saat + 0.5) ? KENAR : 0, backgroundImage: sigmaz ? TARAMA : undefined }}
                       title={sigmaz ? 'Bu saatte sadece 30 dakika boşluk var; en az 1 saatlik rezervasyon yapılabilir' : undefined}
                       onClick={() => navigate('/rezervasyon/yeni?sahaId=' + s.id + '&saat=' + saat + '&tarih=' + toIsoDate(gun))}
                       className={cn(
@@ -266,7 +270,13 @@ export default function TakvimPage() {
                         key={rez.id}
                         type="button"
                         onClick={() => navigate('/rezervasyon/' + rez.id)}
-                        style={{ top: top + 2, height: height - 4, left: KENAR, right: 2 }}
+                        style={{
+                          top: top + 2,
+                          height: height - 4,
+                          // İptal edilmiş bir rezervasyon varsa sol kenarda şerit için yer bırakılır; yoksa blok sütunun tamamını kaplar
+                          left: iptalVar(s.id, rez.bas, rez.bas + sureSaat(rez.baslangicTarih, rez.bitisTarih)) ? KENAR : 2,
+                          right: 2,
+                        }}
                         className={cn(
                           'absolute z-[2] flex cursor-pointer flex-col justify-center gap-0.5 overflow-hidden border px-1.5 py-1 text-left font-body sm:px-2.5',
                           rez.abonelikId
