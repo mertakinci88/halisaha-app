@@ -91,6 +91,15 @@ export const rezervasyonService = {
 export const raporService = {
   /** params: { baslangic, bitis, sahaId, grupla: GUN|HAFTA|AY, esas: ODEME|SEANS } */
   ciro: (params) => api.get('/api/raporlar/ciro', { params }).then((r) => r.data),
+  /** params: { baslangic, bitis } (ISO tarih) — varsayılan: bu ayın başından bugüne */
+  finans: (params) => api.get('/api/raporlar/finans', { params }).then((r) => r.data),
+  /** params: { yil, ay } — seçilen ayın öğrenci ödeme tahsilat özeti */
+  ogrenci: (params) => api.get('/api/raporlar/ogrenci', { params }).then((r) => r.data),
+  /** params: { baslangic, bitis } — birden fazla aya yayılan dönemin ay ay öğrenci ödeme tahsilat özeti */
+  ogrenciAylik: (params) => api.get('/api/raporlar/ogrenci/aylik', { params }).then((r) => r.data),
+  yoklama: (params) => api.get('/api/raporlar/yoklama', { params }).then((r) => r.data),
+  rezervasyon: (params) => api.get('/api/raporlar/rezervasyon', { params }).then((r) => r.data),
+  envanter: (params) => api.get('/api/raporlar/envanter', { params }).then((r) => r.data),
 };
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
@@ -165,13 +174,20 @@ export const envanterSetService = {
 /* ── /api/ogrenciler/{id}/envanter-satislari (öğrenci detayındaki envanter seti satışı) ── */
 export const envanterSatisService = {
   list: (ogrenciId) => api.get('/api/ogrenciler/' + ogrenciId + '/envanter-satislari').then((r) => r.data),
-  /** body: { kalemler: [{ tur, beden, odendi, teslim }] (her türden bir tane), odenenTutar, setId (isteğe bağlı; yalnızca oluştururken) } */
+  /**
+   * body: { kalemler: [{ tur, beden, odendi, teslim }] (her türden bir tane), odenenTutar (kaydedildikten sonraki TOPLAM ödenen),
+   * odemeSekli: NAKIT | KART | HAVALE_EFT ve hesapId (yalnızca HAVALE_EFT) — toplam artıyorsa aradaki fark bu yöntemle yeni ödeme olur,
+   * setId (isteğe bağlı; yalnızca oluştururken) }. Yanıttaki odemeler: [{ id, tutar, odemeSekli, hesapId, hesapAd, odemeTarihi }]
+   */
   create: (ogrenciId, body) =>
     api.post('/api/ogrenciler/' + ogrenciId + '/envanter-satislari', body).then((r) => r.data),
   update: (ogrenciId, satisId, body) =>
     api.put('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId, body).then((r) => r.data),
   remove: (ogrenciId, satisId) =>
     api.delete('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId),
+  /** Yanlış girilen bir ödemeyi siler (satışın en az bir ödemesi kalmalı); güncel satışı döner */
+  odemeSil: (ogrenciId, satisId, odemeId) =>
+    api.delete('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId + '/odemeler/' + odemeId).then((r) => r.data),
 };
 
 /* ── /api/gruplar ──────────────────────────────────────────── */

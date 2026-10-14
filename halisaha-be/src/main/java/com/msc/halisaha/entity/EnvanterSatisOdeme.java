@@ -20,35 +20,33 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** Envanter satışı için alınan tek bir ödeme (kendi tarihi, tutarı ve yöntemiyle). */
 @Entity
-@Table(name = "odeme")
+@Table(name = "envanter_satis_odeme")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Odeme {
+public class EnvanterSatisOdeme {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rezervasyon_id", nullable = false)
-    private Rezervasyon rezervasyon;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tip", nullable = false, length = 10)
-    private OdemeTipi tip;
+    @JoinColumn(name = "satis_id", nullable = false)
+    private EnvanterSatis satis;
 
     @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal tutar;
 
+    /** Bu alan eklenmeden önceki satışların ödemelerinde boştur. */
     @Enumerated(EnumType.STRING)
-    @Column(name = "yontem", nullable = false, length = 20)
-    private OdemeYontemi yontem;
+    @Column(name = "odeme_sekli", length = 20)
+    private OdemeYontemi odemeSekli;
 
-    /** Havale / EFT ile alınan ödemede paranın yattığı hesap (diğer yöntemlerde null). */
+    /** Havale / EFT ödemede paranın yattığı hesap (diğer yöntemlerde null). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hesap_id")
     private Hesap hesap;
@@ -56,7 +54,6 @@ public class Odeme {
     @Column(name = "odeme_tarihi", nullable = false)
     private LocalDateTime odemeTarihi;
 
-    /** Ödemeyi alan kullanıcı. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kullanici_id")
     private Kullanici kullanici;

@@ -4,7 +4,7 @@ Halı Saha Yönetim Sistemi arayüzü. `halisaha-be` (Spring Boot) API'sine bağ
 
 ## Teknoloji
 
-React 18 · Vite · Tailwind CSS v4 · Axios · React Router · lucide-react
+React 18 · Vite · Tailwind CSS v4 · Axios · React Router · lucide-react · recharts
 
 Görsel dil: **Industry** design system (çelik mavisi accent `#5980a6`, açık teknik zemin `#f2f2f3`,
 Barlow Condensed başlık / Barlow gövde, kare köşeli "blueprint" kartlar ve nişangah işaretleri).
@@ -53,7 +53,8 @@ işletmesinin verisini görür (backend `isletme_id` ile filtreler, frontend'de 
 | `/envanter/:id` | Envanter güncelle (tür ve beden de değişebilir; satışta kullanılıyorsa değişemez) | `GET/PUT /api/envanterler/{id}` |
 | `/ogrenciler/:id` | **Transfer bilgileri** kartı: hedef grup seçilip transfer talebi açılır (admin onaylayana kadar öğrenci eski grubunda kalır), bekleyen talep güncellenebilir ya da geri çekilebilir; altta nereden nereye / ne zaman / kim talep etti-onayladı geçmişi. Öğrencinin grubu varsa Grup alanı salt okunur, değişiklik transferle yapılır | `GET/POST /api/ogrenciler/{id}/transferler`, `PUT /api/transferler/{id}/iptal` |
 | `/transferler` | (Admin ya da Transferler yetkisi) Öğrenci transfer talepleri: Bekleyenler / Tümü; **Onayla** (öğrenci hemen yeni gruba geçer) ya da **Reddet** (isteğe bağlı red nedeniyle) | `GET /api/transferler`, `PUT /api/transferler/{id}/onayla`, `PUT .../reddet` |
-| `/ogrenciler/:id` | (Envanter yetkisi olanlar için) **Envanter bilgileri** kartı: öğrenciye envanter seti satışı; **Set** combobox'ından set seçilince tablo setin envanterleriyle dolar (bedenler değiştirilebilir; seçilmezse kayıtlı envanterlerden özel satış). Her envanter için Ödendi / Teslim; Ödendi işaretlenenlerin fiyatları ödenen tutara eklenir; stok yalnızca teslimde düşer | `GET/POST /api/ogrenciler/{id}/envanter-satislari`, `PUT/DELETE .../{satisId}` |
+| `/raporlar` | (Yalnızca ADMIN; Personel yetki listesinde yoktur) Finans (tahsil edilen / bekleyen ciro, trend, kaynak ve yöntem dağılımı), Öğrenci (tek ay seçiliyse o ayın ödeme tahsilat oranı ve grup bazı; birden fazla aya yayılan dönemde – ör. Bu yıl – ay ay tahsilat/oran grafikleri, ay ay detay ve grup bazında özet), Yoklama (devam oranları), Rezervasyon (saha doluluğu, yoğun saat/gün), Envanter (satışlar, kritik stok) sekmeleri; Bugün / Bu hafta / Bu ay / Geçen ay / Bu yıl / Özel tarih filtresi; grafikler recharts. Her işletme yalnızca kendi verisini görür | `GET /api/raporlar/finans`, `/ogrenci`, `/ogrenci/aylik`, `/yoklama`, `/rezervasyon`, `/envanter` |
+| `/ogrenciler/:id` | (Envanter yetkisi olanlar için) **Envanter bilgileri** kartı (her ödeme ayrı satır olarak tarih / tutar / ödeme şekli (Nakit-Kart-Havale+hesap) ile tutulur; satış güncellenirken geçmiş ödemeler listelenir, yeni alınan ödeme **Ek ödeme** olarak girilir, yanlış ödeme silinebilir): öğrenciye envanter seti satışı; **Set** combobox'ından set seçilince tablo setin envanterleriyle dolar (bedenler değiştirilebilir; seçilmezse kayıtlı envanterlerden özel satış). Her envanter için Ödendi / Teslim; Ödendi işaretlenenlerin fiyatları ödenen tutara eklenir; stok yalnızca teslimde düşer | `GET/POST /api/ogrenciler/{id}/envanter-satislari`, `DELETE .../{satisId}/odemeler/{odemeId}`, `PUT/DELETE .../{satisId}` |
 | `/sahalar` | Saha listesi | `GET /api/sahalar`, `DELETE /api/sahalar/{id}` |
 | `/sahalar/yeni` | Saha kaydı | `POST /api/sahalar` |
 | `/urunler` | Kafeterya ürünleri (stok ±) | `GET /api/urunler`, `PUT /api/urunler/{id}`, `DELETE /api/urunler/{id}` |

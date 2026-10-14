@@ -89,7 +89,7 @@ public class RaporService {
                        COALESCE(SUM(o.tutar) FILTER (WHERE o.yontem = 'KART'), 0) AS kart,
                        COALESCE(SUM(o.tutar) FILTER (WHERE o.yontem = 'HAVALE_EFT'), 0) AS havale_eft,
                        COUNT(*) AS adet
-                FROM odeme o
+                FROM rezervasyon_odeme o
                 JOIN rezervasyon r ON r.id = o.rezervasyon_id
                 WHERE r.isletme_id = :isletmeId
                   AND o.odeme_tarihi - %s >= :bas AND o.odeme_tarihi - %s < :bit%s

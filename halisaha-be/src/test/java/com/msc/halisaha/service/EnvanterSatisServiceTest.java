@@ -9,6 +9,7 @@ import com.msc.halisaha.entity.EnvanterStokHareket;
 import com.msc.halisaha.entity.EnvanterStokHareketTip;
 import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OdemeDurumu;
+import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.EnvanterStokHareketRepository;
 import com.msc.halisaha.repository.IsletmeRepository;
@@ -359,5 +360,50 @@ class EnvanterSatisServiceTest {
         var eksikler = ogrenciService.list(null, null, false, true, 0, 50).icerik();
         assertEquals(List.of("Ahmet Test"), eksikler.stream().map(com.msc.halisaha.dto.OgrenciResponse::adSoyad).toList());
         assertEquals(3, ogrenciService.list(null, null, false, false, 0, 50).toplamKayit());
+    }
+
+    private EnvanterSatisRequest toplamOdenenle(EnvanterSatisRequest oncekiIstek, String toplam, OdemeYontemi yontem, Long hesapId) {
+        return new EnvanterSatisRequest(oncekiIstek.kalemler(), new BigDecimal(toplam), null, yontem, hesapId);
+    }
+
+    @Test
+    void sonradanAlinanOdemeKendiYontemiyleAyriSatirOlurAzalincaSonOdemelerdenDuser() {
+        var istek = set("140", "164", List.of(), List.of(TOZLUK), "450");
+        var satis = satisService.olustur(ogrenci, istek);
+        assertEquals(1, satis.odemeler().size());
+        assertEquals(OdemeYontemi.NAKIT, satis.odemeler().get(0).odemeSekli());
+
+        // Toplam artınca yalnızca fark yeni ödeme olur ve istekteki yöntemle yazılır
+        var g = satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "800", OdemeYontemi.KART, null));
+        assertEquals(2, g.odemeler().size());
+        assertEquals(0, new BigDecimal("450").compareTo(g.odemeler().get(0).tutar()));
+        assertEquals(OdemeYontemi.NAKIT, g.odemeler().get(0).odemeSekli());
+        assertEquals(0, new BigDecimal("350").compareTo(g.odemeler().get(1).tutar()));
+        assertEquals(OdemeYontemi.KART, g.odemeler().get(1).odemeSekli());
+        assertEquals(0, new BigDecimal("800").compareTo(g.odenenTutar()));
+
+        // Yeni ödeme olmuyorsa yöntem gerekmez; artış varsa yöntem ve (Havale / EFT'de) hesap zorunludur
+        assertEquals(2, satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "800", null, null)).odemeler().size());
+        assertEquals(400, hata(() -> satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "900", null, null))).getStatus().value());
+        assertEquals(400, hata(() -> satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "900", OdemeYontemi.HAVALE_EFT, null))).getStatus().value());
+
+        // Toplam azalınca en son ödemeden başlanarak düşülür
+        var az = satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "300", null, null));
+        assertEquals(1, az.odemeler().size());
+        assertEquals(0, new BigDecimal("300").compareTo(az.odemeler().get(0).tutar()));
+    }
+
+    @Test
+    void odemeSilinirToplamAzalirAmaSonOdemeSilinemez() {
+        var istek = set("140", "164", List.of(), List.of(TOZLUK), "450");
+        var satis = satisService.olustur(ogrenci, istek);
+        var iki = satisService.guncelle(ogrenci, satis.id(), toplamOdenenle(istek, "800", OdemeYontemi.KART, null));
+
+        var tek = satisService.odemeSil(ogrenci, satis.id(), iki.odemeler().get(1).id());
+        assertEquals(1, tek.odemeler().size());
+        assertEquals(0, new BigDecimal("450").compareTo(tek.odenenTutar()));
+        assertEquals(0, new BigDecimal("1600").compareTo(tek.kalanTutar()));
+        assertEquals(400, hata(() -> satisService.odemeSil(ogrenci, satis.id(), tek.odemeler().get(0).id())).getStatus().value());
+        assertEquals(404, hata(() -> satisService.odemeSil(ogrenci, satis.id(), 999999L)).getStatus().value());
     }
 }

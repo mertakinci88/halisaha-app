@@ -44,6 +44,11 @@ public class EnvanterSatisController {
         return satisService.guncelle(ogrenciId, satisId, request);
     }
 
+    @DeleteMapping("/{satisId}/odemeler/{odemeId}")
+    public EnvanterSatisResponse odemeSil(@PathVariable Long ogrenciId, @PathVariable Long satisId, @PathVariable Long odemeId) {
+        return satisService.odemeSil(ogrenciId, satisId, odemeId);
+    }
+
     @DeleteMapping("/{satisId}")
     public ResponseEntity<Void> sil(@PathVariable Long ogrenciId, @PathVariable Long satisId) {
         satisService.sil(ogrenciId, satisId);

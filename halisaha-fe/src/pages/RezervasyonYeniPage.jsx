@@ -51,7 +51,7 @@ export default function RezervasyonYeniPage() {
     telNo: '',
     kaporaAl: false,
     odemeTuru: 'KAPORA',
-    odemeYontemi: 'NAKIT',
+    odemeYontemi: '',
     kapora: '',
     hesapId: '',
   }));
@@ -101,6 +101,10 @@ export default function RezervasyonYeniPage() {
     setHata('');
     if (form.kaporaAl && !(tahsilat > 0)) {
       setHata(tamOdeme ? 'Ödeme alınacak rezervasyon tutarı sıfırdan büyük olmalıdır.' : 'Kapora tutarını giriniz.');
+      return;
+    }
+    if (tahsilat > 0 && !form.odemeYontemi) {
+      setHata('Lütfen ödeme yöntemini seçiniz.');
       return;
     }
     if (kapora < 0 || kapora > toplam) {
@@ -250,6 +254,7 @@ export default function RezervasyonYeniPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Ödeme yöntemi">
                   <Select value={form.odemeYontemi} onChange={(e) => set('odemeYontemi', e.target.value)}>
+                    <option value="">Seçiniz</option>
                     <option value="NAKIT">Nakit</option>
                     <option value="KART">Kart</option>
                     <option value="HAVALE_EFT">Havale / EFT</option>

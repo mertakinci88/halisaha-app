@@ -2,8 +2,10 @@ package com.msc.halisaha.dto;
 
 import com.msc.halisaha.entity.EnvanterSatis;
 import com.msc.halisaha.entity.EnvanterSatisKalem;
+import com.msc.halisaha.entity.EnvanterSatisOdeme;
 import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OdemeDurumu;
+import com.msc.halisaha.entity.OdemeYontemi;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,8 +22,20 @@ public record EnvanterSatisResponse(
         BigDecimal kalanTutar,
         OdemeDurumu odemeDurumu,
         LocalDateTime kayitTarihi,
-        List<KalemResponse> kalemler
+        List<KalemResponse> kalemler,
+        List<OdemeResponse> odemeler
 ) {
+
+    public record OdemeResponse(Long id, BigDecimal tutar, OdemeYontemi odemeSekli, Long hesapId, String hesapAd, LocalDateTime odemeTarihi) {
+
+        static OdemeResponse from(EnvanterSatisOdeme o) {
+            return new OdemeResponse(o.getId(), o.getTutar(), o.getOdemeSekli(),
+                    o.getHesap() != null ? o.getHesap().getId() : null,
+                    o.getHesap() != null ? o.getHesap().getAd() : null,
+                    o.getOdemeTarihi());
+        }
+    }
+
 
     public record KalemResponse(
             EnvanterTur tur,
@@ -53,6 +67,7 @@ public record EnvanterSatisResponse(
                 s.getKalemler().stream()
                         .sorted(Comparator.comparing((EnvanterSatisKalem k) -> k.getEnvanter().getTur().ordinal()))
                         .map(KalemResponse::from)
-                        .toList());
+                        .toList(),
+                s.getOdemeler().stream().map(OdemeResponse::from).toList());
     }
 }

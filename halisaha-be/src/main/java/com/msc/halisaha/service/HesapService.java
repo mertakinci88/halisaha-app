@@ -9,7 +9,7 @@ import com.msc.halisaha.entity.Hesap;
 import com.msc.halisaha.entity.HesapDurum;
 import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.repository.HesapRepository;
-import com.msc.halisaha.repository.OdemeRepository;
+import com.msc.halisaha.repository.RezervasyonOdemeRepository;
 import com.msc.halisaha.repository.OgrenciOdemeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ import java.util.Locale;
 public class HesapService {
 
     private final HesapRepository hesapRepository;
-    private final OdemeRepository odemeRepository;
+    private final RezervasyonOdemeRepository rezervasyonOdemeRepository;
     private final OgrenciOdemeRepository ogrenciOdemeRepository;
     private final IsletmeContext isletmeContext;
 
@@ -69,7 +69,7 @@ public class HesapService {
     @Transactional
     public void delete(Long id) {
         Hesap hesap = getEntity(id);
-        if (odemeRepository.existsByHesapId(id) || ogrenciOdemeRepository.existsByHesapId(id)) {
+        if (rezervasyonOdemeRepository.existsByHesapId(id) || ogrenciOdemeRepository.existsByHesapId(id)) {
             hesap.setDurum(HesapDurum.PASIF);
             return;
         }

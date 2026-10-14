@@ -30,6 +30,7 @@ import EnvanterSetDetayPage from '@/pages/EnvanterSetDetayPage';
 import HesapListePage from '@/pages/HesapListePage';
 import HesapKayitPage from '@/pages/HesapKayitPage';
 import HesapDetayPage from '@/pages/HesapDetayPage';
+import RaporPage from '@/pages/RaporPage';
 import PersonelListePage from '@/pages/PersonelListePage';
 import PersonelKayitPage from '@/pages/PersonelKayitPage';
 import PersonelDuzenlePage from '@/pages/PersonelDuzenlePage';
@@ -170,6 +171,10 @@ export default function App() {
         <Route
           path="/transferler"
           element={<YetkiliRota modul="TRANSFER"><TransferListePage /></YetkiliRota>}
+        />
+        <Route
+          path="/raporlar"
+          element={<YetkiliRota sadeceAdmin><RaporPage /></YetkiliRota>}
         />
         <Route
           path="/personel"
