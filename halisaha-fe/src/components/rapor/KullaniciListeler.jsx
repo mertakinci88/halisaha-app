@@ -212,6 +212,7 @@ const tarayiciOzet = (ua) => {
 const OLAY = {
   GIRIS: { ad: 'Giriş', sinif: 'bg-basari-100 text-basari-800' },
   CIKIS: { ad: 'Çıkış', sinif: 'bg-neutral-100 text-neutral-800' },
+  OTURUM_SURESI_DOLDU: { ad: 'Oturum süresi doldu', sinif: 'bg-amber-100 text-amber-800' },
   BASARISIZ_GIRIS: { ad: 'Başarısız giriş', sinif: 'bg-red-100 text-red-800' },
 };
 
