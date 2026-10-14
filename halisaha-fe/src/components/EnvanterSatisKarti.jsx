@@ -8,15 +8,28 @@ import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { Yukleniyor } from '@/components/ui/durum';
+import HesapSecimi from '@/components/HesapSecimi';
 import { envanterService, envanterSetService, envanterSatisService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { stokDurumu, tarihSaat, tl } from '@/lib/format';
+import { ODEME_YONTEMI_LABEL, stokDurumu, tarihSaat, tl } from '@/lib/format';
 import { ENVANTER_TURLERI, STANDART } from '@/lib/envanter';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
 
 const TURLER = ENVANTER_TURLERI;
+
+/** Satışın ödeme şekilleri ("Nakit, Kart"); hesapli: Havale / EFT'de hesap adı da yazılır. */
+const yontemler = (satis, hesapli = false) => {
+  const adlar = [
+    ...new Set(
+      satis.odemeler
+        .filter((o) => o.odemeSekli)
+        .map((o) => ODEME_YONTEMI_LABEL[o.odemeSekli] + (hesapli && o.hesapAd ? ' (' + o.hesapAd + ')' : '')),
+    ),
+  ];
+  return adlar.length ? adlar.join(', ') : '—';
+};
 
 function Kutu({ on, pasif, onChange, renk, etiket, yazi }) {
   return (
@@ -70,11 +83,15 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const [odendi, setOdendi] = useState(() => new Set());
   const [teslim, setTeslim] = useState(() => new Set());
   const [odenen, setOdenen] = useState('');
+  const [odemeSekli, setOdemeSekli] = useState('');
+  const [hesapId, setHesapId] = useState('');
+  const [hesapSayisi, setHesapSayisi] = useState(null); // seçilebilir Havale / EFT hesabı sayısı
   const [fiyatDuz, setFiyatDuz] = useState({}); // { TUR: '250' } elle değiştirilen satış fiyatları
   const [elle, setElle] = useState(false); // tutar elle değiştirildiyse Ödendi işaretleri üzerine yazmaz
   const [kaydediyor, setKaydediyor] = useState(false);
   const [kayitHatasi, setKayitHatasi] = useState(''); // yalnızca Satışı kaydet / güncelle hatası; kartın içinde gösterilir
   const [silinecek, setSilinecek] = useState(null);
+  const [silinecekOdeme, setSilinecekOdeme] = useState(null); // silinmek istenen ödeme satırı
 
   const yukle = useCallback(() => {
     setHata('');
@@ -146,15 +163,19 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
 
   // Ödendi işaretlenen envanterlerin fiyatları ödenen tutara otomatik yansır (tutar elle değiştirilene kadar)
   const odenenDeger = elle ? odenen : odendiToplam > 0 ? String(odendiToplam) : '';
-  const tutar = Number(odenenDeger) || 0;
+  // Yeni satışta tüm ödeme, güncellemede mevcut ödemelere eklenen ek ödeme
+  const yeniOdeme = Number(odenenDeger) || 0;
+  const mevcutOdenen = duzenlenen ? Number(duzenlenen.odenenTutar) : 0;
+  const tutar = mevcutOdenen + yeniOdeme;
   const asim = hepsiSecili && tutar > toplam;
-  const durum = odenenDeger === '' ? 'yok' : asim ? 'gecersiz' : tutar === toplam ? 'odendi' : 'kismi';
+  const durum = tutar <= 0 ? 'yok' : asim ? 'gecersiz' : tutar === toplam ? 'odendi' : 'kismi';
   const kalan = Math.max(toplam - tutar, 0);
   const stoksuzlar = dahil.filter((t) => {
     const e = envOf(t);
     return e && e.adet <= 0 && !zatenTeslim(t, e);
   });
-  const kaydetPasif = dahil.length === 0 || !hepsiSecili || tutar <= 0 || asim || kaydediyor;
+  const hesapEksik = yeniOdeme > 0 && odemeSekli === 'HAVALE_EFT' && (!hesapId || hesapSayisi === 0);
+  const kaydetPasif = dahil.length === 0 || !hepsiSecili || tutar <= 0 || asim || (yeniOdeme > 0 && !odemeSekli) || hesapEksik || kaydediyor;
 
   /* ── işlemler ── */
   const sifirla = () => {
@@ -166,6 +187,8 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setOdendi(new Set());
     setTeslim(new Set());
     setOdenen('');
+    setOdemeSekli('');
+    setHesapId('');
     setElle(false);
     setFiyatDuz({});
   };
@@ -192,7 +215,9 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setSecim(Object.fromEntries(satis.kalemler.filter((k) => TURLER.find((t) => t.kod === k.tur)?.bedenli).map((k) => [k.tur, k.beden])));
     setOdendi(new Set(satis.kalemler.filter((k) => k.odendi).map((k) => k.tur)));
     setTeslim(new Set(satis.kalemler.filter((k) => k.teslimEdildi).map((k) => k.tur)));
-    setOdenen(String(satis.odenenTutar));
+    setOdenen(''); // güncellemede bu alan ek ödemedir; mevcut ödemeler listede görünür
+    setOdemeSekli('');
+    setHesapId('');
     setElle(true);
     setFiyatDuz({});
     kartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -248,6 +273,8 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
         birimFiyat: fiyatOf(t),
       })),
       odenenTutar: tutar,
+      odemeSekli: yeniOdeme > 0 ? odemeSekli : null,
+      hesapId: yeniOdeme > 0 && odemeSekli === 'HAVALE_EFT' ? Number(hesapId) : null,
       ...(duzenlenen || !seciliSet ? {} : { setId: seciliSet.id }),
     };
     try {
@@ -261,6 +288,19 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       yukle(); // stok vb. güncel kalsın
     } finally {
       setKaydediyor(false);
+    }
+  };
+
+  const odemeSil = async () => {
+    const o = silinecekOdeme;
+    setSilinecekOdeme(null);
+    try {
+      const g = await envanterSatisService.odemeSil(ogrenciId, duzenlenen.id, o.id);
+      setDuzenlenen(g);
+      toast.basari('Ödeme silindi.');
+      await yukle();
+    } catch (err) {
+      setKayitHatasi(apiHata(err));
     }
   };
 
@@ -283,15 +323,17 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       ? { renk: 'text-yellow-800', metin: 'Önce satışa eklenecek envanterleri işaretleyin.' }
       : !hepsiSecili
       ? { renk: 'text-yellow-800', metin: 'Önce bedenli envanterlerin bedenini seçin.' }
-      : stoksuzlar.length
-        ? {
-            renk: 'text-yellow-800',
-            metin:
-              'Stoğu biten envanter satılabilir (' +
-              stoksuzlar.map((t) => adBeden(t, bedenOf(t))).join(', ') +
-              '); stok girişi yapılana kadar teslim edilemez, “Eksik envanter”de bekler.',
-          }
-        : null;
+      : yeniOdeme > 0 && !odemeSekli
+        ? { renk: 'text-yellow-800', metin: 'Ödeme şeklini seçin.' }
+        : stoksuzlar.length
+          ? {
+              renk: 'text-yellow-800',
+              metin:
+                'Stoğu biten envanter satılabilir (' +
+                stoksuzlar.map((t) => adBeden(t, bedenOf(t))).join(', ') +
+                '); stok girişi yapılana kadar teslim edilemez, “Eksik envanter”de bekler.',
+            }
+          : null;
 
   const satirlar = gosterilen.map((tur) => {
     const env = envOf(tur);
@@ -533,8 +575,33 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
 
             {hicEnvanterYok ? null : (
               <>
+              {duzenlenen ? (
+                <div>
+                  <div className="mb-1 text-[13.5px] text-ink/70">Yapılan ödemeler</div>
+                  <div className="flex flex-col border border-divider bg-bg">
+                    {duzenlenen.odemeler.map((o) => (
+                      <div key={o.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-hairline px-3 py-2 text-[14px] last:border-b-0">
+                        <span className="text-ink/60">{tarihSaat(o.odemeTarihi)}</span>
+                        <b className="tabular-nums">{tl(o.tutar)}</b>
+                        <span className="text-ink/70">
+                          {o.odemeSekli ? ODEME_YONTEMI_LABEL[o.odemeSekli] + (o.hesapAd ? ' (' + o.hesapAd + ')' : '') : 'Şekil kaydı yok'}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={duzenlenen.odemeler.length === 1}
+                          onClick={() => setSilinecekOdeme(o)}
+                          className="ml-auto cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-hata-800 underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+                          title={duzenlenen.odemeler.length === 1 ? 'Satışın en az bir ödemesi olmalı' : undefined}
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div>
-                <label htmlFor="envanter-odenen" className="mb-1 block text-[13.5px] text-ink/70">Ödenen tutar</label>
+                <label htmlFor="envanter-odenen" className="mb-1 block text-[13.5px] text-ink/70">{duzenlenen ? 'Ek ödeme (bu işlemde alınan)' : 'Ödenen tutar'}</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/55">₺</span>
                   <Input
@@ -559,11 +626,44 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   </div>
                 ) : (
                   <p className="m-0 mt-1 text-[13px] text-ink/55">
-                    Tabloda <b>Ödendi</b> işaretlenen envanterlerin fiyatları otomatik toplanır; tutarı elle de
-                    değiştirebilirsiniz. En fazla {tl(toplam)}.
+                    {duzenlenen ? (
+                      <>
+                        Satışa ek olarak yeni bir ödeme aldıysanız tutarını girin; boş bırakırsanız ödeme eklenmez.
+                        Şimdiye kadar ödenen {tl(mevcutOdenen)}, en fazla {tl(toplam)}.
+                      </>
+                    ) : (
+                      <>
+                        Tabloda <b>Ödendi</b> işaretlenen envanterlerin fiyatları otomatik toplanır; tutarı elle de
+                        değiştirebilirsiniz. En fazla {tl(toplam)}.
+                      </>
+                    )}
                   </p>
                 )}
               </div>
+
+              {!duzenlenen || yeniOdeme > 0 ? (
+              <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2">
+                <div>
+                  <label htmlFor="envanter-odeme-sekli" className="mb-1 block text-[13.5px] text-ink/70">Ödeme şekli</label>
+                  <Select
+                    id="envanter-odeme-sekli"
+                    value={odemeSekli}
+                    onChange={(e) => {
+                      setOdemeSekli(e.target.value);
+                      if (e.target.value !== 'HAVALE_EFT') setHesapId('');
+                    }}
+                  >
+                    <option value="">Seçiniz</option>
+                    {Object.entries(ODEME_YONTEMI_LABEL).map(([kod, ad]) => (
+                      <option key={kod} value={kod}>{ad}</option>
+                    ))}
+                  </Select>
+                </div>
+                {odemeSekli === 'HAVALE_EFT' ? (
+                  <HesapSecimi value={hesapId} onChange={setHesapId} onSecenekler={setHesapSayisi} />
+                ) : null}
+              </div>
+              ) : null}
 
               <div className="text-[14px] text-ink/70">
                 Ödeme durumu:{' '}
@@ -577,7 +677,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Tag tone="warning">Kısmi ödendi</Tag>
                 )}
               </div>
-              {odenenDeger !== '' && hepsiSecili && !asim ? (
+              {tutar > 0 && hepsiSecili && !asim ? (
                 <div className="text-[14px]">Kalan tutar: <b>{tl(kalan)}</b></div>
               ) : null}
 
@@ -664,7 +764,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     <span className="ml-auto text-[13px] text-ink/55">{tarihSaat(s.kayitTarihi)}</span>
                   </div>
                   <div className="mt-1.5 flex gap-5 text-[14.5px]">
-                    <span>Ödenen: <b className="tabular-nums">{tl(s.odenenTutar)}</b></span>
+                    <span>Ödenen: <b className="tabular-nums">{tl(s.odenenTutar)}</b><span className="text-[13px] text-ink/55"> · {yontemler(s)}</span></span>
                     <span>Kalan: <b className="tabular-nums">{Number(s.kalanTutar) > 0 ? tl(s.kalanTutar) : '—'}</b></span>
                   </div>
                   <div className="mt-2 text-[12.5px] uppercase tracking-[0.08em] text-ink/60">Teslim edilenler</div>
@@ -687,6 +787,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Th>Envanter</Th>
                   <Th className="text-right">Ödenen tutar</Th>
                   <Th className="text-right">Kalan tutar</Th>
+                  <Th>Ödeme şekli</Th>
                   <Th>Ödeme durumu</Th>
                   <Th>Ödeme tarihi</Th>
                   <Th>Teslim edilenler</Th>
@@ -702,6 +803,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     <Td className="whitespace-nowrap text-right font-bold tabular-nums">
                       {Number(s.kalanTutar) > 0 ? tl(s.kalanTutar) : <span className="font-normal text-ink/55">—</span>}
                     </Td>
+                    <Td className="whitespace-nowrap">{yontemler(s, true)}</Td>
                     <Td>{durumTag(s)}</Td>
                     <Td className="whitespace-nowrap">{tarihSaat(s.kayitTarihi)}</Td>
                     <Td>{chipler(s.kalemler.filter((k) => k.teslimEdildi), 'accent', 'bg-accent-200 text-accent-800')}</Td>
@@ -713,18 +815,29 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Td className="font-bold">Toplam</Td>
                   <Td className="whitespace-nowrap text-right font-bold tabular-nums">{tl(topOdenen)}</Td>
                   <Td className="whitespace-nowrap text-right font-bold tabular-nums">{topKalan > 0 ? tl(topKalan) : '—'}</Td>
-                  <Td colSpan={5} />
+                  <Td colSpan={6} />
                 </tr>
                 <tr>
                   <Td className="whitespace-nowrap border-t-2 border-ink/60 font-bold">Toplam tutar</Td>
                   <Td colSpan={2} className="whitespace-nowrap border-t-2 border-ink/60 text-right font-bold tabular-nums">{tl(topTutar)}</Td>
-                  <Td colSpan={5} className="text-[13.5px] text-ink/60">= Ödenen tutar + Kalan tutar</Td>
+                  <Td colSpan={6} className="text-[13.5px] text-ink/60">= Ödenen tutar + Kalan tutar</Td>
                 </tr>
               </tbody>
             </Table>
           );
         })()}
       </Card>
+
+      <ConfirmDialog
+        open={!!silinecekOdeme}
+        title="Ödeme silinsin mi?"
+        description="Bu ödeme satıştan düşülür; kalan tutar artar."
+        isim={silinecekOdeme ? tl(silinecekOdeme.tutar) + ' · ' + tarihSaat(silinecekOdeme.odemeTarihi) : ''}
+        confirmLabel="Sil"
+        tehlikeli
+        onConfirm={odemeSil}
+        onCancel={() => setSilinecekOdeme(null)}
+      />
 
       <ConfirmDialog
         open={!!silinecek}

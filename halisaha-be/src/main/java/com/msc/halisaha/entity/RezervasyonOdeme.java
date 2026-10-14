@@ -1,0 +1,63 @@
+package com.msc.halisaha.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "rezervasyon_odeme")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RezervasyonOdeme {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "rezervasyon_id", nullable = false)
+    private Rezervasyon rezervasyon;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tip", nullable = false, length = 10)
+    private OdemeTipi tip;
+
+    @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
+    private BigDecimal tutar;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "yontem", nullable = false, length = 20)
+    private OdemeYontemi yontem;
+
+    /** Havale / EFT ile alınan ödemede paranın yattığı hesap (diğer yöntemlerde null). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hesap_id")
+    private Hesap hesap;
+
+    @Column(name = "odeme_tarihi", nullable = false)
+    private LocalDateTime odemeTarihi;
+
+    /** Ödemeyi alan kullanıcı. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kullanici_id")
+    private Kullanici kullanici;
+}

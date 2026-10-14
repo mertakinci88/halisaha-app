@@ -12,6 +12,7 @@ import {
   Layers,
   LogOut,
   ArrowRightLeft,
+  BarChart3,
   Plus,
   ShieldCheck,
   Square,
@@ -45,6 +46,7 @@ export default function AppLayout() {
     ? [{ to: '/isletmeler', ad: 'İşletmeler', Icon: Building2, modul: null }]
     : NAV.filter((m) => !m.modul || yetkiVar(m.modul));
   if (isAdmin) {
+    nav.push({ to: '/raporlar', ad: 'Rapor', Icon: BarChart3, modul: null });
     nav.push({ to: '/personel', ad: 'Personel', Icon: ShieldCheck, modul: null });
   }
 

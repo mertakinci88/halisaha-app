@@ -1,5 +1,6 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.EnvanterSatisRequest;
@@ -9,6 +10,7 @@ import com.msc.halisaha.entity.Envanter;
 import com.msc.halisaha.entity.EnvanterBeden;
 import com.msc.halisaha.entity.EnvanterSatis;
 import com.msc.halisaha.entity.EnvanterSatisKalem;
+import com.msc.halisaha.entity.EnvanterSatisOdeme;
 import com.msc.halisaha.entity.EnvanterSet;
 import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.Ogrenci;
@@ -49,6 +51,7 @@ public class EnvanterSatisService {
     private final EnvanterSetRepository setRepository;
     private final OgrenciRepository ogrenciRepository;
     private final EnvanterStokService stokService;
+    private final HesapService hesapService;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
 
@@ -95,6 +98,7 @@ public class EnvanterSatisService {
         BigDecimal toplam = toplam(fiyatlar);
         satis.setSetTutari(toplam);
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, toplam));
+        odemeleriEsitle(satis, request);
         satisRepository.save(satis);
 
         for (EnvanterSatisKalem kalem : satis.getKalemler()) {
@@ -182,6 +186,58 @@ public class EnvanterSatisService {
         BigDecimal set = toplam(fiyatlar);
         satis.setSetTutari(set);
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, set));
+        odemeleriEsitle(satis, request);
+        satis.setKullanici(mevcutKullanici.getir());
+        satisRepository.flush();   // yeni ödeme satırlarının id'si yanıtta dolu gelsin
+        return EnvanterSatisResponse.from(satis);
+    }
+
+    /**
+     * Ödeme satırlarını satışın toplam ödenen tutarına eşitler. Toplam artmışsa fark, istekteki yöntemle yeni bir ödeme olarak
+     * bugünün tarihine yazılır (yöntem zorunlu; Havale / EFT'de hesap da); azalmışsa en son ödemelerden düşülür.
+     */
+    private void odemeleriEsitle(EnvanterSatis satis, EnvanterSatisRequest request) {
+        BigDecimal mevcut = satis.getOdemeler().stream().map(EnvanterSatisOdeme::getTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal hedef = satis.getOdenenTutar();
+        int fark = hedef.compareTo(mevcut);
+        if (fark > 0) {
+            if (request.odemeSekli() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme şekli seçilmelidir");
+            }
+            satis.getOdemeler().add(EnvanterSatisOdeme.builder()
+                    .satis(satis)
+                    .tutar(hedef.subtract(mevcut))
+                    .odemeSekli(request.odemeSekli())
+                    .hesap(hesapService.coz(request.hesapId(), request.odemeSekli(), null))
+                    .odemeTarihi(AppZaman.simdi())
+                    .kullanici(mevcutKullanici.getir())
+                    .build());
+        } else if (fark < 0) {
+            BigDecimal dusulecek = mevcut.subtract(hedef);
+            for (int i = satis.getOdemeler().size() - 1; i >= 0 && dusulecek.signum() > 0; i--) {
+                EnvanterSatisOdeme odeme = satis.getOdemeler().get(i);
+                if (odeme.getTutar().compareTo(dusulecek) <= 0) {
+                    dusulecek = dusulecek.subtract(odeme.getTutar());
+                    satis.getOdemeler().remove(i);
+                } else {
+                    odeme.setTutar(odeme.getTutar().subtract(dusulecek));
+                    dusulecek = BigDecimal.ZERO;
+                }
+            }
+        }
+    }
+
+    /** Yanlış girilmiş bir ödemeyi siler. Satışın en az bir ödemesi kalmalıdır. */
+    @Transactional
+    public EnvanterSatisResponse odemeSil(Long ogrenciId, Long satisId, Long odemeId) {
+        EnvanterSatis satis = satisGetir(ogrenciId, satisId, isletmeContext.id());
+        EnvanterSatisOdeme odeme = satis.getOdemeler().stream().filter(o -> o.getId().equals(odemeId)).findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ödeme bulunamadı: " + odemeId));
+        if (satis.getOdemeler().size() == 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Satışın en az bir ödemesi olmalıdır; ödemeyi silmek yerine satışı silin");
+        }
+        satis.getOdemeler().remove(odeme);
+        satis.setOdenenTutar(satis.getOdenenTutar().subtract(odeme.getTutar()));
         satis.setKullanici(mevcutKullanici.getir());
         return EnvanterSatisResponse.from(satis);
     }
