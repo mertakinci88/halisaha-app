@@ -57,6 +57,7 @@ export default function RezervasyonDetayPage() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [islemde, setIslemde] = useState(false);
   const [iptalOnay, setIptalOnay] = useState(false);
+  const [iptalNeden, setIptalNeden] = useState('');
   const [odemeYontemi, setOdemeYontemi] = useState('');
   const [hesapId, setHesapId] = useState('');
   const [hesapSecenekSayisi, setHesapSecenekSayisi] = useState(0);
@@ -118,7 +119,7 @@ export default function RezervasyonDetayPage() {
     setIptalOnay(false);
     setIslemde(true);
     try {
-      await rezervasyonService.iptal(id);
+      await rezervasyonService.iptal(id, iptalNeden.trim());
       toast.basari('Rezervasyon iptal edildi.');
       navigate('/takvim');
     } catch (e) {
@@ -208,6 +209,13 @@ export default function RezervasyonDetayPage() {
     { etiket: 'Ödeme durumu', deger: rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Abonelik kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
     { etiket: 'Kayıt tarihi', deger: tarihSaat(rez.kayitTarih) },
     { etiket: 'Kaydeden', deger: rez.kaydedenAd || '—' },
+    ...(rez.durum === 'IPTAL'
+      ? [
+          { etiket: 'İptal eden', deger: rez.iptalEdenAd || 'Kayıt yok' },
+          { etiket: 'İptal zamanı', deger: rez.iptalTarih ? tarihSaat(rez.iptalTarih) : 'Kayıt yok' },
+          ...(rez.iptalNeden ? [{ etiket: 'İptal nedeni', deger: rez.iptalNeden }] : []),
+        ]
+      : []),
   ];
 
   return (
@@ -424,7 +432,10 @@ export default function RezervasyonDetayPage() {
             <Button
               variant="danger"
               disabled={islemde || rez.durum !== 'AKTIF'}
-              onClick={() => setIptalOnay(true)}
+              onClick={() => {
+                setIptalNeden('');
+                setIptalOnay(true);
+              }}
             >
               Rezervasyonu iptal et
             </Button>
@@ -443,7 +454,15 @@ export default function RezervasyonDetayPage() {
         confirmLabel="İptal et"
         onConfirm={iptalEt}
         onCancel={() => setIptalOnay(false)}
-      />
+      >
+        <Input
+          value={iptalNeden}
+          onChange={(e) => setIptalNeden(e.target.value)}
+          maxLength={255}
+          placeholder="İptal nedeni (isteğe bağlı)"
+          aria-label="İptal nedeni"
+        />
+      </ConfirmDialog>
     </div>
   );
 }

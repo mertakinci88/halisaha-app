@@ -14,10 +14,15 @@ public record YoklamaRaporu(
         long izinli,
         BigDecimal devamOrani,
         List<GrupSatiri> gruplar,
+        /** Her grupta dönemde kaç gün yoklama alındığı ve son yoklama (yoklaması hiç alınmayan gruplar da dahil). */
+        List<GrupYoklamasi> grupYoklamalari,
         /** Haftanın günü: 1 = Pazartesi … 7 = Pazar. */
         List<GunSatiri> gunler,
         List<OgrenciSatiri> devamsizlar
 ) {
+    public record GrupYoklamasi(Long grupId, String grupAd, long aktifOgrenci, long yoklamaGunu, LocalDate sonYoklama) {
+    }
+
     public record GrupSatiri(Long grupId, String grupAd, long geldi, long gelmedi, long izinli, BigDecimal devamOrani) {
     }
 

@@ -59,6 +59,8 @@ public class AbonelikService {
     private static final Locale TR = Locale.forLanguageTag("tr-TR");
     private static final DateTimeFormatter TARIH = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final int KAPANIS_DAKIKA = 26 * 60;
+    /** Abonelik iptalinde iptal edilen haftalık rezervasyonların nedeni (raporlarda ayrı sayılır). */
+    public static final String ABONELIK_IPTALI = "Abonelik iptali";
     private static final int GOSTERILEN_CAKISMA = 5;
 
     private final AbonelikRepository abonelikRepository;
@@ -218,14 +220,22 @@ public class AbonelikService {
     /** Aboneliği iptal eder; henüz gerçekleşmemiş haftalık rezervasyonlar iptal edilir, geçmiş haftalar kalır. Alınan ödemeler silinmez. */
     @Transactional
     public AbonelikResponse iptalEt(Long id) {
+        return iptalEt(id, null);
+    }
+
+    /** İptal eden kullanıcı, zaman ve (varsa) neden kaydedilir; iptal edilen haftalık rezervasyonlar "Abonelik iptali" nedeniyle işaretlenir. */
+    @Transactional
+    public AbonelikResponse iptalEt(Long id, String neden) {
         Abonelik abonelik = getEntity(id);
         if (abonelik.getDurum() == AbonelikDurum.AKTIF) {
             abonelik.setDurum(AbonelikDurum.IPTAL);
             abonelik.setIptalTarih(AppZaman.simdi());
+            abonelik.setIptalEden(mevcutKullanici.getir());
+            abonelik.setIptalNeden(neden != null && !neden.isBlank() ? neden.trim() : null);
             LocalDateTime simdi = AppZaman.simdi();
             for (Rezervasyon r : rezervasyonRepository.findByAbonelikId(id)) {
                 if (r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi)) {
-                    rezervasyonService.cancel(r.getId());
+                    rezervasyonService.cancel(r.getId(), ABONELIK_IPTALI);
                 }
             }
         }

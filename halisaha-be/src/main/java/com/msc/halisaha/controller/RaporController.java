@@ -3,12 +3,14 @@ package com.msc.halisaha.controller;
 import com.msc.halisaha.dto.CiroRaporu;
 import com.msc.halisaha.dto.EnvanterRaporu;
 import com.msc.halisaha.dto.FinansRaporu;
+import com.msc.halisaha.dto.KullaniciRaporlari;
 import com.msc.halisaha.dto.OgrenciAylikRaporu;
 import com.msc.halisaha.dto.OgrenciRaporu;
 import com.msc.halisaha.dto.RezervasyonRaporu;
 import com.msc.halisaha.dto.YoklamaRaporu;
 import com.msc.halisaha.service.EnvanterRaporService;
 import com.msc.halisaha.service.FinansRaporService;
+import com.msc.halisaha.service.KullaniciRaporService;
 import com.msc.halisaha.service.OgrenciRaporService;
 import com.msc.halisaha.service.RezervasyonRaporService;
 import com.msc.halisaha.service.YoklamaRaporService;
@@ -37,6 +39,7 @@ public class RaporController {
     private final YoklamaRaporService yoklamaRaporService;
     private final RezervasyonRaporService rezervasyonRaporService;
     private final EnvanterRaporService envanterRaporService;
+    private final KullaniciRaporService kullaniciRaporService;
 
     /**
      * Rezervasyon cirosu. Varsayılanlar: son 30 gün, günlük, tahsilat tarihine (ODEME) göre.
@@ -93,5 +96,50 @@ public class RaporController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
         return envanterRaporService.getir(baslangic, bitis);
+    }
+
+    /** Kullanıcı bazlı tahsilat (kasa): kim ne kadar para aldı, ne kadar iade etti. */
+    @GetMapping("/kullanici/kasa")
+    public KullaniciRaporlari.Kasa kullaniciKasa(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
+        return kullaniciRaporService.kasa(baslangic, bitis);
+    }
+
+    @GetMapping("/kullanici/islemler")
+    public KullaniciRaporlari.Islemler kullaniciIslemler(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
+        return kullaniciRaporService.islemler(baslangic, bitis);
+    }
+
+    @GetMapping("/kullanici/iadeler")
+    public KullaniciRaporlari.Iadeler kullaniciIadeler(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
+        return kullaniciRaporService.iadeler(baslangic, bitis);
+    }
+
+    @GetMapping("/kullanici/iptaller")
+    public KullaniciRaporlari.Iptaller kullaniciIptaller(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
+        return kullaniciRaporService.iptaller(baslangic, bitis);
+    }
+
+    @GetMapping("/kullanici/yoklama")
+    public KullaniciRaporlari.Yoklama kullaniciYoklama(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis) {
+        return kullaniciRaporService.yoklama(baslangic, bitis);
+    }
+
+    /** Giriş / çıkış / başarısız giriş geçmişi; {@code kullaniciId} verilirse yalnızca o kullanıcı. */
+    @GetMapping("/kullanici/giris")
+    public KullaniciRaporlari.Giris kullaniciGiris(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis,
+            @RequestParam(required = false) Long kullaniciId) {
+        return kullaniciRaporService.giris(baslangic, bitis, kullaniciId);
     }
 }

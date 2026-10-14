@@ -36,6 +36,7 @@ export default function AboneDetayPage() {
   const [form, setForm] = useState(null); // { adSoyad, telNo, ucret, not }
   const [kaydediyor, setKaydediyor] = useState(false);
   const [iptalOnay, setIptalOnay] = useState(false);
+  const [iptalNeden, setIptalNeden] = useState('');
   const [silinecekOdeme, setSilinecekOdeme] = useState(null);
   const [odeme, setOdeme] = useState({ tutar: '', sekil: '', hesapId: '', tarih: BUGUN });
   const [odemeEkliyor, setOdemeEkliyor] = useState(false);
@@ -102,7 +103,7 @@ export default function AboneDetayPage() {
   const iptalEt = async () => {
     setIptalOnay(false);
     try {
-      uygula(await aboneService.iptal(id));
+      uygula(await aboneService.iptal(id, iptalNeden.trim()));
       toast.basari('Abonelik iptal edildi; gelecekteki haftalık rezervasyonlar iptal edildi.');
     } catch (err) {
       setHata(apiHata(err));
@@ -170,6 +171,8 @@ export default function AboneDetayPage() {
             {bilgiSatiri('Dönem', kisaTarih(abone.baslangicTarih) + ' – ' + kisaTarih(abone.bitisTarih))}
             {bilgiSatiri('Kayıt', kisaTarih(abone.kayitTarih) + (abone.kaydedenAd ? ' · ' + abone.kaydedenAd : ''))}
             {abone.iptalTarih ? bilgiSatiri('İptal tarihi', kisaTarih(abone.iptalTarih)) : null}
+            {abone.durum === 'IPTAL' ? bilgiSatiri('İptal eden', abone.iptalEdenAd || 'Kayıt yok') : null}
+            {abone.iptalNeden ? bilgiSatiri('İptal nedeni', abone.iptalNeden) : null}
             <p className="m-0 text-[13px] text-ink/55">
               Gün, saat ve tarihler değiştirilemez; değişiklik için aboneliği iptal edip yeni abonelik açın.
             </p>
@@ -206,7 +209,16 @@ export default function AboneDetayPage() {
                   {kaydediyor ? 'Kaydediliyor…' : 'Kaydet'}
                 </Button>
                 {aktif ? (
-                  <Button type="button" variant="danger" onClick={() => setIptalOnay(true)}>Aboneliği iptal et</Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    onClick={() => {
+                      setIptalNeden('');
+                      setIptalOnay(true);
+                    }}
+                  >
+                    Aboneliği iptal et
+                  </Button>
                 ) : null}
               </div>
             </form>
@@ -339,7 +351,15 @@ export default function AboneDetayPage() {
         tehlikeli
         onConfirm={iptalEt}
         onCancel={() => setIptalOnay(false)}
-      />
+      >
+        <Input
+          value={iptalNeden}
+          onChange={(e) => setIptalNeden(e.target.value)}
+          maxLength={255}
+          placeholder="İptal nedeni (isteğe bağlı)"
+          aria-label="İptal nedeni"
+        />
+      </ConfirmDialog>
       <ConfirmDialog
         open={!!silinecekOdeme}
         title="Ödeme silinsin mi?"

@@ -7,6 +7,7 @@ import com.msc.halisaha.dto.AbonelikOdemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeResponse;
 import com.msc.halisaha.dto.AbonelikRequest;
+import com.msc.halisaha.dto.IptalRequest;
 import com.msc.halisaha.dto.AbonelikResponse;
 import com.msc.halisaha.entity.AbonelikDurum;
 import com.msc.halisaha.service.AbonelikService;
@@ -73,8 +74,8 @@ public class AbonelikController {
     }
 
     @PutMapping("/{id}/iptal")
-    public AbonelikResponse iptalEt(@PathVariable Long id) {
-        return abonelikService.iptalEt(id);
+    public AbonelikResponse iptalEt(@PathVariable Long id, @Valid @RequestBody(required = false) IptalRequest request) {
+        return abonelikService.iptalEt(id, request != null ? request.neden() : null);
     }
 
     @PostMapping("/{id}/odemeler")

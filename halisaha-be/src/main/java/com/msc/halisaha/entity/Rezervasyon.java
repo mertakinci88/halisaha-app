@@ -78,6 +78,17 @@ public class Rezervasyon {
     @Column(name = "odenecek_tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal odenecekTutar;
 
+    /** İptal edilme zamanı, iptal eden kullanıcı ve (varsa) neden; bu alanlar eklenmeden önce iptal edilenlerde boştur. */
+    @Column(name = "iptal_tarih")
+    private LocalDateTime iptalTarih;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "iptal_eden_id")
+    private Kullanici iptalEden;
+
+    @Column(name = "iptal_neden", length = 255)
+    private String iptalNeden;
+
     /** Bu rezervasyon bir aboneliğin haftalık rezervasyonuysa o abonelik; normal rezervasyonda null. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "abonelik_id")

@@ -85,6 +85,13 @@ public class Abonelik {
     @Column(name = "iptal_tarih")
     private LocalDateTime iptalTarih;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "iptal_eden_id")
+    private Kullanici iptalEden;
+
+    @Column(name = "iptal_neden", length = 255)
+    private String iptalNeden;
+
     @Column(name = "\"not\"", length = 255)
     private String not;
 

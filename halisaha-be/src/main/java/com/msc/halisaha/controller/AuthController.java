@@ -5,7 +5,9 @@ import com.msc.halisaha.dto.LoginRequest;
 import com.msc.halisaha.dto.RefreshRequest;
 import com.msc.halisaha.dto.SifreDegistirRequest;
 import com.msc.halisaha.dto.TokenResponse;
+import com.msc.halisaha.common.security.IstemciBilgisi;
 import com.msc.halisaha.common.security.UserPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
 import com.msc.halisaha.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +32,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+        return ResponseEntity.ok(authService.login(request, IstemciBilgisi.from(http)));
     }
 
     @PostMapping("/refresh")
@@ -40,8 +42,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
-        authService.logout(request);
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request, HttpServletRequest http) {
+        authService.logout(request, IstemciBilgisi.from(http));
         return ResponseEntity.noContent().build();
     }
 
