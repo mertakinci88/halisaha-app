@@ -33,6 +33,9 @@ public record AbonelikResponse(
         OdemeDurumu odemeDurumu,
         String not,
         LocalDateTime iptalTarih,
+        /** İptal eden kullanıcının adı ve neden (eski kayıtlarda boş olabilir). */
+        String iptalEdenAd,
+        String iptalNeden,
         LocalDateTime kayitTarih,
         String kaydedenAd,
         List<OdemeResponse> odemeler,
@@ -64,7 +67,8 @@ public record AbonelikResponse(
                 a.getDurum() == AbonelikDurum.AKTIF && a.getBitisTarih().isBefore(bugun),
                 a.getUcret(), odenen, a.getUcret().subtract(odenen).max(BigDecimal.ZERO),
                 OdemeDurumu.hesapla(odenen, a.getUcret()),
-                a.getNot(), a.getIptalTarih(), a.getKayitTarih(),
+                a.getNot(), a.getIptalTarih(),
+                a.getIptalEden() != null ? a.getIptalEden().getAdSoyad() : null, a.getIptalNeden(), a.getKayitTarih(),
                 a.getKullanici() != null ? a.getKullanici().getAdSoyad() : null,
                 a.getOdemeler().stream().map(OdemeResponse::from).toList(),
                 haftalar);

@@ -74,7 +74,8 @@ export const rezervasyonService = {
   get: (id) => api.get('/api/rezervasyonlar/' + id).then((r) => r.data),
   create: (body) => api.post('/api/rezervasyonlar', body).then((r) => r.data),
   update: (id, body) => api.put('/api/rezervasyonlar/' + id, body).then((r) => r.data),
-  iptal: (id) => api.patch('/api/rezervasyonlar/' + id + '/iptal').then((r) => r.data),
+  /** neden isteğe bağlı; iptal eden kullanıcı ve zaman sunucuda kaydedilir */
+  iptal: (id, neden) => api.patch('/api/rezervasyonlar/' + id + '/iptal', { neden: neden || null }).then((r) => r.data),
   remove: (id) => api.delete('/api/rezervasyonlar/' + id),
   urunEkle: (id, urunId, miktar) =>
     api.post('/api/rezervasyonlar/' + id + '/urunler', { urunId, miktar }).then((r) => r.data),
@@ -100,6 +101,14 @@ export const raporService = {
   yoklama: (params) => api.get('/api/raporlar/yoklama', { params }).then((r) => r.data),
   rezervasyon: (params) => api.get('/api/raporlar/rezervasyon', { params }).then((r) => r.data),
   envanter: (params) => api.get('/api/raporlar/envanter', { params }).then((r) => r.data),
+  /** Kullanıcı sekmesi — hepsi params: { baslangic, bitis } */
+  kullaniciKasa: (params) => api.get('/api/raporlar/kullanici/kasa', { params }).then((r) => r.data),
+  kullaniciIslemler: (params) => api.get('/api/raporlar/kullanici/islemler', { params }).then((r) => r.data),
+  kullaniciIadeler: (params) => api.get('/api/raporlar/kullanici/iadeler', { params }).then((r) => r.data),
+  kullaniciIptaller: (params) => api.get('/api/raporlar/kullanici/iptaller', { params }).then((r) => r.data),
+  kullaniciYoklama: (params) => api.get('/api/raporlar/kullanici/yoklama', { params }).then((r) => r.data),
+  /** + kullaniciId (isteğe bağlı): giriş / çıkış / başarısız giriş geçmişi */
+  kullaniciGiris: (params) => api.get('/api/raporlar/kullanici/giris', { params }).then((r) => r.data),
 };
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
@@ -207,7 +216,7 @@ export const aboneService = {
   /** body: { adSoyad, telNo, ucret, not } */
   update: (id, body) => api.put('/api/abonelikler/' + id, body).then((r) => r.data),
   /** Gelecekteki haftalık rezervasyonlar da iptal edilir */
-  iptal: (id) => api.put('/api/abonelikler/' + id + '/iptal').then((r) => r.data),
+  iptal: (id, neden) => api.put('/api/abonelikler/' + id + '/iptal', { neden: neden || null }).then((r) => r.data),
   /** body: { tutar, odemeSekli, hesapId, odemeTarihi } */
   odemeEkle: (id, body) => api.post('/api/abonelikler/' + id + '/odemeler', body).then((r) => r.data),
   odemeSil: (id, odemeId) => api.delete('/api/abonelikler/' + id + '/odemeler/' + odemeId).then((r) => r.data),

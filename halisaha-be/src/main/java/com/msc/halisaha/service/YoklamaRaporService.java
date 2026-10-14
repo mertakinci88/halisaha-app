@@ -85,7 +85,20 @@ public class YoklamaRaporService {
                     gelmedi, geldi + gelmedi, oran(geldi, geldi + gelmedi));
         });
 
+        // Her grupta dönemde yoklama alınan gün sayısı ve son yoklama; hiç yoklama alınmayan gruplar da gelir
+        List<YoklamaRaporu.GrupYoklamasi> grupYoklamalari = jdbc.query("""
+                SELECT gr.id, gr.ad,
+                       (SELECT COUNT(*) FROM ogrenci o WHERE o.grup_id = gr.id AND o.durum = 'AKTIF') AS aktif,
+                       COUNT(DISTINCT y.tarih) AS gun, MAX(y.tarih) AS son
+                FROM grup gr
+                LEFT JOIN ogrenci o ON o.grup_id = gr.id
+                LEFT JOIN yoklama y ON y.ogrenci_id = o.id AND y.tarih BETWEEN :ilk AND :son
+                WHERE gr.isletme_id = :isletmeId
+                GROUP BY gr.id, gr.ad ORDER BY gr.ad
+                """, params, (rs, i) -> new YoklamaRaporu.GrupYoklamasi(rs.getLong("id"), rs.getString("ad"), rs.getLong("aktif"),
+                rs.getLong("gun"), rs.getDate("son") != null ? rs.getDate("son").toLocalDate() : null));
+
         return new YoklamaRaporu(aralik.ilk(), aralik.son(), toplam[0], toplam[1], toplam[2], toplam[3],
-                oran(toplam[1], toplam[1] + toplam[2]), gruplar, gunler, devamsizlar);
+                oran(toplam[1], toplam[1] + toplam[2]), gruplar, grupYoklamalari, gunler, devamsizlar);
     }
 }

@@ -163,12 +163,21 @@ public class RezervasyonService {
 
     @Transactional
     public RezervasyonResponse cancel(Long id) {
+        return cancel(id, null);
+    }
+
+    /** İptal; iptal eden kullanıcı, zaman ve (varsa) neden kaydedilir. */
+    @Transactional
+    public RezervasyonResponse cancel(Long id, String neden) {
         Rezervasyon rezervasyon = getEntity(id);
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             return toResponse(rezervasyon);
         }
         stokIadeEt(rezervasyon, kalemRepository.findByRezervasyonIdOrderByIdAsc(id), "rezervasyon iptali");
         rezervasyon.setDurum(RezervasyonDurum.IPTAL);
+        rezervasyon.setIptalTarih(AppZaman.simdi());
+        rezervasyon.setIptalEden(mevcutKullanici.getir());
+        rezervasyon.setIptalNeden(neden != null && !neden.isBlank() ? neden.trim() : null);
         return toResponse(rezervasyon);
     }
 
@@ -436,7 +445,10 @@ public class RezervasyonService {
                 kapora,
                 urunler,
                 odemeResponses,
-                r.getAbonelik() != null ? r.getAbonelik().getId() : null
+                r.getAbonelik() != null ? r.getAbonelik().getId() : null,
+                r.getIptalTarih(),
+                r.getIptalEden() != null ? r.getIptalEden().getAdSoyad() : null,
+                r.getIptalNeden()
         );
     }
 

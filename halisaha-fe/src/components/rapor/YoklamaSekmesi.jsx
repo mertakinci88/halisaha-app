@@ -1,6 +1,8 @@
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from 'recharts';
 import { raporService } from '@/services';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
+import { Tag } from '@/components/ui/tag';
+import { kisaTarih } from '@/lib/format';
 import { GUN_KISA, RENK, yuzde } from '@/lib/rapor';
 import {
   Aciklama, GrafikAlani, Kutu, OranSatiri, Ozet, OzetIzgara, RaporDurumu, TooltipKutusu, useRapor,
@@ -67,6 +69,30 @@ export default function YoklamaSekmesi({ baslangic, bitis }) {
                 </GrafikAlani>
               </Kutu>
             </div>
+
+            <Kutu baslik="Gruplara göre yoklama alma" bilgi="Her grupta dönem içinde kaç gün yoklama alındığı ve son yoklamanın tarihi. Hiç yoklama alınmayan grup “Alınmadı” görünür.">
+              <Table kart>
+                <thead>
+                  <tr>
+                    <Th>Grup</Th>
+                    <Th className="text-right">Aktif öğrenci</Th>
+                    <Th className="text-right">Yoklama alınan gün</Th>
+                    <Th>Son yoklama</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {v.grupYoklamalari.length === 0 ? <Bos colSpan={4}>Grup bulunamadı.</Bos> : null}
+                  {v.grupYoklamalari.map((g) => (
+                    <Tr key={g.grupId}>
+                      <Td etiket="Grup">{g.grupAd}</Td>
+                      <Td etiket="Aktif öğrenci" className="text-right tabular-nums">{g.aktifOgrenci}</Td>
+                      <Td etiket="Yoklama alınan gün" className="text-right tabular-nums">{g.yoklamaGunu}</Td>
+                      <Td etiket="Son yoklama">{g.sonYoklama ? kisaTarih(g.sonYoklama) : <Tag tone="warning">Alınmadı</Tag>}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Kutu>
 
             <Kutu baslik="En çok devamsızlık yapanlar" bilgi="Seçilen dönemde en çok derse gelmeyen aktif öğrenciler. Velilerle görüşmek için kullanabilirsiniz." aciklama="Aktif öğrenciler, en fazla 10 kişi">
               <Table kart>

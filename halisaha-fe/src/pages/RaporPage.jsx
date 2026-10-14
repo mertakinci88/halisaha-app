@@ -7,6 +7,7 @@ import OgrenciSekmesi from '@/components/rapor/OgrenciSekmesi';
 import YoklamaSekmesi from '@/components/rapor/YoklamaSekmesi';
 import RezervasyonSekmesi from '@/components/rapor/RezervasyonSekmesi';
 import EnvanterSekmesi from '@/components/rapor/EnvanterSekmesi';
+import KullaniciSekmesi from '@/components/rapor/KullaniciSekmesi';
 import { DONEMLER } from '@/lib/rapor';
 
 const SEKMELER = [
@@ -15,6 +16,7 @@ const SEKMELER = [
   { kod: 'YOKLAMA', ad: 'Yoklama' },
   { kod: 'REZERVASYON', ad: 'Rezervasyon' },
   { kod: 'ENVANTER', ad: 'Envanter' },
+  { kod: 'KULLANICI', ad: 'Kullanıcı' },
 ];
 
 export default function RaporPage() {
@@ -81,8 +83,10 @@ export default function RaporPage() {
         <YoklamaSekmesi baslangic={baslangic} bitis={bitis} />
       ) : sekme === 'REZERVASYON' ? (
         <RezervasyonSekmesi baslangic={baslangic} bitis={bitis} />
-      ) : (
+      ) : sekme === 'ENVANTER' ? (
         <EnvanterSekmesi baslangic={baslangic} bitis={bitis} />
+      ) : (
+        <KullaniciSekmesi baslangic={baslangic} bitis={bitis} />
       )}
     </>
   );

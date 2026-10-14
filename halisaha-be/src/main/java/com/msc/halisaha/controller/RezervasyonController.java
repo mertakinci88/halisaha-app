@@ -1,6 +1,7 @@
 package com.msc.halisaha.controller;
 
 import com.msc.halisaha.dto.OdemeRequest;
+import com.msc.halisaha.dto.IptalRequest;
 import com.msc.halisaha.dto.RezervasyonRequest;
 import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.dto.RezervasyonUrunRequest;
@@ -53,8 +54,8 @@ public class RezervasyonController {
     }
 
     @PatchMapping("/{id}/iptal")
-    public RezervasyonResponse cancel(@PathVariable Long id) {
-        return rezervasyonService.cancel(id);
+    public RezervasyonResponse cancel(@PathVariable Long id, @Valid @RequestBody(required = false) IptalRequest request) {
+        return rezervasyonService.cancel(id, request != null ? request.neden() : null);
     }
 
     @DeleteMapping("/{id}")

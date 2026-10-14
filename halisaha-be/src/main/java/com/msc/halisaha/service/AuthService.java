@@ -1,6 +1,8 @@
 package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.exception.ApiException;
+import com.msc.halisaha.entity.OturumOlay;
+import com.msc.halisaha.common.security.IstemciBilgisi;
 import com.msc.halisaha.common.security.JwtService;
 import com.msc.halisaha.common.security.UserPrincipal;
 import com.msc.halisaha.dto.LoginRequest;
@@ -16,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +36,28 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final KullaniciRepository kullaniciRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OturumLogService oturumLogService;
 
-    @Transactional
     public TokenResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.kullaniciAdi(), request.sifre()));
+        return login(request, IstemciBilgisi.BILINMIYOR);
+    }
+
+    /** Başarılı ve başarısız girişler, istemci adresiyle birlikte giriş geçmişine yazılır. */
+    @Transactional
+    public TokenResponse login(LoginRequest request, IstemciBilgisi bilgi) {
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.kullaniciAdi(), request.sifre()));
+        } catch (AuthenticationException e) {
+            // Kullanıcı biliniyorsa (yanlış şifre / pasif hesap) kendisine bağlanır; bilinmiyorsa yalnızca girilen ad tutulur
+            oturumLogService.kaydet(OturumOlay.BASARISIZ_GIRIS,
+                    kullaniciRepository.findByKullaniciAdi(request.kullaniciAdi()).orElse(null), request.kullaniciAdi(), bilgi);
+            throw e;
+        }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        oturumLogService.kaydet(OturumOlay.GIRIS, principal.getKullanici(), request.kullaniciAdi(), bilgi);
         return issueTokenPair(principal.getKullanici());
     }
 
@@ -62,12 +80,21 @@ public class AuthService {
         return new TokenResponse(newAccessToken, stored.getToken(), TOKEN_TYPE);
     }
 
-    @Transactional
     public void logout(RefreshRequest request) {
+        logout(request, IstemciBilgisi.BILINMIYOR);
+    }
+
+    /** Çıkış, geçerli bir oturum kapatıldıysa giriş geçmişine yazılır (aynı oturum için tekrar çıkışlar yazılmaz). */
+    @Transactional
+    public void logout(RefreshRequest request, IstemciBilgisi bilgi) {
         refreshTokenRepository.findByToken(request.refreshToken())
                 .ifPresent(refreshToken -> {
+                    boolean aktifti = !refreshToken.isRevoked();
                     refreshToken.setRevoked(true);
                     refreshTokenRepository.save(refreshToken);
+                    if (aktifti) {
+                        oturumLogService.kaydet(OturumOlay.CIKIS, refreshToken.getKullanici(), null, bilgi);
+                    }
                 });
     }
 
