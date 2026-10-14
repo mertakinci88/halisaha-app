@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,7 +59,7 @@ class OturumTemizlikTest {
 
     @Test
     void suresiDolanOturumBitisZamaniyla_yazilirVeBirDahaYazilmaz() {
-        Instant simdi = Instant.now();
+        Instant simdi = Instant.now().truncatedTo(ChronoUnit.MICROS); // veritabanı mikrosaniye tutar
         Instant bitis = simdi.minus(Duration.ofDays(2));
         RefreshToken dolan = token(bitis, false);
         RefreshToken suruyor = token(simdi.plus(Duration.ofDays(3)), false);
@@ -77,7 +78,7 @@ class OturumTemizlikTest {
 
     @Test
     void eskiTokenVeLoglarSilinir() {
-        Instant simdi = Instant.now();
+        Instant simdi = Instant.now().truncatedTo(ChronoUnit.MICROS); // veritabanı mikrosaniye tutar
         RefreshToken eski = token(simdi.minus(Duration.ofDays(OturumTemizlikService.TOKEN_SAKLAMA_GUN + 1)), true);
         RefreshToken yeni = token(simdi.minus(Duration.ofDays(5)), true);
         oturumLogRepository.save(OturumLog.builder().kullaniciId(kullanici.getId()).kullaniciAdi("a").olay(OturumOlay.GIRIS)
