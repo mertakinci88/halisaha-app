@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Lock, TriangleAlert } from 'lucide-react';
+import { Check, Lock, Pencil, Plus, Save, Trash2, TriangleAlert, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
@@ -455,8 +455,9 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                 Öğrenciye envanter seti satabilmek için önce Envanter menüsünden envanterleri (forma, eşofman, tozluk vb.)
                 stok ve satış fiyatıyla ekleyin. Eklendikten sonra bu bölümde set olarak listelenir.
               </p>
-              <Button variant="secondary" size="sm" onClick={() => navigate('/envanter/yeni')}>
-                Envanter ekle
+              <Button variant="cerceve" size="sm" onClick={() => navigate('/envanter/yeni')}>
+                <Plus size={14} strokeWidth={1.5} />
+                <span>Envanter ekle</span>
               </Button>
             </div>
           ) : mobil ? (
@@ -707,11 +708,13 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
             ) : null}
             <div className="flex gap-2">
               <Button variant="primary" className="flex-1" disabled={kaydetPasif} onClick={kaydet}>
-                {kaydediyor ? 'Kaydediliyor…' : duzenlenen ? 'Satışı güncelle' : 'Satışı kaydet'}
+                <Save size={16} strokeWidth={1.5} />
+                <span>{kaydediyor ? 'Kaydediliyor…' : duzenlenen ? 'Satışı güncelle' : 'Satışı kaydet'}</span>
               </Button>
               {duzenlenen ? (
-                <Button variant="danger" onClick={sifirla}>
-                  Vazgeç
+                <Button variant="cerceveHata" onClick={sifirla}>
+                  <X size={16} strokeWidth={1.5} />
+                  <span>Vazgeç</span>
                 </Button>
               ) : null}
             </div>
@@ -739,11 +742,13 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
             );
           const islemler = (s) => (
             <>
-              <Button variant="guncelle" size="sm" onClick={() => duzenlemeyeBasla(s)}>
-                Güncelle
+              <Button variant="cerceve" size="sm" onClick={() => duzenlemeyeBasla(s)}>
+                <Pencil size={14} strokeWidth={1.5} />
+                <span>Güncelle</span>
               </Button>
-              <Button variant="danger" size="sm" className="ml-1" onClick={() => setSilinecek(s)}>
-                Sil
+              <Button variant="cerceveHata" size="sm" className="ml-1" onClick={() => setSilinecek(s)}>
+                <Trash2 size={14} strokeWidth={1.5} />
+                <span>Sil</span>
               </Button>
             </>
           );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
@@ -330,12 +330,14 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" disabled={kaydediyor || degisenler.length === 0} onClick={kaydet}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Ödemeleri kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Ödemeleri kaydet'}</span>
             </Button>
             {degisenler.length > 0 ? (
               <>
-                <Button variant="danger" disabled={kaydediyor} onClick={() => uygula(veri)}>
-                  Vazgeç
+                <Button variant="cerceveHata" disabled={kaydediyor} onClick={() => uygula(veri)}>
+                  <X size={16} strokeWidth={1.5} />
+                  <span>Vazgeç</span>
                 </Button>
                 <span className="text-[13.5px] text-ink/60">
                   {degisenler.length} ayda kaydedilmemiş değişiklik var:{' '}

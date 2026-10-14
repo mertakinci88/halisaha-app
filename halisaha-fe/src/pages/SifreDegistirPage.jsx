@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { KeyRound, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -89,10 +90,12 @@ export default function SifreDegistirPage() {
           </Field>
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || tamamlandi}>
-              {tamamlandi ? 'Yönlendiriliyor…' : kaydediyor ? 'Kaydediliyor…' : 'Şifreyi değiştir'}
+              <KeyRound size={16} strokeWidth={1.5} />
+              <span>{tamamlandi ? 'Yönlendiriliyor…' : kaydediyor ? 'Kaydediliyor…' : 'Şifreyi değiştir'}</span>
             </Button>
-            <Button variant="danger" disabled={tamamlandi} onClick={() => navigate(-1)}>
-              Vazgeç
+            <Button variant="cerceveHata" disabled={tamamlandi} onClick={() => navigate(-1)}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

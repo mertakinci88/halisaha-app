@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,11 +83,13 @@ export default function GrupListePage() {
                     </Td>
                     <Td tam className="text-right">
                       <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
-                        <Button variant="guncelle" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
-                          Güncelle
+                        <Button variant="cerceve" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
+                          <Pencil size={14} strokeWidth={1.5} />
+                          <span>Güncelle</span>
                         </Button>
-                        <Button variant="danger" size="sm" onClick={() => setSilinecek(g)}>
-                          Sil
+                        <Button variant="cerceveHata" size="sm" onClick={() => setSilinecek(g)}>
+                          <Trash2 size={14} strokeWidth={1.5} />
+                          <span>Sil</span>
                         </Button>
                       </div>
                     </Td>

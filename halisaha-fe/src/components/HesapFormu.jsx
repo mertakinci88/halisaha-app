@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CircleCheck, CirclePause, Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,11 +61,13 @@ export default function HesapFormu({ baslangic, kaydediyor, onKaydet, kaydetEtik
 
         <Field label="Durum">
           <Seg className="w-full">
-            <SegOpt active={form.durum === 'AKTIF'} onClick={() => set('durum', 'AKTIF')} className="flex-1">
-              Aktif
+            <SegOpt active={form.durum === 'AKTIF'} tone="basari" onClick={() => set('durum', 'AKTIF')} className="flex-1">
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>Aktif</span>
             </SegOpt>
-            <SegOpt active={form.durum === 'PASIF'} onClick={() => set('durum', 'PASIF')} className="flex-1">
-              Pasif
+            <SegOpt active={form.durum === 'PASIF'} tone="notr" onClick={() => set('durum', 'PASIF')} className="flex-1">
+              <CirclePause size={16} strokeWidth={1.5} />
+              <span>Pasif</span>
             </SegOpt>
           </Seg>
           <p className="m-0 mt-1.5 text-[13px] text-ink/55">
@@ -74,10 +77,12 @@ export default function HesapFormu({ baslangic, kaydediyor, onKaydet, kaydetEtik
 
         <div className="mt-1 flex gap-2">
           <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-            {kaydediyor ? 'Kaydediliyor…' : kaydetEtiket}
+            <Save size={16} strokeWidth={1.5} />
+            <span>{kaydediyor ? 'Kaydediliyor…' : kaydetEtiket}</span>
           </Button>
-          <Button variant="danger" onClick={() => navigate('/hesaplar')}>
-            Vazgeç
+          <Button variant="cerceveHata" onClick={() => navigate('/hesaplar')}>
+            <X size={16} strokeWidth={1.5} />
+            <span>Vazgeç</span>
           </Button>
         </div>
       </Card>

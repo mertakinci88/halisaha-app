@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft, CircleCheck, CirclePause, Save, ShieldCheck, User } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useHata, useToast } from '@/context/ToastContext';
-import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
+import { MODUL_LABEL, ModulIkon, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelDuzenlePage() {
   const { id } = useParams();
@@ -152,10 +153,12 @@ export default function PersonelDuzenlePage() {
             </Field>
             <div className="mt-1 flex gap-2">
               <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || !bilgi.adSoyad.trim() || !bilgi.kullaniciAdi.trim()}>
-                {kaydediyor ? 'Kaydediliyor…' : 'Bilgileri kaydet'}
+                <Save size={16} strokeWidth={1.5} />
+                <span>{kaydediyor ? 'Kaydediliyor…' : 'Bilgileri kaydet'}</span>
               </Button>
               <Button variant="secondary" onClick={() => navigate('/personel')}>
-                Listeye dön
+                <ArrowLeft size={16} strokeWidth={1.5} />
+                <span>Listeye dön</span>
               </Button>
             </div>
           </Card>
@@ -166,17 +169,20 @@ export default function PersonelDuzenlePage() {
           <Seg className="w-full">
             <SegOpt
               active={kullanici.rol === 'PERSONEL'}
+              tone="notr"
               onClick={() => !kendisi && rolDegistir('PERSONEL')}
               className="flex-1"
             >
-              Personel
+              <User size={16} strokeWidth={1.5} />
+              <span>Personel</span>
             </SegOpt>
             <SegOpt
               active={kullanici.rol === 'ADMIN'}
               onClick={() => !kendisi && rolDegistir('ADMIN')}
               className="flex-1"
             >
-              Admin
+              <ShieldCheck size={16} strokeWidth={1.5} />
+              <span>Admin</span>
             </SegOpt>
           </Seg>
           <p className="m-0 text-[13.5px] text-ink/55">
@@ -202,14 +208,16 @@ export default function PersonelDuzenlePage() {
                 onClick={() => yetkiSecTogla(m)}
                 className="border border-divider border-l!"
               >
-                {MODUL_LABEL[m]}
+                <ModulIkon modul={m} />
+                <span>{MODUL_LABEL[m]}</span>
               </SegOpt>
             ))}
           </div>
 
           <div className="mt-1 flex gap-2">
             <Button type="button" variant="primary" className="flex-1" disabled={kaydediyor} onClick={yetkileriKaydet}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Yetkileri kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Yetkileri kaydet'}</span>
             </Button>
           </div>
         </Card>
@@ -218,11 +226,13 @@ export default function PersonelDuzenlePage() {
         <Card className="gap-3.5">
           <h4 className="text-[22px]">Hesap durumu</h4>
           <Seg className="w-full">
-            <SegOpt active={kullanici.durum === 'AKTIF'} onClick={() => durumDegistir('AKTIF')} className="flex-1">
-              Aktif
+            <SegOpt active={kullanici.durum === 'AKTIF'} tone="basari" onClick={() => durumDegistir('AKTIF')} className="flex-1">
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>Aktif</span>
             </SegOpt>
-            <SegOpt active={kullanici.durum === 'PASIF'} onClick={() => durumDegistir('PASIF')} className="flex-1">
-              Pasif
+            <SegOpt active={kullanici.durum === 'PASIF'} tone="notr" onClick={() => durumDegistir('PASIF')} className="flex-1">
+              <CirclePause size={16} strokeWidth={1.5} />
+              <span>Pasif</span>
             </SegOpt>
           </Seg>
           <p className="m-0 text-[13.5px] text-ink/55">

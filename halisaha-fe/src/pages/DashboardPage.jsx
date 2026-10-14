@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card, CardKicker } from '@/components/ui/card';
@@ -149,7 +150,8 @@ export default function DashboardPage() {
               <div className="flex items-baseline gap-2.5">
                 <h4 className="text-[22px]">Bugünün programı</h4>
                 <Button variant="ghost" className="ml-auto" onClick={() => navigate('/takvim')}>
-                  Tümü
+                  <span>Tümü</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </div>
               <Table kart>
@@ -209,7 +211,8 @@ export default function DashboardPage() {
                   </tbody>
                 </Table>
                 <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
-                  Tüm ödeme bekleyenler
+                  <span>Tüm ödeme bekleyenler</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </Card>
               ) : null}
@@ -278,7 +281,8 @@ export default function DashboardPage() {
                   </div>
 
                   <Button variant="secondary" className="self-start" onClick={() => navigate('/envanter')}>
-                    Envantere git
+                    <span>Envantere git</span>
+                    <ArrowRight size={16} strokeWidth={1.5} />
                   </Button>
                 </Card>
               ) : null}
@@ -309,7 +313,8 @@ export default function DashboardPage() {
                   </tbody>
                 </Table>
                 <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
-                  Kafeteryaya git
+                  <span>Kafeteryaya git</span>
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </Card>
               ) : null}

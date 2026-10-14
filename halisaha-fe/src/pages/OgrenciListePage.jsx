@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Plus, Search } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -151,14 +151,15 @@ export default function OgrenciListePage() {
                       </Td>
                       <Td className="text-right">
                         <Button
-                          variant="primary"
+                          variant="cerceve"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate('/ogrenciler/' + o.id);
                           }}
                         >
-                          Detay
+                          <Eye size={14} strokeWidth={1.5} />
+                          <span>Detay</span>
                         </Button>
                       </Td>
                     </Tr>

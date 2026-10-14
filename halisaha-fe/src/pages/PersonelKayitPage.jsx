@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save, ShieldCheck, User, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Hata } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
+import { MODUL_LABEL, ModulIkon, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelKayitPage() {
   const navigate = useNavigate();
@@ -89,11 +90,13 @@ export default function PersonelKayitPage() {
 
           <Field label="Rol">
             <Seg className="w-full">
-              <SegOpt active={form.rol === 'PERSONEL'} onClick={() => set('rol', 'PERSONEL')} className="flex-1">
-                Personel
+              <SegOpt active={form.rol === 'PERSONEL'} tone="notr" onClick={() => set('rol', 'PERSONEL')} className="flex-1">
+                <User size={16} strokeWidth={1.5} />
+                <span>Personel</span>
               </SegOpt>
               <SegOpt active={form.rol === 'ADMIN'} onClick={() => set('rol', 'ADMIN')} className="flex-1">
-                Admin
+                <ShieldCheck size={16} strokeWidth={1.5} />
+                <span>Admin</span>
               </SegOpt>
             </Seg>
           </Field>
@@ -112,7 +115,8 @@ export default function PersonelKayitPage() {
                     onClick={() => yetkiSecTogla(m)}
                     className="border border-divider border-l!"
                   >
-                    {MODUL_LABEL[m]}
+                    <ModulIkon modul={m} />
+                    <span>{MODUL_LABEL[m]}</span>
                   </SegOpt>
                 ))}
               </div>
@@ -123,10 +127,12 @@ export default function PersonelKayitPage() {
 
           <div className="mt-1 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Kullanıcıyı kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Kullanıcıyı kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/personel')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/personel')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

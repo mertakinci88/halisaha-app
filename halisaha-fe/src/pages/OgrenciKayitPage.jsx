@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { CircleCheck, CirclePause, Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select, Textarea } from '@/components/ui/input';
+import { Field, Input, Select, Textarea, TelInput } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
@@ -48,7 +49,7 @@ export default function OgrenciKayitPage() {
         adSoyad: form.adSoyad.trim(),
         dogumTarih: form.dogumTarih || null,
         veliAdSoyad: form.veliAdSoyad.trim() || null,
-        veliTelNo: form.veliTelNo.trim() || null,
+        veliTelNo: form.veliTelNo ? '0' + form.veliTelNo : null,
         durum: form.durum,
         antrenmanGunSayisi: Number(form.antrenmanGunSayisi) || null,
         not: form.not.trim() || null,
@@ -117,11 +118,13 @@ export default function OgrenciKayitPage() {
                 </Field>
                 <Field label="Durum">
                   <Seg className="w-full">
-                    <SegOpt active={form.durum === 'AKTIF'} onClick={() => set('durum', 'AKTIF')} className="flex-1">
-                      Aktif
+                    <SegOpt active={form.durum === 'AKTIF'} tone="basari" onClick={() => set('durum', 'AKTIF')} className="flex-1">
+                      <CircleCheck size={16} strokeWidth={1.5} />
+                      <span>Aktif</span>
                     </SegOpt>
-                    <SegOpt active={form.durum === 'PASIF'} onClick={() => set('durum', 'PASIF')} className="flex-1">
-                      Pasif
+                    <SegOpt active={form.durum === 'PASIF'} tone="notr" onClick={() => set('durum', 'PASIF')} className="flex-1">
+                      <CirclePause size={16} strokeWidth={1.5} />
+                      <span>Pasif</span>
                     </SegOpt>
                   </Seg>
                 </Field>
@@ -140,12 +143,7 @@ export default function OgrenciKayitPage() {
                   />
                 </Field>
                 <Field label="Veli telefon">
-                  <Input
-                    type="tel"
-                    placeholder="05__ ___ __ __"
-                    value={form.veliTelNo}
-                    onChange={(e) => set('veliTelNo', e.target.value)}
-                  />
+                  <TelInput value={form.veliTelNo} onChange={(v) => set('veliTelNo', v)} />
                 </Field>
               </div>
 
@@ -161,10 +159,12 @@ export default function OgrenciKayitPage() {
 
           <div className="mt-1.5 flex gap-2">
             <Button type="submit" variant="primary" className="flex-1 md:flex-none" disabled={kaydediyor}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Öğrenciyi kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Öğrenciyi kaydet'}</span>
             </Button>
-            <Button variant="danger" onClick={() => navigate('/ogrenciler')}>
-              Vazgeç
+            <Button variant="cerceveHata" onClick={() => navigate('/ogrenciler')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
             </Button>
           </div>
         </Card>

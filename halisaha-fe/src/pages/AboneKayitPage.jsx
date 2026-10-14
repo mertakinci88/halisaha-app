@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TriangleAlert } from 'lucide-react';
+import { Save, TriangleAlert, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input, Select, TelInput } from '@/components/ui/input';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import HesapSecimi from '@/components/HesapSecimi';
 import { aboneService, sahaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { kisaTarih, ODEME_YONTEMI_LABEL, telMaske, telRakam, tl, toIsoDate, tutarSinirla } from '@/lib/format';
+import { kisaTarih, ODEME_YONTEMI_LABEL, tl, toIsoDate, tutarSinirla } from '@/lib/format';
 import { BASLANGIC_SECENEKLERI, EN_UZUN_SURE_SAAT, HAFTA_GUNLERI, KAPANIS_DAKIKA, abonelikBitis, dakikaSaat, gunAdi, haftaGunuOf } from '@/lib/abone';
 
 const BUGUN = toIsoDate(new Date());
@@ -167,14 +167,7 @@ export default function AboneKayitPage() {
             <Input value={form.adSoyad} onChange={(e) => set('adSoyad', e.target.value)} required maxLength={255} />
           </Field>
           <Field label="Telefon">
-            <Input
-              type="tel"
-              inputMode="numeric"
-              placeholder="0 (5xx) xxx xx xx"
-              value={telMaske(form.telNo)}
-              onChange={(e) => set('telNo', telRakam(e.target.value))}
-              required
-            />
+            <TelInput value={form.telNo} onChange={(v) => set('telNo', v)} required />
           </Field>
           <Field label="Saha">
             <Select value={form.sahaId} onChange={(e) => set('sahaId', e.target.value)} required>
@@ -315,9 +308,13 @@ export default function AboneKayitPage() {
 
           <div className="flex gap-2 pt-1">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || cakisma || sahalar.length === 0}>
-              {kaydediyor ? 'Kaydediliyor…' : 'Aboneliği kaydet'}
+              <Save size={16} strokeWidth={1.5} />
+              <span>{kaydediyor ? 'Kaydediliyor…' : 'Aboneliği kaydet'}</span>
             </Button>
-            <Button type="button" variant="danger" onClick={() => navigate('/aboneler')}>Vazgeç</Button>
+            <Button type="button" variant="cerceveHata" onClick={() => navigate('/aboneler')}>
+              <X size={16} strokeWidth={1.5} />
+              <span>Vazgeç</span>
+            </Button>
           </div>
           {sahalar.length === 0 ? <p className="m-0 text-[13.5px] text-yellow-800">Abonelik için önce aktif bir saha tanımlanmalıdır.</p> : null}
         </Card>
