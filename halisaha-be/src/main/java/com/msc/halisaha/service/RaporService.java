@@ -92,7 +92,7 @@ public class RaporService {
                 FROM rezervasyon_odeme o
                 JOIN rezervasyon r ON r.id = o.rezervasyon_id
                 WHERE r.isletme_id = :isletmeId
-                  AND o.odeme_tarihi - %s >= :bas AND o.odeme_tarihi - %s < :bit%s
+                  AND o.odeme_tarihi >= (CAST(:bas AS timestamp) + %s) AND o.odeme_tarihi < (CAST(:bit AS timestamp) + %s)%s
                 GROUP BY 1
                 ORDER BY 1
                 """.formatted(grupla.sqlBirim, ISLETME_GUNU, ISLETME_GUNU, ISLETME_GUNU, sahaFiltre);
@@ -118,7 +118,7 @@ public class RaporService {
                 JOIN rezervasyon_kalem k ON k.rezervasyon_id = r.id
                 WHERE r.isletme_id = :isletmeId
                   AND r.durum = 'AKTIF'
-                  AND r.baslangic_tarih - %s >= :bas AND r.baslangic_tarih - %s < :bit%s
+                  AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %s)%s
                 GROUP BY 1
                 ORDER BY 1
                 """.formatted(grupla.sqlBirim, ISLETME_GUNU, ISLETME_GUNU, ISLETME_GUNU, sahaFiltre);

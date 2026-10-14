@@ -5,8 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Finans özeti. Tahsil edilen: dönemde kasaya giren para (rezervasyon ve öğrenci ödemeleri ödeme tarihine,
- * envanter satışı kayıt tarihine göre). Bekleyen: dönemde hizmeti verilen / satılan ama henüz ödenmemiş tutar.
+ * Finans özeti. Tahsil edilen: dönemde kasaya giren para (ödeme tarihine göre; envanter ve abonelik dahil), yapılan iadeler düşülmüş net tutardır.
+ * Bekleyen: dönemde hizmeti verilen / satılan ama henüz ödenmemiş tutar.
  */
 public record FinansRaporu(
         LocalDate baslangic,
@@ -17,21 +17,23 @@ public record FinansRaporu(
         Kaynak oncekiTahsilat,
         LocalDate oncekiBaslangic,
         LocalDate oncekiBitis,
+        /** Dönemde geri verilen tutar; tahsilat rakamları bu tutar düşülmüş (net) değerlerdir. */
+        BigDecimal iade,
         Bekleyen bekleyen,
         /** Rezervasyonlara eklenen kafeterya ürünlerinin satış tutarı (ödeme durumundan bağımsız; tahsilat toplamına ayrıca eklenmez). */
         BigDecimal kafeteryaSatisi,
         Yontem yontem,
         List<Nokta> trend
 ) {
-    public record Kaynak(BigDecimal rezervasyon, BigDecimal ogrenci, BigDecimal envanter, BigDecimal toplam) {
+    public record Kaynak(BigDecimal rezervasyon, BigDecimal ogrenci, BigDecimal envanter, BigDecimal abonelik, BigDecimal toplam) {
     }
 
-    public record Bekleyen(BigDecimal rezervasyon, BigDecimal envanter, BigDecimal toplam) {
+    public record Bekleyen(BigDecimal rezervasyon, BigDecimal envanter, BigDecimal abonelik, BigDecimal toplam) {
     }
 
     public record Yontem(BigDecimal nakit, BigDecimal kart, BigDecimal havaleEft) {
     }
 
-    public record Nokta(LocalDate donem, BigDecimal rezervasyon, BigDecimal ogrenci, BigDecimal envanter, BigDecimal toplam) {
+    public record Nokta(LocalDate donem, BigDecimal rezervasyon, BigDecimal ogrenci, BigDecimal envanter, BigDecimal abonelik, BigDecimal toplam) {
     }
 }

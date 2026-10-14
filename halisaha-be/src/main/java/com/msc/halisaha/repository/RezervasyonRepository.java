@@ -44,4 +44,8 @@ public interface RezervasyonRepository extends JpaRepository<Rezervasyon, Long> 
             @Param("bitis") LocalDateTime bitis,
             @Param("excludeId") Long excludeId
     );
+
+    /** Bir aboneliğin haftalık rezervasyonları (tarih sırasıyla). */
+    @Query("SELECT r FROM Rezervasyon r WHERE r.abonelik.id = :abonelikId ORDER BY r.baslangicTarih")
+    List<Rezervasyon> findByAbonelikId(@Param("abonelikId") Long abonelikId);
 }

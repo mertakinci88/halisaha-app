@@ -78,6 +78,11 @@ public class Rezervasyon {
     @Column(name = "odenecek_tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal odenecekTutar;
 
+    /** Bu rezervasyon bir aboneliğin haftalık rezervasyonuysa o abonelik; normal rezervasyonda null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "abonelik_id")
+    private Abonelik abonelik;
+
     @PrePersist
     void prePersist() {
         if (durum == null) {

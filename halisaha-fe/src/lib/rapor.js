@@ -4,6 +4,7 @@ import { toIsoDate } from '@/lib/format';
 export const RENK = {
   rezervasyon: '#597ea3', // accent-600
   ogrenci: '#2f8a52', // basari-600
+  abonelik: '#8e6bb5',
   envanter: '#c2872b',
   gelmedi: '#c0504d',
   izinli: '#b5d9fd', // accent-300

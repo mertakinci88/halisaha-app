@@ -35,7 +35,7 @@ public class EnvanterRaporService {
         BigDecimal[] ozet = jdbc.queryForObject("""
                 SELECT COUNT(*) AS adet, COALESCE(SUM(set_tutari), 0) AS tutar, COALESCE(SUM(odenen_tutar), 0) AS odenen
                 FROM envanter_satis
-                WHERE isletme_id = :isletmeId AND kayit_tarihi - %1$s >= :bas AND kayit_tarihi - %1$s < :bit
+                WHERE isletme_id = :isletmeId AND kayit_tarihi >= (CAST(:bas AS timestamp) + %1$s) AND kayit_tarihi < (CAST(:bit AS timestamp) + %1$s)
                 """.formatted(ISLETME_GUNU), params, (rs, i) -> new BigDecimal[]{
                 BigDecimal.valueOf(rs.getLong("adet")), rs.getBigDecimal("tutar"), rs.getBigDecimal("odenen")});
 
@@ -44,7 +44,7 @@ public class EnvanterRaporService {
                 FROM envanter_satis_kalem k
                 JOIN envanter_satis s ON s.id = k.satis_id
                 JOIN envanter e ON e.id = k.envanter_id
-                WHERE s.isletme_id = :isletmeId AND s.kayit_tarihi - %1$s >= :bas AND s.kayit_tarihi - %1$s < :bit
+                WHERE s.isletme_id = :isletmeId AND s.kayit_tarihi >= (CAST(:bas AS timestamp) + %1$s) AND s.kayit_tarihi < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY e.tur, e.beden
                 ORDER BY adet DESC, tutar DESC
                 LIMIT :limit
@@ -54,7 +54,7 @@ public class EnvanterRaporService {
         List<EnvanterRaporu.SetSatiri> setler = jdbc.query("""
                 SELECT set_ad, COUNT(*) AS adet, SUM(set_tutari) AS tutar
                 FROM envanter_satis
-                WHERE isletme_id = :isletmeId AND kayit_tarihi - %1$s >= :bas AND kayit_tarihi - %1$s < :bit
+                WHERE isletme_id = :isletmeId AND kayit_tarihi >= (CAST(:bas AS timestamp) + %1$s) AND kayit_tarihi < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY set_ad
                 ORDER BY adet DESC, tutar DESC
                 LIMIT :limit

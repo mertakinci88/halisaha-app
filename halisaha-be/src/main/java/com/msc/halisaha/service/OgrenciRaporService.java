@@ -103,14 +103,14 @@ public class OgrenciRaporService {
     private List<OgrenciRaporu.AySatiri> trend(YearMonth donem, MapSqlParameterSource params) {
         YearMonth ilk = donem.minusMonths(TREND_AY - 1L);
         MapSqlParameterSource p = new MapSqlParameterSource(params.getValues())
-                .addValue("ilkSira", ilk.getYear() * 12 + ilk.getMonthValue())
-                .addValue("sonSira", donem.getYear() * 12 + donem.getMonthValue());
+                .addValue("ilkYil", ilk.getYear()).addValue("ilkAy", ilk.getMonthValue())
+                .addValue("sonYil", donem.getYear()).addValue("sonAy", donem.getMonthValue());
         Map<YearMonth, OgrenciRaporu.AySatiri> bulunan = new HashMap<>();
         jdbc.query("""
                 SELECT p.yil, p.ay, COUNT(DISTINCT p.ogrenci_id) AS odeyen, SUM(p.odenen_tutar) AS tutar
-                FROM ogrenci_odeme p JOIN ogrenci o ON o.id = p.ogrenci_id
-                WHERE o.isletme_id = :isletmeId AND p.odenen_tutar > 0
-                  AND p.yil * 12 + p.ay BETWEEN :ilkSira AND :sonSira
+                FROM ogrenci_odeme p
+                WHERE p.isletme_id = :isletmeId AND p.odenen_tutar > 0
+                  AND (p.yil, p.ay) >= (:ilkYil, :ilkAy) AND (p.yil, p.ay) <= (:sonYil, :sonAy)
                 GROUP BY p.yil, p.ay
                 """, p, rs -> {
             bulunan.put(YearMonth.of(rs.getInt("yil"), rs.getInt("ay")),
@@ -134,8 +134,8 @@ public class OgrenciRaporService {
         YearMonth sonAy = YearMonth.from(aralik.son());
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("isletmeId", isletmeId)
-                .addValue("ilkSira", ilkAy.getYear() * 12 + ilkAy.getMonthValue())
-                .addValue("sonSira", sonAy.getYear() * 12 + sonAy.getMonthValue());
+                .addValue("ilkYil", ilkAy.getYear()).addValue("ilkAy", ilkAy.getMonthValue())
+                .addValue("sonYil", sonAy.getYear()).addValue("sonAy", sonAy.getMonthValue());
 
         Map<Long, OgrenciKaydi> ogrenciler = new HashMap<>();
         jdbc.query("""
@@ -156,9 +156,9 @@ public class OgrenciRaporService {
         Map<Long, BigDecimal> grupTutarlari = new HashMap<>();
         jdbc.query("""
                 SELECT p.yil, p.ay, p.ogrenci_id, p.odenen_tutar
-                FROM ogrenci_odeme p JOIN ogrenci o ON o.id = p.ogrenci_id
-                WHERE o.isletme_id = :isletmeId AND p.odenen_tutar > 0
-                  AND p.yil * 12 + p.ay BETWEEN :ilkSira AND :sonSira
+                FROM ogrenci_odeme p
+                WHERE p.isletme_id = :isletmeId AND p.odenen_tutar > 0
+                  AND (p.yil, p.ay) >= (:ilkYil, :ilkAy) AND (p.yil, p.ay) <= (:sonYil, :sonAy)
                 """, params, rs -> {
             YearMonth ay = YearMonth.of(rs.getInt("yil"), rs.getInt("ay"));
             long ogrenciId = rs.getLong("ogrenci_id");

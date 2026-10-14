@@ -31,6 +31,8 @@ public record RezervasyonResponse(
         BigDecimal kalanTutar,
         BigDecimal kaporaTutar,
         List<RezervasyonUrunResponse> urunler,
-        List<OdemeResponse> odemeler
+        List<OdemeResponse> odemeler,
+        /** Bir aboneliğin haftalık rezervasyonuysa o aboneliğin id'si; normal rezervasyonda null. */
+        Long abonelikId
 ) {
 }

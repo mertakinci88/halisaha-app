@@ -10,6 +10,7 @@ const KAYNAKLAR = [
   { alan: 'rezervasyon', ad: 'Rezervasyon', renk: RENK.rezervasyon },
   { alan: 'ogrenci', ad: 'Öğrenci ödemesi', renk: RENK.ogrenci },
   { alan: 'envanter', ad: 'Envanter satışı', renk: RENK.envanter },
+  { alan: 'abonelik', ad: 'Abonelik', renk: RENK.abonelik },
 ];
 
 const YONTEMLER = [
@@ -23,6 +24,7 @@ function BekleyenDagilimi({ bekleyen }) {
   const satirlar = [
     { ad: 'Rezervasyon', tutar: Number(bekleyen.rezervasyon) },
     { ad: 'Envanter satışı', tutar: Number(bekleyen.envanter) },
+    { ad: 'Abonelik', tutar: Number(bekleyen.abonelik) },
   ].filter((s) => s.tutar > 0);
   if (satirlar.length === 0) return <span>Ödenmemiş tutar yok</span>;
   return (
@@ -52,13 +54,19 @@ export default function FinansSekmesi({ baslangic, bitis }) {
         return (
           <>
             <OzetIzgara className="lg:grid-cols-2">
-              <Ozet vurgu etiket="Tahsil edilen" bilgi="Seçilen dönemde kasaya giren toplam para: rezervasyon, öğrenci ve envanter ödemeleri. Para hangi gün alındıysa o güne sayılır. Altındaki bilgi, karşılaştırma dönemindeki tahsilattır: seçtiğiniz dönemin hemen öncesindeki aynı uzunluktaki dönem (Bu yıl seçiliyse geçen yılın aynı günleri). O dönemde tahsilat varsa aradaki değişim yüzdesi de gösterilir." deger={tl(v.tahsilat.toplam)} fark={yuzdeFark(v.tahsilat.toplam, v.oncekiTahsilat.toplam)} alt={"Önceki dönem (" + kisaTarih(v.oncekiBaslangic) + " – " + kisaTarih(v.oncekiBitis) + "): " + tl(v.oncekiTahsilat.toplam)} />
-              <Ozet etiket="Bekleyen" bilgi="Henüz ödenmemiş, alınması gereken tutar. Bu dönemdeki rezervasyonların (saha ve kafeterya ürünleri; maçı henüz oynanmamış olanlar dahil) ve bu dönemde satılan envanterin kalan borcudur. Öğrenci ödemeleri bu tutara dahil değildir, çünkü öğrencilerin ödemesi gereken sabit bir tutar tanımlı değil. Ödeme yapmayan öğrencileri Öğrenci sekmesinden görebilirsiniz." deger={tl(v.bekleyen.toplam)} alt={<BekleyenDagilimi bekleyen={v.bekleyen} />} />
+              <Ozet vurgu etiket="Tahsil edilen" bilgi="Seçilen dönemde kasaya giren toplam para: rezervasyon, öğrenci, envanter ve abonelik ödemeleri. Para hangi gün alındıysa o güne sayılır; iade edilen para, iadenin yapıldığı güne göre düşülmüştür (net tutar). Altındaki bilgi, karşılaştırma dönemindeki tahsilattır: seçtiğiniz dönemin hemen öncesindeki aynı uzunluktaki dönem (Bu yıl seçiliyse geçen yılın aynı günleri). O dönemde tahsilat varsa aradaki değişim yüzdesi de gösterilir." deger={tl(v.tahsilat.toplam)} fark={yuzdeFark(v.tahsilat.toplam, v.oncekiTahsilat.toplam)} alt={
+                  <>
+                    {Number(v.iade) > 0 ? <div>İade {tl(v.iade)} düşüldü</div> : null}
+                    <div>Önceki dönem ({kisaTarih(v.oncekiBaslangic)} – {kisaTarih(v.oncekiBitis)}): {tl(v.oncekiTahsilat.toplam)}</div>
+                  </>
+                } />
+              <Ozet etiket="Bekleyen" bilgi="Henüz ödenmemiş, alınması gereken tutar. Bu dönemdeki rezervasyonların (saha ve kafeterya ürünleri; maçı henüz oynanmamış olanlar dahil), bu dönemde satılan envanterin ve bu dönemde kaydı yapılan aboneliklerin kalan borcudur. Öğrenci ödemeleri bu tutara dahil değildir, çünkü öğrencilerin ödemesi gereken sabit bir tutar tanımlı değil. Ödeme yapmayan öğrencileri Öğrenci sekmesinden görebilirsiniz." deger={tl(v.bekleyen.toplam)} alt={<BekleyenDagilimi bekleyen={v.bekleyen} />} />
             </OzetIzgara>
-            <OzetIzgara>
+            <OzetIzgara className="lg:grid-cols-5">
               <Ozet etiket="Rezervasyon (saha + kafeterya)" bilgi="Rezervasyonlar için alınan tüm ödemeler: kapora, kısmi ve kalan ödemeler. Ödeme saha ücreti ve eklenen kafeterya ürünleri için tek seferde alındığı için ikisi bir arada gösterilir." deger={tl(v.tahsilat.rezervasyon)} />
               <Ozet etiket="Kafeterya satışı" deger={tl(v.kafeteryaSatisi)} alt="Yandaki rezervasyon tutarının içindedir" bilgi="Bu dönemdeki rezervasyonlara eklenen kafeterya ürünlerinin (su, içecek vb.) satış tutarı. Ödenip ödenmediğine bakılmaz. Rezervasyon ödemesi içinde zaten sayıldığı için bu tutar toplama ayrıca eklenmez; sadece kafeteryadan ne kadar satıldığını göstermek içindir."/>
               <Ozet etiket="Öğrenci ödemesi" bilgi="Öğrencilerin her ay yaptığı ödemeler. Ödemenin yapıldığı tarihe göre sayılır." deger={tl(v.tahsilat.ogrenci)} />
+              <Ozet etiket="Abonelik" deger={tl(v.tahsilat.abonelik)} bilgi="Abonelik ücreti olarak alınan ödemeler (kayıttaki ilk ödeme ve sonradan alınan kalan ödemeler). Ödemenin alındığı tarihe göre sayılır; abonelerin haftalık rezervasyonları ayrıca ücretlendirilmez." />
               <Ozet etiket="Envanter satışı" bilgi="Öğrencilere satılan envanterler (forma, eşofman vb.) için alınan ödemeler. Satış başka bir ayda yapılıp ödeme bu dönemde alındıysa bu döneme yazılır." deger={tl(v.tahsilat.envanter)} />
             </OzetIzgara>
 

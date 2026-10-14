@@ -190,6 +190,39 @@ export const envanterSatisService = {
     api.delete('/api/ogrenciler/' + ogrenciId + '/envanter-satislari/' + satisId + '/odemeler/' + odemeId).then((r) => r.data),
 };
 
+/* ── /api/abonelikler (haftalık sabit rezervasyon: Aboneler menüsü) ── */
+export const aboneService = {
+  /** params: { durum: AKTIF | IPTAL, q } — durum boşsa hepsi */
+  list: (params) => api.get('/api/abonelikler', { params }).then((r) => r.data),
+  /** Detay: ödemeler ve haftalık rezervasyon listesi (haftalar) dahil */
+  get: (id) => api.get('/api/abonelikler/' + id).then((r) => r.data),
+  /** { standartUcret } — tanımlı değilse null */
+  ayar: () => api.get('/api/abonelikler/ayar').then((r) => r.data),
+  /** body: { standartUcret } — yalnızca ADMIN */
+  ayarKaydet: (body) => api.put('/api/abonelikler/ayar', body).then((r) => r.data),
+  /** body: { sahaId, haftaGunu (1=Pzt..7=Paz), baslangicSaat (12..25), sureSaat, baslangicTarih } — { rezervasyonSayisi, bitisTarih, cakismalar: [{ tarih, adSoyad }] } */
+  onizle: (body) => api.post('/api/abonelikler/onizleme', body).then((r) => r.data),
+  /** body: { sahaId, adSoyad, telNo (05…), haftaGunu, baslangicSaat, sureSaat, baslangicTarih, ucret, odenenTutar, odemeSekli, hesapId, odemeTarihi, not } — bitiş tarihi sunucuda başlangıçtan 1 yıl sonrası olarak hesaplanır */
+  create: (body) => api.post('/api/abonelikler', body).then((r) => r.data),
+  /** body: { adSoyad, telNo, ucret, not } */
+  update: (id, body) => api.put('/api/abonelikler/' + id, body).then((r) => r.data),
+  /** Gelecekteki haftalık rezervasyonlar da iptal edilir */
+  iptal: (id) => api.put('/api/abonelikler/' + id + '/iptal').then((r) => r.data),
+  /** body: { tutar, odemeSekli, hesapId, odemeTarihi } */
+  odemeEkle: (id, body) => api.post('/api/abonelikler/' + id + '/odemeler', body).then((r) => r.data),
+  odemeSil: (id, odemeId) => api.delete('/api/abonelikler/' + id + '/odemeler/' + odemeId).then((r) => r.data),
+};
+
+/* ── /api/iadeler (alınan ödemenin geri verilmesi; rezervasyon, öğrenci aylık ödemesi, envanter satışı, abonelik) ── */
+export const iadeService = {
+  /** params: tam olarak biri { rezervasyonId | ogrenciOdemeId | envanterSatisId | abonelikId } ya da { ogrenciId, yil } (öğrencinin yılın tüm iadeleri) */
+  list: (params) => api.get('/api/iadeler', { params }).then((r) => r.data),
+  /** body: { rezervasyonId | ogrenciOdemeId | envanterSatisId | abonelikId (biri), tutar, iadeSekli, hesapId, iadeTarihi, neden } — yalnızca ADMIN */
+  yap: (body) => api.post('/api/iadeler', body).then((r) => r.data),
+  /** Hatalı girilen iade kaydını siler — yalnızca ADMIN */
+  remove: (id) => api.delete('/api/iadeler/' + id),
+};
+
 /* ── /api/gruplar ──────────────────────────────────────────── */
 export const grupService = {
   list: () => api.get('/api/gruplar').then((r) => r.data),
