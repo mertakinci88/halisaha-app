@@ -76,7 +76,7 @@ public final class KullaniciRaporlari {
     public record Giris(LocalDate baslangic, LocalDate bitis, List<GirisSatiri> satirlar, boolean kesildi) {
     }
 
-    /** olay: GIRIS, CIKIS, BASARISIZ_GIRIS */
+    /** olay: GIRIS, CIKIS, OTURUM_SURESI_DOLDU, BASARISIZ_GIRIS */
     public record GirisSatiri(LocalDateTime zaman, Long kullaniciId, String kullaniciAdi, String ad, String olay, String ip, String tarayici) {
     }
 }

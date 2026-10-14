@@ -220,7 +220,7 @@ public class KullaniciRaporService {
                 """, params);
         Map<Long, LocalDateTime> sonCikis = sorgu("""
                 SELECT kullanici_id, MAX(zaman) FROM oturum_log
-                WHERE isletme_id = :isletmeId AND olay = 'CIKIS' GROUP BY 1
+                WHERE isletme_id = :isletmeId AND olay IN ('CIKIS', 'OTURUM_SURESI_DOLDU') GROUP BY 1
                 """, params, rs -> {
             try {
                 Timestamp t = rs.getTimestamp(2);
