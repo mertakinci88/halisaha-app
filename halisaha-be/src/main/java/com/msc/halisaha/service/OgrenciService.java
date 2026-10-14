@@ -40,6 +40,7 @@ public class OgrenciService {
     private final IsletmeContext isletmeContext;
     private final EnvanterSatisRepository envanterSatisRepository;
     private final OgrenciOdemeRepository ogrenciOdemeRepository;
+    private final GrupKapsami grupKapsami;
 
     /**
      * odemeBekleyen: yalnızca içinde bulunulan ayda ödemesi girilmemiş (Ödeme bekliyor / Ödenmedi) öğrenciler.
@@ -55,8 +56,14 @@ public class OgrenciService {
         if (arananGruplar.isEmpty()) {
             arananGruplar = List.of(-1L);
         }
+        // Grup kısıtlı personel yalnızca izinli grupların öğrencilerini görür (boş küme IN koşulunda hata verdiği için -1 konur)
+        Set<Long> izinli = grupKapsami.izinli();
+        if (grupId != null) {
+            grupKapsami.kontrolGrup(grupId);
+        }
+        List<Long> izinliListe = izinli == null || izinli.isEmpty() ? List.of(-1L) : List.copyOf(izinli);
         Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeId, grupId, q, odemeBekleyen, envanterEksik,
-                bugun.getYear(), bugun.getMonthValue(), arananGruplar, pageRequest);
+                bugun.getYear(), bugun.getMonthValue(), arananGruplar, izinli != null, izinliListe, pageRequest);
         Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
         return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));
     }
@@ -131,14 +138,21 @@ public class OgrenciService {
 
     private Grup resolveGrup(Long grupId) {
         if (grupId == null) {
+            // Grup kısıtlı personel grupsuz öğrenci açamaz: açsa bile kendisi göremezdi
+            if (grupKapsami.kisitli()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Grup seçmelisiniz");
+            }
             return null;
         }
+        grupKapsami.kontrolGrup(grupId);
         return grupRepository.findByIdAndIsletmeId(grupId, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grup bulunamadı: " + grupId));
     }
 
     private Ogrenci getEntity(Long id) {
-        return ogrenciRepository.findByIdAndIsletmeId(id, isletmeContext.id())
+        Ogrenci ogrenci = ogrenciRepository.findByIdAndIsletmeId(id, isletmeContext.id())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + id));
+        grupKapsami.kontrol(ogrenci);
+        return ogrenci;
     }
 }

@@ -10,7 +10,7 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { kullaniciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
-import { MODUL_LABEL } from '@/lib/yetki';
+import { MODUL_LABEL, TUM_MODULLER } from '@/lib/yetki';
 
 export default function PersonelListePage() {
   const navigate = useNavigate();
@@ -98,11 +98,11 @@ export default function PersonelListePage() {
                     <Td tam etiket="Menü yetkileri">
                       {k.rol === 'ADMIN' ? (
                         <span className="text-ink/55">Tüm menüler</span>
-                      ) : k.yetkiler.length === 0 ? (
+                      ) : k.yetkiler.filter((m) => TUM_MODULLER.includes(m)).length === 0 ? (
                         <span className="text-ink/55">Sadece rezervasyon</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {k.yetkiler.map((m) => (
+                          {k.yetkiler.filter((m) => TUM_MODULLER.includes(m)).map((m) => (
                             <Tag key={m} tone="outline">
                               {MODUL_LABEL[m] || m}
                             </Tag>

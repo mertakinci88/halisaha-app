@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/ogrenciler/{ogrenciId}/odemeler")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('MODUL_OGRENCI_ODEME')")
 public class OgrenciOdemeController {
 
     private final OgrenciOdemeService odemeService;

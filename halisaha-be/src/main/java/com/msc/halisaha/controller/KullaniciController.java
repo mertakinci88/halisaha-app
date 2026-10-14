@@ -1,5 +1,6 @@
 package com.msc.halisaha.controller;
 
+import com.msc.halisaha.dto.GrupYetkiGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciGuncelleRequest;
 import com.msc.halisaha.dto.KullaniciOlusturRequest;
 import com.msc.halisaha.dto.KullaniciResponse;
@@ -60,6 +61,11 @@ public class KullaniciController {
     @PutMapping("/{id}/yetkiler")
     public KullaniciResponse yetkileriGuncelle(@PathVariable Long id, @Valid @RequestBody YetkiGuncelleRequest request) {
         return kullaniciService.yetkileriGuncelle(id, request);
+    }
+
+    @PutMapping("/{id}/gruplar")
+    public KullaniciResponse grupYetkisiniGuncelle(@PathVariable Long id, @Valid @RequestBody GrupYetkiGuncelleRequest request) {
+        return kullaniciService.grupYetkisiniGuncelle(id, request);
     }
 
     @PatchMapping("/{id}/durum")

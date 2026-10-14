@@ -31,7 +31,7 @@ export default function OgrenciTransferKarti({ ogrenciId, grupId }) {
   const [duzenleniyor, setDuzenleniyor] = useState(false); // bekleyen talebin hedef grubu / açıklaması düzenleniyor
 
   const yukle = useCallback(() => {
-    return Promise.all([grupService.list(), transferService.gecmis(ogrenciId)])
+    return Promise.all([grupService.hedefler(), transferService.gecmis(ogrenciId)])
       .then(([g, t]) => {
         setGruplar(g);
         setGecmis(t);
