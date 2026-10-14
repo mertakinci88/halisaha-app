@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Layers, Package, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,14 @@ export default function EnvanterListePage() {
       <Hata mesaj={hata} onTekrar={yukle} />
 
       <Seg className="mb-3.5">
-        <SegOpt active={!setlerSekmesi} onClick={() => sekmeSec('envanterler')}>Envanterler</SegOpt>
-        <SegOpt active={setlerSekmesi} onClick={() => sekmeSec('setler')}>Setler</SegOpt>
+        <SegOpt active={!setlerSekmesi} onClick={() => sekmeSec('envanterler')}>
+          <Package size={16} strokeWidth={1.5} />
+          <span>Envanterler</span>
+        </SegOpt>
+        <SegOpt active={setlerSekmesi} onClick={() => sekmeSec('setler')}>
+          <Layers size={16} strokeWidth={1.5} />
+          <span>Setler</span>
+        </SegOpt>
       </Seg>
 
       <Card className="gap-3.5">

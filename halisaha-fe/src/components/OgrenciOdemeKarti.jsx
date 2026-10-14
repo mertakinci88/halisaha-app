@@ -237,7 +237,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
             onClick={() => yilGit(yilIndex > 0 ? yillar[yilIndex - 1] : yil - 1)}>
             <ChevronLeft size={18} />
           </Button>
-          <Select aria-label="Yıl" className="w-[96px] text-center [text-align-last:center]" value={yil} disabled={yukleniyor}
+          <Select aria-label="Yıl" className="w-auto" value={yil} disabled={yukleniyor}
             onChange={(e) => yilGit(Number(e.target.value))}>
             {yillar.map((y) => (
               <option key={y} value={y}>{y}</option>

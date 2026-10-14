@@ -149,7 +149,7 @@ export default function DashboardPage() {
             <Card>
               <div className="flex items-baseline gap-2.5">
                 <h4 className="text-[22px]">Bugünün programı</h4>
-                <Button variant="ghost" className="ml-auto" onClick={() => navigate('/takvim')}>
+                <Button variant="gri" className="ml-auto" onClick={() => navigate('/takvim')}>
                   <span>Tümü</span>
                   <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
+                <Button variant="gri" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
                   <span>Tüm ödeme bekleyenler</span>
                   <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                     ) : null}
                   </div>
 
-                  <Button variant="secondary" className="self-start" onClick={() => navigate('/envanter')}>
+                  <Button variant="gri" className="self-start" onClick={() => navigate('/envanter')}>
                     <span>Envantere git</span>
                     <ArrowRight size={16} strokeWidth={1.5} />
                   </Button>
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </Table>
-                <Button variant="secondary" className="self-start" onClick={() => navigate('/urunler')}>
+                <Button variant="gri" className="self-start" onClick={() => navigate('/urunler')}>
                   <span>Kafeteryaya git</span>
                   <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
