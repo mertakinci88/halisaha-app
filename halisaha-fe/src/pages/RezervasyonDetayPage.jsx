@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Check, CircleCheck, Plus, Wallet, X } from 'lucide-react';
+import { ArrowLeft, Ban, Check, CircleCheck, Pencil, Plus, Save, Wallet, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,7 @@ export default function RezervasyonDetayPage() {
   const [hesapSecenekSayisi, setHesapSecenekSayisi] = useState(0);
   const [kapora, setKapora] = useState('');
   const [kismiAcik, setKismiAcik] = useState(false);
+  const [tutarDuzen, setTutarDuzen] = useState(null); // null = düzenlenmiyor; aksi halde girilen metin
 
   const yukle = useCallback(() => {
     setYukleniyor(true);
@@ -162,6 +163,25 @@ export default function RezervasyonDetayPage() {
     }
   };
 
+  const tutarKaydet = async () => {
+    const tutar = Number(String(tutarDuzen).replace(',', '.'));
+    if (tutarDuzen === '' || !(tutar >= 0)) {
+      setHata('Ödenecek tutarı giriniz.');
+      return;
+    }
+    setHata('');
+    setIslemde(true);
+    try {
+      setRez(await rezervasyonService.sahaTutari(id, tutar));
+      setTutarDuzen(null);
+      toast.basari('Ödenecek tutar güncellendi.');
+    } catch (e) {
+      setHata(apiHata(e));
+    } finally {
+      setIslemde(false);
+    }
+  };
+
   // Kapora yalnızca rezervasyon kaydı sırasında alınır; kayıttan sonra alınan ödemeler kısmi ödemedir
   const kismiTip = 'KISMI';
   const kismiEtiket = ODEME_TIPI_LABEL[kismiTip];
@@ -206,7 +226,7 @@ export default function RezervasyonDetayPage() {
     { etiket: 'Saat', deger: saatOf(rez.baslangicTarih) + ' – ' + saatOf(rez.bitisTarih) },
     { etiket: 'Telefon', deger: telGoster(rez.telNo) },
     { etiket: 'Son ödeme yöntemi', deger: ODEME_YONTEMI_LABEL[rez.odemeYontemi] || '—' },
-    { etiket: 'Ödeme durumu', deger: rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Abonelik kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
+    { etiket: 'Ödeme durumu', deger: rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Depozito kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
     { etiket: 'Kayıt tarihi', deger: tarihSaat(rez.kayitTarih) },
     { etiket: 'Kaydeden', deger: rez.kaydedenAd || '—' },
     ...(rez.durum === 'IPTAL'
@@ -225,7 +245,7 @@ export default function RezervasyonDetayPage() {
       {rez.abonelikId ? (
         <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 border border-basari-300 bg-basari-100 px-4 py-2.5 text-[14.5px] text-basari-800">
           <b>Abone rezervasyonu</b>
-          <span>Bu rezervasyon, haftalık sabit rezervasyon (abonelik) kapsamındadır; saha ücreti abonelik ödemesiyle alınır.</span>
+          <span>Bu rezervasyon, haftalık sabit rezervasyon (abonelik) kapsamındadır; maç ücreti her hafta normal rezervasyon gibi alınır. Abonelik iptal edildiyse ücreti depozitodan karşılanır.</span>
           {yetkiVar('ABONELIK') ? (
             <Link to={'/aboneler/' + rez.abonelikId} className="ml-auto text-basari-800 underline">Aboneliği aç</Link>
           ) : null}
@@ -294,7 +314,47 @@ export default function RezervasyonDetayPage() {
         <Card className="gap-3">
           <h4 className="text-[22px]">Ödeme özeti</h4>
           <div className="grid gap-y-2">
-            <OzetSatir etiket={rez.sahaAd + ' · ' + saatYazi(sure) + ' saat'} tutar={tl(sahaTutar)} />
+            <OzetSatir
+              etiket={rez.sahaAd + ' · ' + saatYazi(sure) + ' saat'}
+              tutar={tl(sahaTutar)}
+              eylem={
+                aktif && tutarDuzen === null ? (
+                  <Button variant="secondary" size="sm" disabled={islemde} onClick={() => setTutarDuzen(String(sahaTutar))}>
+                    <Pencil size={14} strokeWidth={1.75} />
+                    <span>Düzenle</span>
+                  </Button>
+                ) : null
+              }
+            />
+            {tutarDuzen !== null ? (
+              <div className="grid gap-2 border border-hairline p-3">
+                <label className="text-[13px] text-ink/55" htmlFor="saha-tutar">Ödenecek tutar (₺)</label>
+                <Input
+                  id="saha-tutar"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  autoFocus
+                  value={tutarDuzen}
+                  onChange={(e) => setTutarDuzen(tutarSinirla(e.target.value, 10000000))}
+                />
+                <p className="m-0 text-[12.5px] text-ink/55">
+                  Müşteriyle anlaşılan yeni tutarı yazın.
+                  {Number(rez.odenenTutar) > 0 ? ' Alınan ödemenin (' + tl(rez.odenenTutar) + ') altına düşürülemez.' : ''}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="primary" className="flex-1" disabled={islemde} onClick={tutarKaydet}>
+                    <Save size={16} strokeWidth={1.5} />
+                    <span>Kaydet</span>
+                  </Button>
+                  <Button variant="cerceveHata" disabled={islemde} onClick={() => setTutarDuzen(null)}>
+                    <X size={16} strokeWidth={1.5} />
+                    <span>Vazgeç</span>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
 
             {urunGruplari.map((g) => (
               <OzetSatir

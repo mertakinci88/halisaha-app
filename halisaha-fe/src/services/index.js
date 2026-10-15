@@ -76,6 +76,8 @@ export const rezervasyonService = {
   get: (id) => api.get('/api/rezervasyonlar/' + id).then((r) => r.data),
   create: (body) => api.post('/api/rezervasyonlar', body).then((r) => r.data),
   update: (id, body) => api.put('/api/rezervasyonlar/' + id, body).then((r) => r.data),
+  /** Kayıttan sonra ödenecek (saha) tutarı değiştirir; alınan ödemenin altına düşemez. Güncel rezervasyonu döner */
+  sahaTutari: (id, tutar) => api.patch('/api/rezervasyonlar/' + id + '/saha-tutari', { tutar }).then((r) => r.data),
   /** neden isteğe bağlı; iptal eden kullanıcı ve zaman sunucuda kaydedilir */
   iptal: (id, neden) => api.patch('/api/rezervasyonlar/' + id + '/iptal', { neden: neden || null }).then((r) => r.data),
   remove: (id) => api.delete('/api/rezervasyonlar/' + id),
@@ -213,13 +215,15 @@ export const aboneService = {
   ayarKaydet: (body) => api.put('/api/abonelikler/ayar', body).then((r) => r.data),
   /** body: { sahaId, haftaGunu (1=Pzt..7=Paz), baslangicSaat (12..25), sureSaat, baslangicTarih } — { rezervasyonSayisi, bitisTarih, cakismalar: [{ tarih, adSoyad }] } */
   onizle: (body) => api.post('/api/abonelikler/onizleme', body).then((r) => r.data),
-  /** body: { sahaId, adSoyad, telNo (05…), haftaGunu, baslangicSaat, sureSaat, baslangicTarih, ucret, odenenTutar, odemeSekli, hesapId, odemeTarihi, not } — bitiş tarihi sunucuda 52. haftanın tarihi olarak hesaplanır */
+  /** body: { sahaId, adSoyad, telNo (05…), haftaGunu, baslangicDakika, sureDakika, baslangicTarih, depozito, haftalikUcret, odenenTutar (alınan depozito), odemeSekli, hesapId, odemeTarihi, not } — bitiş tarihi sunucuda 52. haftanın tarihi olarak hesaplanır */
   create: (body) => api.post('/api/abonelikler', body).then((r) => r.data),
-  /** body: { adSoyad, telNo, ucret, not } */
+  /** body: { adSoyad, telNo, depozito, haftalikUcret, not } — haftalık ücret, ödemesi alınmamış gelecek haftalara da yansır */
   update: (id, body) => api.put('/api/abonelikler/' + id, body).then((r) => r.data),
-  /** Gelecekteki haftalık rezervasyonlar da iptal edilir */
-  iptal: (id, neden) => api.put('/api/abonelikler/' + id + '/iptal', { neden: neden || null }).then((r) => r.data),
-  /** body: { tutar, odemeSekli, hesapId, odemeTarihi } */
+  /** İptal edilirse ne olacağı: { kalanDepozito, haftalikUcret, oynanacakHafta, iptalEdilecekHafta, artanTutar, kismiHaftaVar, kismiHaftaOdenecek, iadeZorunlu } */
+  iptalOnizle: (id) => api.get('/api/abonelikler/' + id + '/iptal-onizleme').then((r) => r.data),
+  /** body: { neden, artanIade (artan depozito iade edilsin), iadeSekli, hesapId } — kalan depozito kadar hafta oynanır, diğer haftalar iptal edilir */
+  iptal: (id, body) => api.put('/api/abonelikler/' + id + '/iptal', body).then((r) => r.data),
+  /** Depozito ödemesi. body: { tutar, odemeSekli, hesapId, odemeTarihi } */
   odemeEkle: (id, body) => api.post('/api/abonelikler/' + id + '/odemeler', body).then((r) => r.data),
   odemeSil: (id, odemeId) => api.delete('/api/abonelikler/' + id + '/odemeler/' + odemeId).then((r) => r.data),
 };

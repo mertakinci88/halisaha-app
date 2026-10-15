@@ -23,6 +23,7 @@ export default function AboneKayitPage() {
   const [kaydediyor, setKaydediyor] = useState(false);
   const [onizleme, setOnizleme] = useState(null);
   const [odenenElle, setOdenenElle] = useState(false);
+  const [haftalikElle, setHaftalikElle] = useState(false);
   const [gunElle, setGunElle] = useState(false);
   const [standart, setStandart] = useState(null);
   const [form, setForm] = useState({
@@ -33,7 +34,8 @@ export default function AboneKayitPage() {
     baslangicDakika: 19 * 60,
     sureDakika: 60,
     baslangic: BUGUN,
-    ucret: '',
+    depozito: '',
+    haftalikUcret: '',
     odenen: '',
     odemeSekli: '',
     hesapId: '',
@@ -51,8 +53,8 @@ export default function AboneKayitPage() {
         setForm((p) => ({
           ...p,
           sahaId: aktif.length === 1 ? String(aktif[0].id) : p.sahaId,
-          // Ücret standart tutardan dolar; elle değiştirilebilir
-          ucret: ayar.standartUcret != null ? String(ayar.standartUcret) : p.ucret,
+          // Depozito standart tutardan dolar; elle değiştirilebilir
+          depozito: ayar.standartUcret != null ? String(ayar.standartUcret) : p.depozito,
           odenen: ayar.standartUcret != null ? String(ayar.standartUcret) : p.odenen,
         }));
       })
@@ -67,10 +69,18 @@ export default function AboneKayitPage() {
     if (!gunElle && form.baslangic) set('haftaGunu', haftaGunuOf(form.baslangic));
   }, [form.baslangic, gunElle]);
 
-  // Alınan ödeme, elle değiştirilmediyse ücretle birlikte değişir (varsayılan: tamamı peşin)
+  // Alınan ödeme, elle değiştirilmediyse depozitoyla birlikte değişir (varsayılan: depozitonun tamamı)
   useEffect(() => {
-    if (!odenenElle) set('odenen', form.ucret);
-  }, [form.ucret, odenenElle]);
+    if (!odenenElle) set('odenen', form.depozito);
+  }, [form.depozito, odenenElle]);
+
+  // Haftalık ücret, elle değiştirilmediyse sahanın saatlik ücreti x süre olarak gelir (rezervasyondaki gibi)
+  const seciliSaha = sahalar?.find((x) => String(x.id) === String(form.sahaId));
+  useEffect(() => {
+    if (haftalikElle) return;
+    const saatlik = Number(seciliSaha?.saatlikUcret);
+    set('haftalikUcret', saatlik > 0 ? String(Math.round(saatlik * (Number(form.sureDakika) / 60) * 100) / 100) : '');
+  }, [seciliSaha, form.sureDakika, haftalikElle]);
 
   // Seçime göre oluşacak rezervasyon sayısı ve çakışmalar
   useEffect(() => {
@@ -100,7 +110,8 @@ export default function AboneKayitPage() {
   // Süre tam saat olarak seçilir; kapanışı (02:00) aşamaz
   const enUzunSaat = Math.min(EN_UZUN_SURE_SAAT, Math.floor((KAPANIS_DAKIKA - Number(form.baslangicDakika)) / 60));
   const bitis = onizleme?.bitisTarih || abonelikBitis(form.baslangic, form.haftaGunu);
-  const ucret = Number(String(form.ucret).replace(',', '.')) || 0;
+  const depozito = Number(String(form.depozito).replace(',', '.')) || 0;
+  const haftalik = Number(String(form.haftalikUcret).replace(',', '.')) || 0;
   const odenen = Number(String(form.odenen).replace(',', '.')) || 0;
   const cakisma = onizleme?.cakismalar?.length > 0;
 
@@ -111,16 +122,20 @@ export default function AboneKayitPage() {
       setHata('Telefon numarası 10 haneli olmalı ve 5 ile başlamalıdır (örn. 546 976 46 13).');
       return;
     }
-    if (!(ucret > 0)) {
-      setHata('Abonelik ücretini giriniz.');
+    if (!(depozito > 0)) {
+      setHata('Depozito tutarını giriniz.');
+      return;
+    }
+    if (!(haftalik > 0)) {
+      setHata('Haftalık maç ücretini giriniz.');
       return;
     }
     if (!(odenen > 0)) {
-      setHata('Alınan ödeme tutarını giriniz.');
+      setHata('Alınan depozito tutarını giriniz.');
       return;
     }
-    if (odenen > ucret) {
-      setHata('Alınan ödeme abonelik ücretini (' + tl(ucret) + ') aşamaz.');
+    if (odenen > depozito) {
+      setHata('Alınan ödeme depozitoyu (' + tl(depozito) + ') aşamaz.');
       return;
     }
     if (!form.odemeSekli) {
@@ -137,7 +152,8 @@ export default function AboneKayitPage() {
         baslangicDakika: Number(form.baslangicDakika),
         sureDakika: Number(form.sureDakika),
         baslangicTarih: form.baslangic,
-        ucret,
+        depozito,
+        haftalikUcret: haftalik,
         odenenTutar: odenen,
         odemeSekli: form.odemeSekli,
         hesapId: form.odemeSekli === 'HAVALE_EFT' && form.hesapId ? Number(form.hesapId) : null,
@@ -244,26 +260,44 @@ export default function AboneKayitPage() {
         </Card>
 
         <Card className="gap-3.5">
-          <h4 className="text-[22px]">Ücret ve ödeme</h4>
-          <Field label="Abonelik ücreti (₺)">
+          <h4 className="text-[22px]">Depozito ve ödeme</h4>
+          <Field label="Depozito (₺)">
             <Input
               type="number"
               min="0.01"
               step="0.01"
               inputMode="decimal"
-              value={form.ucret}
+              value={form.depozito}
               onChange={(e) => {
-                set('ucret', tutarSinirla(e.target.value, 10000000));
+                set('depozito', tutarSinirla(e.target.value, 10000000));
               }}
               required
             />
             <p className="m-0 mt-1 text-[13px] text-ink/55">
               {standart != null
-                ? 'Standart ücret ' + tl(standart) + '; gerekirse bu abone için değiştirebilirsiniz.'
-                : 'Standart ücret tanımlı değil; Aboneler sayfasından yönetici tanımlayabilir.'}
+                ? 'Standart depozito ' + tl(standart) + '; gerekirse bu abone için değiştirebilirsiniz.'
+                : 'Standart depozito tanımlı değil; Aboneler sayfasından yönetici tanımlayabilir.'}{' '}
+              Depozito işletmede kalır; abonelik iptal edilince kalan haftalar bununla oynanır.
             </p>
           </Field>
-          <Field label="Alınan ödeme (₺)">
+          <Field label="Haftalık maç ücreti (₺)">
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputMode="decimal"
+              value={form.haftalikUcret}
+              onChange={(e) => {
+                setHaftalikElle(true);
+                set('haftalikUcret', tutarSinirla(e.target.value, 10000000));
+              }}
+              required
+            />
+            <p className="m-0 mt-1 text-[13px] text-ink/55">
+              Sahanın ücretinden gelir, isterseniz değiştirebilirsiniz. Abone her hafta geldiğinde bu tutarı öder.
+            </p>
+          </Field>
+          <Field label="Alınan depozito (₺)">
             <Input
               type="number"
               min="0.01"
@@ -272,13 +306,13 @@ export default function AboneKayitPage() {
               value={form.odenen}
               onChange={(e) => {
                 setOdenenElle(true);
-                set('odenen', tutarSinirla(e.target.value, ucret || 10000000));
+                set('odenen', tutarSinirla(e.target.value, depozito || 10000000));
               }}
               required
             />
             <p className="m-0 mt-1 text-[13px] text-ink/55">
-              Ücretin tamamı ya da bir kısmı alınabilir; kalan tutar sonradan abone detayından tahsil edilir.
-              {ucret > 0 && odenen > 0 && odenen < ucret ? ' Kalan: ' + tl(ucret - odenen) + '.' : ''}
+              Depozitonun tamamı ya da bir kısmı alınabilir; kalanı sonradan abone detayından tahsil edilir.
+              {depozito > 0 && odenen > 0 && odenen < depozito ? ' Kalan: ' + tl(depozito - odenen) + '.' : ''}
             </p>
           </Field>
           <div className="grid grid-cols-2 gap-3">

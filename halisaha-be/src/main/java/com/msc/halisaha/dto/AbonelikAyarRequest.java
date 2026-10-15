@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public record AbonelikAyarRequest(
-        @NotNull(message = "Standart abonelik ücreti zorunludur") @DecimalMin(value = "0.00", message = "Ücret negatif olamaz") BigDecimal standartUcret
+        @NotNull(message = "Standart depozito zorunludur") @DecimalMin(value = "0.00", message = "Depozito negatif olamaz") BigDecimal standartUcret
 ) {
 }
