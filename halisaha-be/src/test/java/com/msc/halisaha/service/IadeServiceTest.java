@@ -147,7 +147,7 @@ class IadeServiceTest {
     void abonelikIadesiVeOdemeSilmeKorumasi() {
         LocalDate baslangic = AppZaman.bugun().plusDays(3);
         var abonelik = abonelikService.olustur(new AbonelikRequest(saha.getId(), "Ali", "05469764613",
-                baslangic.getDayOfWeek().getValue(), 1140, 60, baslangic, new BigDecimal("10000"), new BigDecimal("4000"),
+                baslangic.getDayOfWeek().getValue(), 1140, 60, baslangic, new BigDecimal("10000"), new BigDecimal("1000"), new BigDecimal("4000"),
                 OdemeYontemi.NAKIT, null, null, null));
         var iki = abonelikService.odemeEkle(abonelik.id(), new AbonelikOdemeRequest(new BigDecimal("2000"), OdemeYontemi.KART, null, null));
         iadeService.yap(new IadeRequest(null, null, null, abonelik.id(), new BigDecimal("3000"), OdemeYontemi.NAKIT, null, null, null));

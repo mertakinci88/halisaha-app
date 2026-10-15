@@ -40,6 +40,10 @@ public interface IadeRepository extends JpaRepository<Iade, Long> {
     @Query("SELECT COALESCE(SUM(i.tutar), 0) FROM Iade i WHERE i.abonelik.id = :id")
     BigDecimal abonelikToplami(@Param("id") Long id);
 
+    /** İşletmedeki aboneliklerin iade toplamları: [abonelikId, toplam]; iadesi olmayan abonelik satırda yoktur. */
+    @Query("SELECT i.abonelik.id, SUM(i.tutar) FROM Iade i WHERE i.isletme.id = :isletmeId AND i.abonelik IS NOT NULL GROUP BY i.abonelik.id")
+    List<Object[]> abonelikToplamlari(@Param("isletmeId") Long isletmeId);
+
     @Query("SELECT COALESCE(SUM(i.tutar), 0) FROM Iade i WHERE i.rezervasyon.id = :id")
     BigDecimal rezervasyonToplami(@Param("id") Long id);
 

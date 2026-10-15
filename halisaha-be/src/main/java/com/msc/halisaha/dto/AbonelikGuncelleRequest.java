@@ -14,8 +14,10 @@ public record AbonelikGuncelleRequest(
         @NotBlank(message = "Telefon numarası zorunludur")
         @Pattern(regexp = "^05\\d{9}$", message = "Telefon numarası 11 haneli olmalı ve 05 ile başlamalıdır (örn. 05469764613)")
         String telNo,
-        /** Alınan ödemenin altına düşemez. */
-        @NotNull(message = "Abonelik ücreti zorunludur") @DecimalMin(value = "0.01", message = "Abonelik ücreti sıfırdan büyük olmalıdır") BigDecimal ucret,
+        /** Alınan depozito ödemesinin altına düşemez. */
+        @NotNull(message = "Depozito zorunludur") @DecimalMin(value = "0.01", message = "Depozito sıfırdan büyük olmalıdır") BigDecimal depozito,
+        /** Yalnızca henüz oynanmamış (ve ödemesi alınmamış) haftalara yansır. */
+        @NotNull(message = "Haftalık ücret zorunludur") @DecimalMin(value = "0.01", message = "Haftalık ücret sıfırdan büyük olmalıdır") BigDecimal haftalikUcret,
         @Size(max = 255, message = "Not en fazla 255 karakter olabilir") String not
 ) {
 }

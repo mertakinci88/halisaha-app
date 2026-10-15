@@ -11,7 +11,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/** İşletmenin standart abonelik ücreti; kayıt formunda ücret alanını doldurur. */
+/** İşletmenin standart abonelik depozitosu (alan adı eski kalmıştır); kayıt formunda depozito alanını doldurur. */
 @Entity
 @Table(name = "abonelik_ayar")
 @Getter

@@ -7,7 +7,8 @@ import com.msc.halisaha.dto.AbonelikOdemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeResponse;
 import com.msc.halisaha.dto.AbonelikRequest;
-import com.msc.halisaha.dto.IptalRequest;
+import com.msc.halisaha.dto.AbonelikIptalOnizlemeResponse;
+import com.msc.halisaha.dto.AbonelikIptalRequest;
 import com.msc.halisaha.dto.AbonelikResponse;
 import com.msc.halisaha.entity.AbonelikDurum;
 import com.msc.halisaha.service.AbonelikService;
@@ -73,9 +74,15 @@ public class AbonelikController {
         return abonelikService.guncelle(id, request);
     }
 
+    /** İptal ekranı için: kalan depozito, oynanacak/iptal edilecek hafta sayısı ve artan tutar. */
+    @GetMapping("/{id}/iptal-onizleme")
+    public AbonelikIptalOnizlemeResponse iptalOnizle(@PathVariable Long id) {
+        return abonelikService.iptalOnizle(id);
+    }
+
     @PutMapping("/{id}/iptal")
-    public AbonelikResponse iptalEt(@PathVariable Long id, @Valid @RequestBody(required = false) IptalRequest request) {
-        return abonelikService.iptalEt(id, request != null ? request.neden() : null);
+    public AbonelikResponse iptalEt(@PathVariable Long id, @Valid @RequestBody(required = false) AbonelikIptalRequest request) {
+        return abonelikService.iptalEt(id, request != null ? request : new AbonelikIptalRequest(null, null, null, null));
     }
 
     @PostMapping("/{id}/odemeler")

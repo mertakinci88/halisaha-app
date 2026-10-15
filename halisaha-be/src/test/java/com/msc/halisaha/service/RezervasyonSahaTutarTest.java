@@ -85,4 +85,39 @@ class RezervasyonSahaTutarTest {
                 () -> olustur(4, 14, new BigDecimal("500"), new BigDecimal("600"), null));
         assertEquals(400, e.getStatus().value());
     }
+
+    @Test
+    void kayittanSonraTutarDusurulupArtirilabilir() {
+        // Saha 2.000 ₺; 1.500 ₺'ye girildi, müşteri fikir değiştirip 1.000 ₺ dedi
+        RezervasyonResponse r = olustur(5, 14, new BigDecimal("1500"), null, null);
+        RezervasyonResponse d = rezervasyonService.sahaTutariGuncelle(r.id(), new BigDecimal("1000"));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(d.odenecekTutar()));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(d.sahaTutar()));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(d.kalanTutar()));
+
+        RezervasyonResponse artan = rezervasyonService.sahaTutariGuncelle(r.id(), new BigDecimal("2500"));
+        assertEquals(0, new BigDecimal("2500.00").compareTo(artan.odenecekTutar()));
+    }
+
+    @Test
+    void tutarAlinanOdemeninAltinaDusurulemezVeOdemeDurumuYenilenir() {
+        RezervasyonResponse r = olustur(6, 14, new BigDecimal("1500"), new BigDecimal("600"), null);
+        ApiException e = assertThrows(ApiException.class,
+                () -> rezervasyonService.sahaTutariGuncelle(r.id(), new BigDecimal("599.99")));
+        assertEquals(400, e.getStatus().value());
+
+        // Alınan ödemeye eşitlenirse rezervasyon tamamen ödenmiş sayılır
+        RezervasyonResponse d = rezervasyonService.sahaTutariGuncelle(r.id(), new BigDecimal("600"));
+        assertEquals(0, BigDecimal.ZERO.compareTo(d.kalanTutar()));
+        assertEquals(com.msc.halisaha.entity.OdemeDurumu.ODENDI, d.odemeDurumu());
+    }
+
+    @Test
+    void iptalEdilenRezervasyonunTutariDegistirilemez() {
+        RezervasyonResponse r = olustur(7, 14, null, null, null);
+        rezervasyonService.cancel(r.id());
+        ApiException e = assertThrows(ApiException.class,
+                () -> rezervasyonService.sahaTutariGuncelle(r.id(), new BigDecimal("1000")));
+        assertEquals(400, e.getStatus().value());
+    }
 }

@@ -14,7 +14,7 @@ import java.time.LocalDate;
 
 /**
  * Yeni abonelik: sahada haftanın belli günü ve saatinde, başlangıç tarihinden itibaren 52 hafta boyunca her hafta için rezervasyon oluşturulur.
- * Bitiş tarihi gönderilmez, 52. haftanın tarihi olarak hesaplanır. Kayıtta ilk ödeme de alınır.
+ * Bitiş tarihi gönderilmez, 52. haftanın tarihi olarak hesaplanır. Kayıtta depozito (ya da ilk kısmı) alınır; her haftalık rezervasyon haftalık ücretle açılır.
  */
 public record AbonelikRequest(
         @NotNull(message = "Saha seçimi zorunludur") Long sahaId,
@@ -30,9 +30,11 @@ public record AbonelikRequest(
         /** Dakika; 30'un katı (1 saat = 60). */
         @NotNull(message = "Süre zorunludur") @Min(value = 30, message = "Süre en az 30 dakika olmalıdır") Integer sureDakika,
         @NotNull(message = "Başlangıç tarihi zorunludur") LocalDate baslangicTarih,
-        /** Abonelik için anlaşılan toplam tutar (standart ücretten gelir, elle değiştirilebilir). */
-        @NotNull(message = "Abonelik ücreti zorunludur") @DecimalMin(value = "0.01", message = "Abonelik ücreti sıfırdan büyük olmalıdır") BigDecimal ucret,
-        /** Kayıtta alınan ödeme; ücreti aşamaz. */
+        /** Bırakılan depozito (standart depozitodan gelir, elle değiştirilebilir). */
+        @NotNull(message = "Depozito zorunludur") @DecimalMin(value = "0.01", message = "Depozito sıfırdan büyük olmalıdır") BigDecimal depozito,
+        /** Maç başına ücret (sahanın ücretinden gelir, elle değiştirilebilir). */
+        @NotNull(message = "Haftalık ücret zorunludur") @DecimalMin(value = "0.01", message = "Haftalık ücret sıfırdan büyük olmalıdır") BigDecimal haftalikUcret,
+        /** Kayıtta alınan depozito ödemesi; depozitoyu aşamaz. */
         @NotNull(message = "Alınan ödeme tutarı zorunludur") @DecimalMin(value = "0.01", message = "Alınan ödeme sıfırdan büyük olmalıdır") BigDecimal odenenTutar,
         @NotNull(message = "Ödeme şekli seçilmelidir") OdemeYontemi odemeSekli,
         /** Yalnızca Havale / EFT'de dikkate alınır ve o durumda zorunludur. */

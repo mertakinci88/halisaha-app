@@ -169,6 +169,49 @@ public class RezervasyonService {
         return toResponse(rezervasyon);
     }
 
+    /**
+     * Abonelik haftalık rezervasyonunun saha tutarını yeniden belirler (haftalık ücret değişikliği ya da iptalde depozitodan karşılama).
+     * Ödemesi alınmış rezervasyona dokunulmaz; değişiklik yapıldıysa true döner.
+     */
+    @Transactional
+    public boolean abonelikSahaTutariBelirle(Long id, BigDecimal tutar, boolean depozitodan) {
+        Rezervasyon rezervasyon = getEntity(id);
+        if (rezervasyon.getAbonelik() == null || rezervasyon.getDurum() == RezervasyonDurum.IPTAL
+                || rezervasyonOdemeRepository.existsByRezervasyonId(id)) {
+            return false;
+        }
+        RezervasyonKalem kalem = kalemRepository.findByRezervasyonIdOrderByIdAsc(id).stream()
+                .filter(k -> k.getTip() == KalemTip.SAHA).findFirst().orElse(null);
+        if (kalem == null) {
+            return false;
+        }
+        sahaKalemiTutariBelirle(kalem, tutar);
+        kalem.setAciklama(rezervasyon.getSaha().getAd() + " · Abonelik" + (depozitodan ? " · Depozitodan" : ""));
+        recalculate(rezervasyon);
+        return true;
+    }
+
+    /** Kayıttan sonra saha ücretini elle değiştirir (müşteriyle anlaşılan tutar değişince); alınan ödemenin altına düşürülemez. */
+    @Transactional
+    public RezervasyonResponse sahaTutariGuncelle(Long id, BigDecimal tutar) {
+        Rezervasyon rezervasyon = getEntity(id);
+        if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyonun tutarı değiştirilemez");
+        }
+        RezervasyonKalem kalem = kalemRepository.findByRezervasyonIdOrderByIdAsc(id).stream()
+                .filter(k -> k.getTip() == KalemTip.SAHA).findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Rezervasyonun saha kalemi bulunamadı"));
+        sahaKalemiTutariBelirle(kalem, tutar);
+        recalculate(rezervasyon);
+        return toResponse(rezervasyon);
+    }
+
+    private void sahaKalemiTutariBelirle(RezervasyonKalem kalem, BigDecimal tutar) {
+        BigDecimal yeni = tutar.setScale(2, RoundingMode.HALF_UP);
+        kalem.setTutar(yeni);
+        kalem.setBirimFiyat(yeni.divide(kalem.getMiktar(), 2, RoundingMode.HALF_UP));
+    }
+
     @Transactional
     public RezervasyonResponse cancel(Long id) {
         return cancel(id, null);
