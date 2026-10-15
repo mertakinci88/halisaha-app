@@ -5,6 +5,7 @@ import com.msc.halisaha.dto.IptalRequest;
 import com.msc.halisaha.dto.RezervasyonRequest;
 import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.dto.RezervasyonUrunRequest;
+import com.msc.halisaha.dto.SahaTutarRequest;
 import com.msc.halisaha.service.RezervasyonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,12 @@ public class RezervasyonController {
     @PutMapping("/{id}")
     public RezervasyonResponse update(@PathVariable Long id, @Valid @RequestBody RezervasyonRequest request) {
         return rezervasyonService.update(id, request);
+    }
+
+    /** Kayıttan sonra ödenecek (saha) tutarı değiştirir; alınan ödemenin altına düşemez. */
+    @PatchMapping("/{id}/saha-tutari")
+    public RezervasyonResponse sahaTutari(@PathVariable Long id, @Valid @RequestBody SahaTutarRequest request) {
+        return rezervasyonService.sahaTutariGuncelle(id, request.tutar());
     }
 
     @PatchMapping("/{id}/iptal")

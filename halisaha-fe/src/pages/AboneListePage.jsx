@@ -71,7 +71,7 @@ export default function AboneListePage() {
       const a = await aboneService.ayarKaydet({ standartUcret: tutar });
       setStandart(a.standartUcret);
       setUcretDuzen(null);
-      toast.basari('Standart abonelik ücreti kaydedildi.');
+      toast.basari('Standart depozito kaydedildi.');
     } catch (e) {
       setHata(apiHata(e));
     } finally {
@@ -87,7 +87,7 @@ export default function AboneListePage() {
       <Card className="mb-5 gap-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div>
-            <div className="text-[11.5px] uppercase tracking-[0.1em] text-accent-700">Standart abonelik ücreti</div>
+            <div className="text-[11.5px] uppercase tracking-[0.1em] text-accent-700">Standart depozito</div>
             {ucretDuzen === null ? (
               <div className="font-heading text-[28px] leading-tight">
                 {standart === null ? <span className="text-[20px] text-ink/55">Tanımlı değil</span> : tl(standart)}
@@ -105,7 +105,7 @@ export default function AboneListePage() {
                     value={ucretDuzen}
                     onChange={(e) => setUcretDuzen(tutarSinirla(e.target.value, 10000000))}
                     className="w-40 pl-7"
-                    aria-label="Standart abonelik ücreti"
+                    aria-label="Standart depozito"
                   />
                 </div>
                 <Button variant="primary" disabled={ucretKaydediyor || ucretDuzen === ''} onClick={ucretKaydet}>
@@ -127,8 +127,8 @@ export default function AboneListePage() {
           ) : null}
         </div>
         <p className="m-0 text-[13px] text-ink/55">
-          Yeni abonelik kaydında ücret bu tutardan gelir; kayıt sırasında elle değiştirilebilir.
-          {!isAdmin ? ' Standart ücreti yalnızca yönetici değiştirebilir.' : ''}
+          Yeni abonelik kaydında depozito bu tutardan gelir; kayıt sırasında elle değiştirilebilir.
+          {!isAdmin ? ' Standart depozitoyu yalnızca yönetici değiştirebilir.' : ''}
         </p>
       </Card>
 
@@ -172,8 +172,9 @@ export default function AboneListePage() {
                 <Th>Saha</Th>
                 <Th>Gün ve saat</Th>
                 <Th>Dönem</Th>
-                <Th className="text-right">Ücret</Th>
-                <Th className="text-right">Kalan</Th>
+                <Th className="text-right">Depozito</Th>
+                <Th className="text-right">Haftalık</Th>
+                <Th className="text-right">Eksik depozito</Th>
                 <Th>Ödeme</Th>
                 <Th>Durum</Th>
                 <Th />
@@ -181,7 +182,7 @@ export default function AboneListePage() {
             </thead>
             <tbody>
               {liste.length === 0 ? (
-                <Bos colSpan={9}>{aramaAktif ? 'Aramaya uyan abonelik bulunamadı.' : 'Abonelik kaydı bulunamadı.'}</Bos>
+                <Bos colSpan={10}>{aramaAktif ? 'Aramaya uyan abonelik bulunamadı.' : 'Abonelik kaydı bulunamadı.'}</Bos>
               ) : (
                 liste.map((a) => (
                   <Tr key={a.id}>
@@ -196,8 +197,9 @@ export default function AboneListePage() {
                     <Td etiket="Dönem" className="whitespace-nowrap">
                       {kisaTarih(a.baslangicTarih)} – {kisaTarih(a.bitisTarih)}
                     </Td>
-                    <Td etiket="Ücret" className="whitespace-nowrap text-right tabular-nums">{tl(a.ucret)}</Td>
-                    <Td etiket="Kalan" className="whitespace-nowrap text-right tabular-nums">
+                    <Td etiket="Depozito" className="whitespace-nowrap text-right tabular-nums">{tl(a.depozito)}</Td>
+                    <Td etiket="Haftalık" className="whitespace-nowrap text-right tabular-nums">{tl(a.haftalikUcret)}</Td>
+                    <Td etiket="Eksik depozito" className="whitespace-nowrap text-right tabular-nums">
                       {Number(a.kalanTutar) > 0 ? tl(a.kalanTutar) : '—'}
                     </Td>
                     <Td etiket="Ödeme"><OdemeDurumuEtiketi durum={a.odemeDurumu} /></Td>

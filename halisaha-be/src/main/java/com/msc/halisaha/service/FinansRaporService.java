@@ -122,9 +122,9 @@ public class FinansRaporService {
                 FROM envanter_satis s
                 WHERE s.isletme_id = :isletmeId AND s.kayit_tarihi >= (CAST(:bas AS timestamp) + %s) AND s.kayit_tarihi < (CAST(:bit AS timestamp) + %s)
                 """.formatted(ISLETME_GUNU, ISLETME_GUNU), params, BigDecimal.class);
-        // Dönemde kaydı yapılan, iptal edilmemiş aboneliklerin ücret - alınan ödeme farkı
+        // Dönemde kaydı yapılan, iptal edilmemiş aboneliklerin depozito - alınan ödeme farkı
         BigDecimal abonelik = jdbc.queryForObject("""
-                SELECT COALESCE(SUM(a.ucret - (SELECT COALESCE(SUM(p.tutar), 0) FROM abonelik_odeme p WHERE p.abonelik_id = a.id)), 0)
+                SELECT COALESCE(SUM(a.depozito - (SELECT COALESCE(SUM(p.tutar), 0) FROM abonelik_odeme p WHERE p.abonelik_id = a.id)), 0)
                 FROM abonelik a
                 WHERE a.isletme_id = :isletmeId AND a.durum = 'AKTIF'
                   AND a.kayit_tarih >= (CAST(:bas AS timestamp) + %s) AND a.kayit_tarih < (CAST(:bit AS timestamp) + %s)

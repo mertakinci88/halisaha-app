@@ -78,9 +78,13 @@ public class Abonelik {
     @Column(name = "durum", nullable = false, length = 20)
     private AbonelikDurum durum;
 
-    /** Abonelik için anlaşılan toplam tutar. */
-    @Column(name = "ucret", nullable = false, precision = 10, scale = 2)
-    private BigDecimal ucret;
+    /** Kayıtta bırakılan depozito (işletmede kalır); iptalde kalan kısım ile kalan haftalar oynanır. */
+    @Column(name = "depozito", nullable = false, precision = 10, scale = 2)
+    private BigDecimal depozito;
+
+    /** Maç başına (haftalık) ücret; haftalık rezervasyonlar bu tutarla açılır. */
+    @Column(name = "haftalik_ucret", nullable = false, precision = 10, scale = 2)
+    private BigDecimal haftalikUcret;
 
     @Column(name = "iptal_tarih")
     private LocalDateTime iptalTarih;

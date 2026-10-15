@@ -7,11 +7,14 @@ import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.AbonelikAyarRequest;
 import com.msc.halisaha.dto.AbonelikAyarResponse;
 import com.msc.halisaha.dto.AbonelikGuncelleRequest;
+import com.msc.halisaha.dto.AbonelikIptalOnizlemeResponse;
+import com.msc.halisaha.dto.AbonelikIptalRequest;
 import com.msc.halisaha.dto.AbonelikOdemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeResponse;
 import com.msc.halisaha.dto.AbonelikRequest;
 import com.msc.halisaha.dto.AbonelikResponse;
+import com.msc.halisaha.dto.IadeRequest;
 import com.msc.halisaha.entity.Abonelik;
 import com.msc.halisaha.entity.AbonelikAyar;
 import com.msc.halisaha.entity.AbonelikDurum;
@@ -21,11 +24,13 @@ import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.Rezervasyon;
 import com.msc.halisaha.entity.RezervasyonDurum;
 import com.msc.halisaha.entity.RezervasyonKalem;
+import com.msc.halisaha.entity.Rol;
 import com.msc.halisaha.entity.Saha;
 import com.msc.halisaha.repository.AbonelikAyarRepository;
 import com.msc.halisaha.repository.AbonelikRepository;
 import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.RezervasyonKalemRepository;
+import com.msc.halisaha.repository.RezervasyonOdemeRepository;
 import com.msc.halisaha.repository.RezervasyonRepository;
 import com.msc.halisaha.repository.SahaRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,15 +46,19 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Abonelik: sahanın haftanın belli günü ve saatinde, başlangıçtan itibaren 52 hafta boyunca bir müşteriye ayrılması.
- * Kayıtta her hafta için bir rezervasyon oluşturulur (takvimde görünür, çakışma kontrolü normal rezervasyonlarla ortaktır);
- * bu rezervasyonların saha ücreti 0'dır, abonelik tutarı abonelik ödemeleriyle tahsil edilir.
- * Abonelik iptalinde henüz gerçekleşmemiş haftalık rezervasyonlar iptal edilir.
+ * Kayıtta her hafta için bir rezervasyon oluşturulur (takvimde görünür, çakışma kontrolü normal rezervasyonlarla ortaktır).
+ * Abone kayıtta depozito bırakır (abonelik ödemesi olarak alınır, işletmede kalır); haftalık rezervasyonlar haftalık ücretle açılır
+ * ve her hafta normal rezervasyon ödemesi gibi tahsil edilir.
+ * İptalde kalan depozito ile kalan haftalar oynanır: haftalık ücrete yetecek kadar hafta rezervasyonda kalır (ücreti sıfırlanır, "depozitodan"),
+ * diğer haftalar iptal edilir. Bir maça yetmeyen artan tutar iade edilir ya da bir sonraki maça sayılır (müşteri farkı öder).
  */
 @Service
 @RequiredArgsConstructor
@@ -69,10 +78,12 @@ public class AbonelikService {
     private final AbonelikAyarRepository ayarRepository;
     private final RezervasyonRepository rezervasyonRepository;
     private final RezervasyonKalemRepository kalemRepository;
+    private final RezervasyonOdemeRepository rezervasyonOdemeRepository;
     private final SahaRepository sahaRepository;
     private final RezervasyonService rezervasyonService;
     private final HesapService hesapService;
     private final IadeRepository iadeRepository;
+    private final IadeService iadeService;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
 
@@ -93,18 +104,20 @@ public class AbonelikService {
     public List<AbonelikResponse> listele(AbonelikDurum durum, String q) {
         LocalDate bugun = AppZaman.bugun();
         String aranan = q == null ? "" : q.trim().toLowerCase(TR);
+        Map<Long, BigDecimal> iadeler = new HashMap<>();
+        iadeRepository.abonelikToplamlari(isletmeContext.id()).forEach(r -> iadeler.put((Long) r[0], (BigDecimal) r[1]));
         return abonelikRepository.listele(isletmeContext.id(), durum).stream()
                 .filter(a -> aranan.isEmpty()
                         || a.getAdSoyad().toLowerCase(TR).contains(aranan)
                         || a.getTelNo().contains(aranan))
                 .sorted(TurkceSirala.<Abonelik>alfabetik(Abonelik::getAdSoyad).thenComparing(Abonelik::getId))
-                .map(a -> AbonelikResponse.from(a, bugun, List.of()))
+                .map(a -> AbonelikResponse.from(a, bugun, List.of(), iadeler.getOrDefault(a.getId(), BigDecimal.ZERO)))
                 .toList();
     }
 
     public AbonelikResponse getir(Long id) {
         Abonelik abonelik = getEntity(id);
-        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik));
+        return yanit(abonelik);
     }
 
     /** Kayıttan önce: oluşacak rezervasyon sayısı ve çakışan tarihler. */
@@ -126,10 +139,11 @@ public class AbonelikService {
         if (request.baslangicTarih().isBefore(bugun)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Başlangıç tarihi geçmişte olamaz");
         }
-        BigDecimal ucret = request.ucret().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal depozito = request.depozito().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal haftalik = request.haftalikUcret().setScale(2, RoundingMode.HALF_UP);
         BigDecimal odenen = request.odenenTutar().setScale(2, RoundingMode.HALF_UP);
-        if (odenen.compareTo(ucret) > 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Alınan ödeme abonelik ücretini (" + ucret + ") aşamaz");
+        if (odenen.compareTo(depozito) > 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Alınan ödeme depozitoyu (" + depozito + ") aşamaz");
         }
         LocalDate odemeTarihi = odemeTarihi(request.odemeTarihi(), bugun);
 
@@ -156,7 +170,8 @@ public class AbonelikService {
                 .baslangicTarih(request.baslangicTarih())
                 .bitisTarih(bitis)
                 .durum(AbonelikDurum.AKTIF)
-                .ucret(ucret)
+                .depozito(depozito)
+                .haftalikUcret(haftalik)
                 .not(not)
                 .kullanici(mevcutKullanici.getir())
                 .build();
@@ -176,7 +191,7 @@ public class AbonelikService {
                     .bitisTarih(baslangic.plusMinutes(request.sureDakika()))
                     .durum(RezervasyonDurum.AKTIF)
                     .odemeDurumu(OdemeDurumu.ODENMEDI)
-                    .odenecekTutar(BigDecimal.ZERO)
+                    .odenecekTutar(haftalik)
                     .kayitTarih(simdi)
                     .kullanici(abonelik.getKullanici())
                     .abonelik(abonelik)
@@ -188,25 +203,31 @@ public class AbonelikService {
                 .tip(KalemTip.SAHA)
                 .aciklama(saha.getAd() + " · Abonelik")
                 .miktar(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP))
-                .birimFiyat(BigDecimal.ZERO)
-                .tutar(BigDecimal.ZERO)
+                .birimFiyat(haftalik.divide(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP), 2, RoundingMode.HALF_UP))
+                .tutar(haftalik)
                 .build()).toList());
 
-        return AbonelikResponse.from(abonelik, bugun, haftalar(abonelik));
+        return yanit(abonelik);
     }
 
-    /** Ad, telefon, ücret ve not güncellenir; gerçekleşmemiş haftalık rezervasyonlarda da ad ve telefon güncellenir. */
+    /**
+     * Ad, telefon, depozito, haftalık ücret ve not güncellenir; gerçekleşmemiş haftalık rezervasyonlarda ad, telefon ve
+     * (ödemesi alınmamışsa) haftalık ücret de güncellenir.
+     */
     @Transactional
     public AbonelikResponse guncelle(Long id, AbonelikGuncelleRequest request) {
         Abonelik abonelik = getEntity(id);
-        BigDecimal ucret = request.ucret().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal depozito = request.depozito().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal haftalik = request.haftalikUcret().setScale(2, RoundingMode.HALF_UP);
         BigDecimal odenen = odenenToplam(abonelik);
-        if (ucret.compareTo(odenen) < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Abonelik ücreti alınan ödemenin (" + odenen + ") altına düşürülemez");
+        if (depozito.compareTo(odenen) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Depozito alınan ödemenin (" + odenen + ") altına düşürülemez");
         }
+        boolean haftalikDegisti = haftalik.compareTo(abonelik.getHaftalikUcret()) != 0 && abonelik.getDurum() == AbonelikDurum.AKTIF;
         abonelik.setAdSoyad(request.adSoyad().trim());
         abonelik.setTelNo(request.telNo());
-        abonelik.setUcret(ucret);
+        abonelik.setDepozito(depozito);
+        abonelik.setHaftalikUcret(haftalik);
         abonelik.setNot(request.not() != null && !request.not().isBlank() ? request.not().trim() : null);
 
         LocalDateTime simdi = AppZaman.simdi();
@@ -214,48 +235,106 @@ public class AbonelikService {
             if (r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi)) {
                 r.setAdSoyad(abonelik.getAdSoyad());
                 r.setTelNo(abonelik.getTelNo());
-            }
-        }
-        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik));
-    }
-
-    /** Aboneliği iptal eder; henüz gerçekleşmemiş haftalık rezervasyonlar iptal edilir, geçmiş haftalar kalır. Alınan ödemeler silinmez. */
-    @Transactional
-    public AbonelikResponse iptalEt(Long id) {
-        return iptalEt(id, null);
-    }
-
-    /** İptal eden kullanıcı, zaman ve (varsa) neden kaydedilir; iptal edilen haftalık rezervasyonlar "Abonelik iptali" nedeniyle işaretlenir. */
-    @Transactional
-    public AbonelikResponse iptalEt(Long id, String neden) {
-        Abonelik abonelik = getEntity(id);
-        if (abonelik.getDurum() == AbonelikDurum.AKTIF) {
-            abonelik.setDurum(AbonelikDurum.IPTAL);
-            abonelik.setIptalTarih(AppZaman.simdi());
-            abonelik.setIptalEden(mevcutKullanici.getir());
-            abonelik.setIptalNeden(neden != null && !neden.isBlank() ? neden.trim() : null);
-            LocalDateTime simdi = AppZaman.simdi();
-            for (Rezervasyon r : rezervasyonRepository.findByAbonelikId(id)) {
-                if (r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi)) {
-                    rezervasyonService.cancel(r.getId(), ABONELIK_IPTALI);
+                if (haftalikDegisti) {
+                    rezervasyonService.abonelikSahaTutariBelirle(r.getId(), haftalik, false);
                 }
             }
         }
-        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik));
+        return yanit(abonelik);
+    }
+
+    /** İptal edilirse ne olacağını hesaplar (iptal ekranı için); hiçbir şeyi değiştirmez. */
+    public AbonelikIptalOnizlemeResponse iptalOnizle(Long id) {
+        Abonelik abonelik = getEntity(id);
+        IptalPlani plan = planla(abonelik);
+        BigDecimal haftalik = abonelik.getHaftalikUcret();
+        int iptalEdilecek = plan.adaylar().size() - plan.tamHafta() - (plan.kismiHafta() ? 1 : 0);
+        return new AbonelikIptalOnizlemeResponse(plan.kalanDepozito(), haftalik, plan.tamHafta(), iptalEdilecek, plan.artan(),
+                plan.kismiHafta(), plan.kismiHafta() ? haftalik.subtract(plan.artan()) : null,
+                plan.artan().signum() > 0 && !plan.kismiHafta());
+    }
+
+    /**
+     * Aboneliği iptal eder. Kalan depozito ile kalan haftalar oynanır: haftalık ücrete yetecek kadar (en yakın) hafta rezervasyonda kalır
+     * ve ücreti depozitodan karşılanır, diğer haftalar "Abonelik iptali" nedeniyle iptal edilir. Bir maça yetmeyen artan tutar
+     * ya iade edilir (iade kaydı oluşur; yalnızca yönetici) ya da bir sonraki maça sayılır: o maçta müşteri yalnızca farkı öder.
+     * Geçmiş haftalar ve ödemesi alınmış haftalar olduğu gibi kalır; alınan ödemeler silinmez.
+     */
+    @Transactional
+    public AbonelikResponse iptalEt(Long id, AbonelikIptalRequest request) {
+        Abonelik abonelik = getEntity(id);
+        if (abonelik.getDurum() != AbonelikDurum.AKTIF) {
+            return yanit(abonelik);
+        }
+        IptalPlani plan = planla(abonelik);
+        boolean artanIade = plan.artan().signum() > 0 && (!plan.kismiHafta() || Boolean.TRUE.equals(request.artanIade()));
+        if (artanIade) {
+            if (mevcutKullanici.getir().getRol() != Rol.ADMIN) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "Artan depozito iadesini yalnızca yönetici yapabilir");
+            }
+            if (request.iadeSekli() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Artan depozito iadesi için iade şekli seçilmelidir");
+            }
+        }
+
+        String neden = request.neden() != null && !request.neden().isBlank() ? request.neden().trim() : null;
+        abonelik.setDurum(AbonelikDurum.IPTAL);
+        abonelik.setIptalTarih(AppZaman.simdi());
+        abonelik.setIptalEden(mevcutKullanici.getir());
+        abonelik.setIptalNeden(neden);
+
+        BigDecimal haftalik = abonelik.getHaftalikUcret();
+        List<Rezervasyon> adaylar = plan.adaylar();
+        for (int i = 0; i < adaylar.size(); i++) {
+            Long rezervasyonId = adaylar.get(i).getId();
+            if (i < plan.tamHafta()) {
+                rezervasyonService.abonelikSahaTutariBelirle(rezervasyonId, BigDecimal.ZERO, true);
+            } else if (i == plan.tamHafta() && plan.kismiHafta() && !artanIade) {
+                rezervasyonService.abonelikSahaTutariBelirle(rezervasyonId, haftalik.subtract(plan.artan()), true);
+            } else {
+                rezervasyonService.cancel(rezervasyonId, ABONELIK_IPTALI);
+            }
+        }
+        if (artanIade) {
+            iadeService.yap(new IadeRequest(null, null, null, id, plan.artan(), request.iadeSekli(), request.hesapId(), null,
+                    "Abonelik iptali: artan depozito iadesi"));
+        }
+        return yanit(abonelik);
+    }
+
+    /** Kalan depozito (alınan - iade), oynanabilecek gelecek haftalar ve artan tutarın dökümü. */
+    private IptalPlani planla(Abonelik abonelik) {
+        BigDecimal kalan = odenenToplam(abonelik).subtract(iadeRepository.abonelikToplami(abonelik.getId())).max(BigDecimal.ZERO);
+        LocalDateTime simdi = AppZaman.simdi();
+        List<Rezervasyon> adaylar = rezervasyonRepository.findByAbonelikId(abonelik.getId()).stream()
+                .filter(r -> r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi))
+                .filter(r -> !rezervasyonOdemeRepository.existsByRezervasyonId(r.getId()))
+                .toList();
+        BigDecimal haftalik = abonelik.getHaftalikUcret();
+        int tam = (int) Math.min(kalan.divideToIntegralValue(haftalik).longValue(), adaylar.size());
+        BigDecimal artan = kalan.subtract(haftalik.multiply(BigDecimal.valueOf(tam)));
+        return new IptalPlani(kalan, adaylar, tam, artan, artan.signum() > 0 && tam < adaylar.size());
+    }
+
+    private record IptalPlani(BigDecimal kalanDepozito, List<Rezervasyon> adaylar, int tamHafta, BigDecimal artan, boolean kismiHafta) {
+    }
+
+    private AbonelikResponse yanit(Abonelik abonelik) {
+        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik), iadeRepository.abonelikToplami(abonelik.getId()));
     }
 
     @Transactional
     public AbonelikResponse odemeEkle(Long id, AbonelikOdemeRequest request) {
         Abonelik abonelik = getEntity(id);
         BigDecimal tutar = request.tutar().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal kalan = abonelik.getUcret().subtract(odenenToplam(abonelik));
+        BigDecimal kalan = abonelik.getDepozito().subtract(odenenToplam(abonelik));
         if (tutar.compareTo(kalan) > 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme tutarı kalan tutarı (" + kalan.max(BigDecimal.ZERO) + ") aşamaz");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme tutarı kalan depozitoyu (" + kalan.max(BigDecimal.ZERO) + ") aşamaz");
         }
         abonelik.getOdemeler().add(odemeOlustur(abonelik, tutar, request.odemeSekli(), request.hesapId(),
                 odemeTarihi(request.odemeTarihi(), AppZaman.bugun())));
         abonelikRepository.flush();   // yeni ödeme satırının id'si yanıtta dolu gelsin
-        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik));
+        return yanit(abonelik);
     }
 
     /** Yanlış girilen ödemeyi siler; aboneliğin en az bir ödemesi kalmalıdır. */
@@ -271,7 +350,7 @@ public class AbonelikService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bu abonelik için iade kaydı var; ödeme silinirse ödenen tutar iade tutarının altına düşer");
         }
         abonelik.getOdemeler().remove(odeme);
-        return AbonelikResponse.from(abonelik, AppZaman.bugun(), haftalar(abonelik));
+        return yanit(abonelik);
     }
 
     private AbonelikOdeme odemeOlustur(Abonelik abonelik, BigDecimal tutar, com.msc.halisaha.entity.OdemeYontemi sekil, Long hesapId, LocalDate tarih) {
@@ -301,9 +380,17 @@ public class AbonelikService {
     }
 
     private List<AbonelikResponse.HaftaResponse> haftalar(Abonelik abonelik) {
-        return rezervasyonRepository.findByAbonelikId(abonelik.getId()).stream()
-                .map(r -> new AbonelikResponse.HaftaResponse(r.getId(), r.getBaslangicTarih(), r.getBitisTarih(), r.getDurum()))
-                .toList();
+        List<Rezervasyon> rezervasyonlar = rezervasyonRepository.findByAbonelikId(abonelik.getId());
+        Map<Long, BigDecimal> odenenler = new HashMap<>();
+        if (!rezervasyonlar.isEmpty()) {
+            rezervasyonOdemeRepository.toplamlar(rezervasyonlar.stream().map(Rezervasyon::getId).toList())
+                    .forEach(r -> odenenler.put((Long) r[0], (BigDecimal) r[1]));
+        }
+        return rezervasyonlar.stream().map(r -> {
+            BigDecimal odenen = odenenler.getOrDefault(r.getId(), BigDecimal.ZERO);
+            return new AbonelikResponse.HaftaResponse(r.getId(), r.getBaslangicTarih(), r.getBitisTarih(), r.getDurum(),
+                    r.getOdenecekTutar(), odenen, r.getOdenecekTutar().subtract(odenen).max(BigDecimal.ZERO), r.getOdemeDurumu());
+        }).toList();
     }
 
     /** İlk tarih, başlangıçtan itibaren (başlangıç dahil) seçilen güne denk gelen ilk gündür; ardından haftalık, toplam {@link #HAFTA_SAYISI} hafta. */
