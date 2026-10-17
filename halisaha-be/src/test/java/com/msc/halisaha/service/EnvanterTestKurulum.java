@@ -57,6 +57,7 @@ final class EnvanterTestKurulum {
     static EnvanterSatisRequest set(String esofmanBeden, String yagmurlukBeden, List<EnvanterTur> teslim, List<EnvanterTur> odendi, String odenen) {
         List<EnvanterSatisRequest.Kalem> k = new ArrayList<>();
         for (EnvanterTur tur : EnvanterTur.values()) {
+            if (tur == EnvanterTur.KALECI_FORMA) continue; // kaleci forması set testlerinin dışında
             String beden = switch (tur) {
                 case KISLIK_ESOFMAN -> esofmanBeden;
                 case YAGMURLUK -> yagmurlukBeden;

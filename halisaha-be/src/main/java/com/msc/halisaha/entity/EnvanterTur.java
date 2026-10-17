@@ -2,6 +2,7 @@ package com.msc.halisaha.entity;
 
 /** Satılan envanter türleri. Sıra, listelerdeki (Türkçe alfabetik) sıradır. */
 public enum EnvanterTur {
+    KALECI_FORMA("Kaleci Forma", true),
     KISLIK_ESOFMAN("Kışlık Eşofman", true),
     KRAMPON_CANTASI("Krampon Çantası", false),
     TOZLUK("Tozluk", false),
