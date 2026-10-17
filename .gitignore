@@ -4,3 +4,6 @@ Halısaha.xlsx
 # Sunucu yedek kılavuzu ve scriptleri: repoda tutulmaz (herkese açık depoda sunucu düzenini ifşa eder)
 halisaha-be/deploy/YEDEK.md
 halisaha-be/deploy/backup/
+
+# Müşteri Excel dosyaları (kişisel veri içerir)
+*.xlsx
