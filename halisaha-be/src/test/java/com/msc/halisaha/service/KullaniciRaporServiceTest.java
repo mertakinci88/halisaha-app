@@ -46,6 +46,7 @@ class KullaniciRaporServiceTest {
     @Autowired KullaniciRepository kullaniciRepository;
     @Autowired SahaRepository sahaRepository;
     @Autowired HesapRepository hesapRepository;
+    @Autowired com.msc.halisaha.repository.OturumLogRepository oturumLogRepository;
 
     private Kullanici admin;
     private Kullanici personel;
@@ -155,8 +156,29 @@ class KullaniciRaporServiceTest {
         TestOturum.girisYap(admin);
         var yoklama = raporService.yoklama(bugun, bugun);
         assertTrue(yoklama.gunler().isEmpty());
-        var giris = raporService.giris(bugun, bugun, null);
+        var giris = raporService.giris(bugun, bugun, null, 0);
         assertTrue(giris.satirlar().isEmpty());
+    }
+
+    @Test
+    void girisGecmisiSayfalanirEnYeniUsttedirVeSinirDisiSayfaSonaIndirilir() {
+        TestOturum.girisYap(admin);
+        LocalDateTime simdi = LocalDateTime.now();
+        for (int i = 0; i < 120; i++) {
+            oturumLogRepository.save(com.msc.halisaha.entity.OturumLog.builder().isletmeId(admin.getIsletme().getId())
+                    .kullaniciId(admin.getId()).kullaniciAdi(admin.getKullaniciAdi()).olay(com.msc.halisaha.entity.OturumOlay.GIRIS)
+                    .zaman(simdi.minusSeconds(i)).build());
+        }
+        var ilk = raporService.giris(bugun, bugun, null, 0);
+        assertEquals(120, ilk.toplam());
+        assertEquals(20, ilk.satirlar().size());
+        assertEquals(20, ilk.sayfaBoyutu());
+        var son = raporService.giris(bugun, bugun, null, 5);
+        assertEquals(20, son.satirlar().size());
+        assertTrue(ilk.satirlar().get(0).zaman().isAfter(son.satirlar().get(0).zaman()));
+        var asan = raporService.giris(bugun, bugun, null, 99);
+        assertEquals(5, asan.sayfa());
+        assertEquals(20, asan.satirlar().size());
     }
 
     @Test

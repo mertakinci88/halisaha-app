@@ -41,6 +41,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.refresh(request));
     }
 
+    /** İstemcinin düzenli "buradayım" sinyali (oturum canlılığı). */
+    @PostMapping("/aktif")
+    public ResponseEntity<Void> aktif(@Valid @RequestBody RefreshRequest request, HttpServletRequest http) {
+        authService.aktif(request, IstemciBilgisi.from(http));
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request, HttpServletRequest http) {
         authService.logout(request, IstemciBilgisi.from(http));

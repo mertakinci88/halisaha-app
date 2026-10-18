@@ -24,6 +24,21 @@ export function AuthProvider({ children }) {
       .finally(() => setYukleniyor(false));
   }, []);
 
+  // Tarayıcı açıkken dakikada bir "buradayım" sinyali; sinyali kesilen oturum giriş geçmişinde "tarayıcı kapatıldı" görünür
+  useEffect(() => {
+    if (!girisli) return undefined;
+    const sinyal = () => {
+      if (document.visibilityState === 'visible') authService.aktif();
+    };
+    sinyal();
+    const zamanlayici = setInterval(sinyal, 60_000);
+    document.addEventListener('visibilitychange', sinyal);
+    return () => {
+      clearInterval(zamanlayici);
+      document.removeEventListener('visibilitychange', sinyal);
+    };
+  }, [girisli]);
+
   const login = useCallback(async (kullaniciAdi, sifre) => {
     const token = await authService.login(kullaniciAdi, sifre);
     tokenStore.set(token);

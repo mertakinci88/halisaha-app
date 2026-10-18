@@ -80,6 +80,25 @@ public class AuthService {
         return new TokenResponse(newAccessToken, stored.getToken(), TOKEN_TYPE);
     }
 
+    /**
+     * İstemcinin düzenli "buradayım" sinyali: son görülme anını günceller. Tarayıcı kapatılmış sayılıp kaydı yazılmış bir
+     * oturumdan sinyal gelirse kullanıcının geri döndüğü giriş geçmişine yazılır.
+     */
+    @Transactional
+    public void aktif(RefreshRequest request, IstemciBilgisi bilgi) {
+        RefreshToken stored = refreshTokenRepository.findByToken(request.refreshToken())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Geçersiz refresh token"));
+        Instant simdi = Instant.now();
+        if (stored.isRevoked() || stored.getExpiryDate().isBefore(simdi)) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token geçersiz veya süresi dolmuş");
+        }
+        if (stored.isKapanisYazildi()) {
+            stored.setKapanisYazildi(false);
+            oturumLogService.kaydetIslemIcinde(OturumOlay.OTURUMA_DONDU, stored.getKullanici(), bilgi);
+        }
+        stored.setSonGorulme(simdi);
+    }
+
     public void logout(RefreshRequest request) {
         logout(request, IstemciBilgisi.BILINMIYOR);
     }
@@ -127,6 +146,7 @@ public class AuthService {
                 .token(refreshToken)
                 .expiryDate(Instant.now().plusMillis(jwtService.getRefreshTokenExpirationMs()))
                 .revoked(false)
+                .sonGorulme(Instant.now())
                 .build();
         refreshTokenRepository.save(entity);
 

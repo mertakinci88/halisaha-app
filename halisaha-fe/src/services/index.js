@@ -6,6 +6,12 @@ export const authService = {
     api.post('/api/auth/login', { kullaniciAdi, sifre }).then((r) => r.data),
   refresh: (refreshToken) =>
     api.post('/api/auth/refresh', { refreshToken }).then((r) => r.data),
+  /** Canlılık sinyali: tarayıcının açık olduğunu bildirir (sessizce; hata yutulur). */
+  aktif: () => {
+    const refreshToken = tokenStore.refresh();
+    if (!refreshToken) return Promise.resolve();
+    return api.post('/api/auth/aktif', { refreshToken }).catch(() => {});
+  },
   logout: () => {
     const refreshToken = tokenStore.refresh();
     if (!refreshToken) return Promise.resolve();

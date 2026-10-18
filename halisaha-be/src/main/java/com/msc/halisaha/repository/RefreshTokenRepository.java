@@ -24,6 +24,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("SELECT t FROM RefreshToken t JOIN FETCH t.kullanici k LEFT JOIN FETCH k.isletme WHERE t.revoked = false AND t.expiryDate < :simdi ORDER BY t.expiryDate")
     List<RefreshToken> suresiDolanlar(@Param("simdi") Instant simdi, Pageable sayfa);
 
+    /** Geçerli ama {@code sinir}'den beri sinyal vermeyen, kapanışı henüz yazılmamış oturumlar (tarayıcısı kapatılmış). */
+    @Query("SELECT t FROM RefreshToken t JOIN FETCH t.kullanici k LEFT JOIN FETCH k.isletme WHERE t.revoked = false AND t.kapanisYazildi = false AND t.sonGorulme < :sinir AND t.expiryDate >= :simdi ORDER BY t.sonGorulme")
+    List<RefreshToken> sinyaliKesilenler(@Param("sinir") Instant sinir, @Param("simdi") Instant simdi, Pageable sayfa);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM RefreshToken t WHERE t.expiryDate < :sinir")
     int eskileriSil(@Param("sinir") Instant sinir);

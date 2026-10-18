@@ -31,6 +31,8 @@ public class OturumTemizlikService {
     static final int TOKEN_SAKLAMA_GUN = 30;
     /** Giriş geçmişi bu kadar gün tutulur. */
     static final int LOG_SAKLAMA_GUN = 365;
+    /** Bu kadar dakika sinyal gelmeyen oturumun tarayıcısı kapatılmış sayılır (istemci dakikada bir sinyal verir). */
+    static final int SINYAL_ZAMAN_ASIMI_DAKIKA = 10;
     private static final int SAYFA = 500;
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -46,6 +48,39 @@ public class OturumTemizlikService {
         }
     }
 
+    /** Her 5 dakikada bir: sinyali kesilen oturumlar için "tarayıcı kapatıldı" kaydı, son görülme anıyla yazılır. */
+    @Scheduled(cron = "0 */5 * * * *", zone = "Europe/Istanbul")
+    public void sinyaliKesilenleriYaz() {
+        try {
+            tarayiciKapananlar(Instant.now());
+        } catch (RuntimeException e) {
+            log.warn("Tarayıcı kapanış kontrolü başarısız oldu", e);
+        }
+    }
+
+    @Transactional
+    public int tarayiciKapananlar(Instant simdi) {
+        Instant sinir = simdi.minus(java.time.Duration.ofMinutes(SINYAL_ZAMAN_ASIMI_DAKIKA));
+        int yazilan = 0;
+        List<RefreshToken> sayfa;
+        while (!(sayfa = refreshTokenRepository.sinyaliKesilenler(sinir, simdi, PageRequest.of(0, SAYFA))).isEmpty()) {
+            for (RefreshToken t : sayfa) {
+                Kullanici k = t.getKullanici();
+                oturumLogRepository.save(OturumLog.builder()
+                        .isletmeId(k.getIsletme() != null ? k.getIsletme().getId() : null)
+                        .kullaniciId(k.getId())
+                        .kullaniciAdi(k.getKullaniciAdi())
+                        .olay(OturumOlay.TARAYICI_KAPATILDI)
+                        .zaman(LocalDateTime.ofInstant(t.getSonGorulme(), AppZaman.ISLETME))
+                        .build());
+                t.setKapanisYazildi(true);
+            }
+            refreshTokenRepository.saveAllAndFlush(sayfa);
+            yazilan += sayfa.size();
+        }
+        return yazilan;
+    }
+
     @Transactional
     public Sonuc temizle(Instant simdi) {
         int kapanan = 0;
@@ -53,13 +88,16 @@ public class OturumTemizlikService {
         while (!(sayfa = refreshTokenRepository.suresiDolanlar(simdi, PageRequest.of(0, SAYFA))).isEmpty()) {
             for (RefreshToken t : sayfa) {
                 Kullanici k = t.getKullanici();
-                oturumLogRepository.save(OturumLog.builder()
-                        .isletmeId(k.getIsletme() != null ? k.getIsletme().getId() : null)
-                        .kullaniciId(k.getId())
-                        .kullaniciAdi(k.getKullaniciAdi())
-                        .olay(OturumOlay.OTURUM_SURESI_DOLDU)
-                        .zaman(LocalDateTime.ofInstant(t.getExpiryDate(), AppZaman.ISLETME))
-                        .build());
+                // Tarayıcı kapatıldı kaydı varsa oturumun sonu zaten yazılmıştır; süre dolumu ayrıca yazılmaz
+                if (!t.isKapanisYazildi()) {
+                    oturumLogRepository.save(OturumLog.builder()
+                            .isletmeId(k.getIsletme() != null ? k.getIsletme().getId() : null)
+                            .kullaniciId(k.getId())
+                            .kullaniciAdi(k.getKullaniciAdi())
+                            .olay(OturumOlay.OTURUM_SURESI_DOLDU)
+                            .zaman(LocalDateTime.ofInstant(t.getExpiryDate(), AppZaman.ISLETME))
+                            .build());
+                }
                 t.setRevoked(true);
             }
             refreshTokenRepository.saveAllAndFlush(sayfa);

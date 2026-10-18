@@ -1,6 +1,8 @@
 package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.AppZaman;
+import com.msc.halisaha.common.security.IstemciBilgisi;
+import com.msc.halisaha.dto.RefreshRequest;
 import com.msc.halisaha.entity.Isletme;
 import com.msc.halisaha.entity.Kullanici;
 import com.msc.halisaha.entity.KullaniciDurum;
@@ -38,6 +40,7 @@ class OturumTemizlikTest {
     @Autowired KullaniciRepository kullaniciRepository;
     @Autowired OturumLogRepository oturumLogRepository;
     @Autowired RefreshTokenRepository refreshTokenRepository;
+    @Autowired AuthService authService;
 
     private Kullanici kullanici;
 
@@ -92,5 +95,59 @@ class OturumTemizlikTest {
         assertTrue(refreshTokenRepository.findById(eski.getId()).isEmpty());
         assertTrue(refreshTokenRepository.findById(yeni.getId()).isPresent());
         assertEquals(1, olaylar().size());
+    }
+
+    private RefreshToken sinyalli(Instant bitis, Instant sonGorulme) {
+        RefreshToken t = token(bitis, false);
+        t.setSonGorulme(sonGorulme);
+        return refreshTokenRepository.saveAndFlush(t);
+    }
+
+    @Test
+    void sinyaliKesilenOturumSonGorulmeZamaniylaYazilirBirDahaYazilmaz() {
+        Instant simdi = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        Instant son = simdi.minus(Duration.ofMinutes(OturumTemizlikService.SINYAL_ZAMAN_ASIMI_DAKIKA + 5));
+        RefreshToken kesilen = sinyalli(simdi.plus(Duration.ofDays(3)), son);
+        RefreshToken canli = sinyalli(simdi.plus(Duration.ofDays(3)), simdi.minus(Duration.ofMinutes(2)));
+        RefreshToken eskiKayit = sinyalli(simdi.plus(Duration.ofDays(3)), null);   // sinyal özelliğinden önceki oturum
+
+        assertEquals(1, temizlik.tarayiciKapananlar(simdi));
+        List<OturumLog> kayitlar = olaylar();
+        assertEquals(1, kayitlar.size());
+        assertEquals(OturumOlay.TARAYICI_KAPATILDI, kayitlar.get(0).getOlay());
+        assertEquals(LocalDateTime.ofInstant(son, AppZaman.ISLETME), kayitlar.get(0).getZaman());
+        assertTrue(refreshTokenRepository.findById(kesilen.getId()).orElseThrow().isKapanisYazildi());
+        assertFalse(refreshTokenRepository.findById(kesilen.getId()).orElseThrow().isRevoked());   // oturum kapanmaz
+        assertFalse(refreshTokenRepository.findById(canli.getId()).orElseThrow().isKapanisYazildi());
+        assertFalse(refreshTokenRepository.findById(eskiKayit.getId()).orElseThrow().isKapanisYazildi());
+        assertEquals(0, temizlik.tarayiciKapananlar(simdi));
+    }
+
+    @Test
+    void sinyalGelinceOturumaDonduYazilirSonraSuresiDolunca_ikinciSonYazilmaz() {
+        Instant simdi = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        RefreshToken t = sinyalli(simdi.plus(Duration.ofDays(3)), simdi.minus(Duration.ofMinutes(30)));
+        temizlik.tarayiciKapananlar(simdi);
+
+        authService.aktif(new RefreshRequest(t.getToken()), IstemciBilgisi.BILINMIYOR);
+        assertEquals(List.of(OturumOlay.TARAYICI_KAPATILDI, OturumOlay.OTURUMA_DONDU),
+                olaylar().stream().map(OturumLog::getOlay).sorted().toList());
+        assertFalse(refreshTokenRepository.findById(t.getId()).orElseThrow().isKapanisYazildi());
+
+        // tekrar sinyal: yeni kayıt yazılmaz
+        authService.aktif(new RefreshRequest(t.getToken()), IstemciBilgisi.BILINMIYOR);
+        assertEquals(2, olaylar().size());
+    }
+
+    @Test
+    void kapanisYazilmisOturumunSuresiDolarsaAyriKayitYazilmaz() {
+        Instant simdi = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        RefreshToken t = sinyalli(simdi.minus(Duration.ofHours(1)), simdi.minus(Duration.ofDays(2)));
+        t.setKapanisYazildi(true);
+        refreshTokenRepository.saveAndFlush(t);
+
+        temizlik.temizle(simdi);
+        assertEquals(0, olaylar().size());
+        assertTrue(refreshTokenRepository.findById(t.getId()).orElseThrow().isRevoked());
     }
 }
