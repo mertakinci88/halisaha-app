@@ -133,7 +133,7 @@ export default function AboneDetayPage() {
       return;
     }
     if (iadeGerekli && !iptalSecim.sekil) {
-      setIptalHata('Lütfen iade şeklini seçiniz.');
+      setIptalHata('Lütfen iade yöntemini seçiniz.');
       return;
     }
     if (iadeGerekli && iptalSecim.sekil === 'HAVALE_EFT' && !iptalSecim.hesapId) {
@@ -158,7 +158,7 @@ export default function AboneDetayPage() {
     e.preventDefault();
     setHata('');
     if (!odeme.sekil) {
-      setHata('Lütfen ödeme şeklini seçiniz.');
+      setHata('Lütfen ödeme yöntemini seçiniz.');
       return;
     }
     setOdemeEkliyor(true);
@@ -293,7 +293,7 @@ export default function AboneDetayPage() {
                 <tr>
                   <Th>Tarih</Th>
                   <Th className="text-right">Tutar</Th>
-                  <Th>Ödeme şekli</Th>
+                  <Th>Ödeme yöntemi</Th>
                   <Th />
                 </tr>
               </thead>
@@ -303,7 +303,7 @@ export default function AboneDetayPage() {
                   <Tr key={o.id}>
                     <Td etiket="Tarih" className="whitespace-nowrap">{kisaTarih(o.odemeTarihi)}</Td>
                     <Td etiket="Tutar" className="whitespace-nowrap text-right tabular-nums">{tl(o.tutar)}</Td>
-                    <Td etiket="Ödeme şekli">{ODEME_YONTEMI_LABEL[o.odemeSekli]}{o.hesapAd ? ' (' + o.hesapAd + ')' : ''}</Td>
+                    <Td etiket="Ödeme yöntemi">{ODEME_YONTEMI_LABEL[o.odemeSekli]}{o.hesapAd ? ' (' + o.hesapAd + ')' : ''}</Td>
                     <Td tam className="text-right">
                       <Button
                         variant="cerceveHata"
@@ -357,7 +357,7 @@ export default function AboneDetayPage() {
                     <Input type="date" max={BUGUN} value={odeme.tarih} onChange={(e) => setOdeme({ ...odeme, tarih: e.target.value })} required />
                   </Field>
                 </div>
-                <Field label="Ödeme şekli">
+                <Field label="Ödeme yöntemi">
                   <Select
                     value={odeme.sekil}
                     onChange={(e) => setOdeme({ ...odeme, sekil: e.target.value, hesapId: e.target.value === 'HAVALE_EFT' ? odeme.hesapId : '' })}
@@ -456,7 +456,7 @@ export default function AboneDetayPage() {
             ) : null}
             {iptalPlan.iadeZorunlu || iptalSecim.artanIade ? (
               <div className="grid gap-2">
-                <Field label="İade şekli">
+                <Field label="İade yöntemi">
                   <Select value={iptalSecim.sekil} onChange={(e) => setIptalSecim({ ...iptalSecim, sekil: e.target.value, hesapId: e.target.value === 'HAVALE_EFT' ? iptalSecim.hesapId : '' })}>
                     <option value="">Seçiniz</option>
                     {Object.entries(ODEME_YONTEMI_LABEL).map(([kod, ad]) => (

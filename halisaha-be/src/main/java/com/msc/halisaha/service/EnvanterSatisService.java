@@ -263,7 +263,7 @@ public class EnvanterSatisService {
         int fark = hedef.compareTo(mevcut);
         if (fark > 0) {
             if (request.odemeSekli() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme şekli seçilmelidir");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme yöntemi seçilmelidir");
             }
             satis.getOdemeler().add(EnvanterSatisOdeme.builder()
                     .satis(satis)

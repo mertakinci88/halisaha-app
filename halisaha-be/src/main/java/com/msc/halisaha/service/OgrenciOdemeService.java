@@ -33,8 +33,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Öğrencinin aylık ödemeleri. Her ay için ne kadar ödendiği elle girilir (ödeme şekli, tarih ve not ile); sabit tutar ya da
- * üst sınır yoktur. Ödeme şekli kullanıcı seçimidir (tutar girilmişse zorunlu). Kayıt, tutar girilmişse ya da yalnızca not
+ * Öğrencinin aylık ödemeleri. Her ay için ne kadar ödendiği elle girilir (ödeme yöntemi, tarih ve not ile); sabit tutar ya da
+ * üst sınır yoktur. Ödeme yöntemi kullanıcı seçimidir (tutar girilmişse zorunlu). Kayıt, tutar girilmişse ya da yalnızca not
  * yazılmışsa tutulur; ikisi de boşsa ayın kaydı silinir. Tutar (> 0) girilmiş ay "Ödendi" sayılır; girilmemiş ay her ayın 15'ine kadar "Ödeme bekliyor", sonrasında "Ödenmedi" olur
  * (durum kaydedilmez, okunurken bugünün tarihinden hesaplanır). Tam / kısmi ayrımı yapılmaz.
  */
@@ -96,7 +96,7 @@ public class OgrenciOdemeService {
         LocalDate tarih = null;
         if (odenen.signum() > 0) {
             if (istek.odemeSekli() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme şekli seçilmelidir (ay: " + istek.ay() + ")");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme yöntemi seçilmelidir (ay: " + istek.ay() + ")");
             }
             sekil = istek.odemeSekli();
             Long mevcutHesapId = kayit != null && kayit.getHesap() != null ? kayit.getHesap().getId() : null;

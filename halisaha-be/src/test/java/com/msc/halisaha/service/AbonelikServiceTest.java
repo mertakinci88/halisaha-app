@@ -216,7 +216,7 @@ class AbonelikServiceTest {
     @Test
     void artanTutarIstenirseIadeEdilirVeKismiHaftaIptalOlur() {
         AbonelikResponse r = abonelikService.olustur(istek("4500", "1000", "4500"));
-        // İade şekli olmadan artan iade istenemez
+        // İade yöntemi olmadan artan iade istenemez
         assertEquals(400, hata(() -> abonelikService.iptalEt(r.id(), new AbonelikIptalRequest(null, true, null, null))).getStatus().value());
 
         AbonelikResponse iptal = abonelikService.iptalEt(r.id(), new AbonelikIptalRequest("Taşınıyor", true, OdemeYontemi.NAKIT, null));

@@ -51,7 +51,7 @@ export function KasaGorunumu({ baslangic, bitis }) {
               />
               <Ozet etiket="Nakit" deger={tl(t.nakit)} bilgi="Nakit olarak alınan toplam para." />
               <Ozet etiket="Kart" deger={tl(t.kart)} bilgi="Kartla alınan toplam para." />
-              <Ozet etiket="Havale" deger={tl(t.havale)} bilgi="Havale / EFT ile alınan toplam para. Hangi hesaba yattığı aşağıdaki tabloda “Havale hangi hesaba” sütununda görünür." />
+              <Ozet etiket="Havale" deger={tl(t.havale)} bilgi="Havale / EFT ile alınan toplam para. Hangi hesaba yattığı aşağıdaki tabloda “Havalenin yattığı hesap” sütununda görünür." />
               <Ozet
                 etiket="Kasadaki nakit"
                 deger={tl(t.netNakit)}
@@ -61,7 +61,7 @@ export function KasaGorunumu({ baslangic, bitis }) {
 
             <Kutu
               baslik={tekGun ? 'Kullanıcılara göre gün sonu' : 'Kullanıcılara göre tahsilat'}
-              bilgi="Parayı kim aldıysa onun adına yazılır. Her satır, o kullanıcının dönemde aldığı tahsilat ile yaptığı iadeyi gösterir. “Havale hangi hesaba” sütunu, havale ile alınan paranın hangi hesaba (bankaya) yattığını gösterir (iadeler dahil değildir). Kullanıcı bilgisi tutulmadan önceki kayıtlar “Belirtilmemiş” satırında toplanır."
+              bilgi="Parayı kim aldıysa onun adına yazılır. Her satır, o kullanıcının dönemde aldığı tahsilat ile yaptığı iadeyi gösterir. “Havalenin yattığı hesap” sütunu, havale ile alınan paranın hangi hesaba (bankaya) yattığını gösterir (iadeler dahil değildir). Kullanıcı bilgisi tutulmadan önceki kayıtlar “Belirtilmemiş” satırında toplanır."
             >
               <Table kart>
                 <thead>
@@ -75,7 +75,7 @@ export function KasaGorunumu({ baslangic, bitis }) {
                     <Th className="text-right">Nakit</Th>
                     <Th className="text-right">Kart</Th>
                     <Th className="text-right">Havale</Th>
-                    <Th className="min-w-[190px]">Havale hangi hesaba</Th>
+                    <Th className="min-w-[190px]">Havalenin yattığı hesap</Th>
                     <Th className="text-right">İade</Th>
                     <Th className="text-right">Net</Th>
                   </tr>
@@ -93,7 +93,7 @@ export function KasaGorunumu({ baslangic, bitis }) {
                       <Td etiket="Nakit" className="whitespace-nowrap text-right tabular-nums">{tl(s.nakit)}</Td>
                       <Td etiket="Kart" className="whitespace-nowrap text-right tabular-nums">{tl(s.kart)}</Td>
                       <Td etiket="Havale" className="whitespace-nowrap text-right tabular-nums">{tl(s.havale)}</Td>
-                      <Td etiket="Havale hangi hesaba"><HavaleHesaplari hesaplar={s.havaleHesaplari} /></Td>
+                      <Td etiket="Havalenin yattığı hesap"><HavaleHesaplari hesaplar={s.havaleHesaplari} /></Td>
                       <Td etiket="İade" className="whitespace-nowrap text-right tabular-nums">{Number(s.iade) > 0 ? '−' + tl(s.iade) : '—'}</Td>
                       <Td etiket="Net" className="whitespace-nowrap text-right font-bold tabular-nums">{tl(s.net)}</Td>
                     </Tr>
@@ -138,7 +138,7 @@ export function IslemlerGorunumu({ baslangic, bitis }) {
               <tr>
                 <Th>Kullanıcı</Th>
                 <Th className="text-right">Rezervasyon</Th>
-                <Th className="text-right">İptal ettiği</Th>
+                <Th className="text-right">Rezervasyon iptali</Th>
                 <Th className="text-right">Öğrenci ödemesi</Th>
                 <Th className="text-right">Envanter satışı</Th>
                 <Th className="text-right">Abonelik</Th>
@@ -153,7 +153,7 @@ export function IslemlerGorunumu({ baslangic, bitis }) {
                 <Tr key={s.kullaniciId ?? 'belirsiz'}>
                   <Td tam className="font-semibold sm:font-normal"><KisiHucresi ad={s.ad} rol={s.rol} /></Td>
                   <Td etiket="Rezervasyon" className="text-right tabular-nums">{s.rezervasyon}</Td>
-                  <Td etiket="İptal ettiği" className="text-right tabular-nums">{s.rezervasyonIptal}</Td>
+                  <Td etiket="Rezervasyon iptali" className="text-right tabular-nums">{s.rezervasyonIptal}</Td>
                   <Td etiket="Öğrenci ödemesi" className="text-right tabular-nums">{s.ogrenciOdeme}</Td>
                   <Td etiket="Envanter satışı" className="text-right tabular-nums">{s.envanterSatis}</Td>
                   <Td etiket="Abonelik" className="text-right tabular-nums">{s.abonelik}</Td>

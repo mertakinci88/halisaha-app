@@ -70,7 +70,7 @@ export default function IadeBolumu({ listeParams, kaynaklar }) {
       return;
     }
     if (!form.sekil) {
-      setHata('Lütfen iade şeklini seçiniz.');
+      setHata('Lütfen iade yöntemini seçiniz.');
       return;
     }
     setKaydediyor(true);
@@ -177,7 +177,7 @@ export default function IadeBolumu({ listeParams, kaynaklar }) {
               <Input type="date" max={BUGUN} value={form.tarih} onChange={(e) => setForm({ ...form, tarih: e.target.value })} required />
             </Field>
           </div>
-          <Field label="İade şekli">
+          <Field label="İade yöntemi">
             <Select
               value={form.sekil}
               onChange={(e) => setForm({ ...form, sekil: e.target.value, hesapId: e.target.value === 'HAVALE_EFT' ? form.hesapId : '' })}

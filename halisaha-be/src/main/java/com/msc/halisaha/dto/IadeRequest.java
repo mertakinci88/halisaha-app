@@ -16,7 +16,7 @@ public record IadeRequest(
         Long envanterSatisId,
         Long abonelikId,
         @NotNull(message = "İade tutarı zorunludur") @DecimalMin(value = "0.01", message = "İade tutarı sıfırdan büyük olmalıdır") BigDecimal tutar,
-        @NotNull(message = "İade şekli seçilmelidir") OdemeYontemi iadeSekli,
+        @NotNull(message = "İade yöntemi seçilmelidir") OdemeYontemi iadeSekli,
         /** Yalnızca Havale / EFT'de dikkate alınır ve o durumda zorunludur. */
         Long hesapId,
         /** Boşsa bugün; ileri tarih olamaz. */

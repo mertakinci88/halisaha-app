@@ -272,7 +272,7 @@ export default function RezervasyonDetayPage() {
           </Card>
 
           <Card>
-            <h4 className="text-[22px]">Kafeterya · ürün ekle</h4>
+            <h4 className="text-[22px]">Kafeterya ürünü ekle</h4>
             <p className="m-0 text-[13.5px] text-ink/55">
               {rez.durum === 'AKTIF'
                 ? 'Seans sırasında satılan ürünleri ekleyin; tutar rezervasyona işlenir.'

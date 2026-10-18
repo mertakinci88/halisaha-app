@@ -273,7 +273,7 @@ public class AbonelikService {
                 throw new ApiException(HttpStatus.FORBIDDEN, "Artan depozito iadesini yalnızca yönetici yapabilir");
             }
             if (request.iadeSekli() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Artan depozito iadesi için iade şekli seçilmelidir");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Artan depozito iadesi için iade yöntemi seçilmelidir");
             }
         }
 

@@ -155,7 +155,7 @@ export default function OgrenciTransferKarti({ ogrenciId, grupId }) {
                     className="min-h-10"
                     rows={1}
                     maxLength={500}
-                    placeholder="Transfer sebebi"
+                    placeholder="Transfer nedeni"
                     value={aciklama}
                     onChange={(e) => setAciklama(e.target.value)}
                   />

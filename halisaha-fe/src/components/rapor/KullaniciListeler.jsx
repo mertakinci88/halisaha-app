@@ -25,15 +25,15 @@ export function IadelerGorunumu({ baslangic, bitis }) {
               <Ozet key={k.kaynak} etiket={KAYNAK[k.kaynak]} deger={tl(k.toplam)} alt={k.adet + ' iade'} />
             ))}
           </OzetIzgara>
-          <Kutu baslik="İadeler" bilgi="Her iade; kim yaptığı, kime ait olduğu, tutarı, şekli ve nedeniyle listelenir.">
+          <Kutu baslik="İadeler" bilgi="Her iade; kim yaptığı, kime ait olduğu, tutarı, yöntemi ve nedeniyle listelenir.">
             <Table kart>
               <thead>
                 <tr>
                   <Th>Tarih</Th>
-                  <Th>Ne için</Th>
+                  <Th>Kaynak</Th>
                   <Th>Kime ait</Th>
                   <Th className="text-right">Tutar</Th>
-                  <Th>Şekil</Th>
+                  <Th>Yöntem</Th>
                   <Th>İadeyi yapan</Th>
                   <Th>Neden</Th>
                 </tr>
@@ -43,7 +43,7 @@ export function IadelerGorunumu({ baslangic, bitis }) {
                 {v.satirlar.map((s) => (
                   <Tr key={s.id}>
                     <Td etiket="Tarih" className="whitespace-nowrap">{kisaTarih(s.tarih)}</Td>
-                    <Td etiket="Ne için">{KAYNAK[s.kaynak]}</Td>
+                    <Td etiket="Kaynak">{KAYNAK[s.kaynak]}</Td>
                     <Td etiket="Kime ait">{s.ilgili || '—'}</Td>
                     <Td etiket="Tutar" className="whitespace-nowrap text-right tabular-nums">{tl(s.tutar)}</Td>
                     <Td etiket="Şekil">{ODEME_YONTEMI_LABEL[s.iadeSekli]}</Td>
@@ -247,7 +247,7 @@ export function GirisGorunumu({ baslangic, bitis }) {
       </div>
       {!kullaniciId ? (
         <Kutu
-          baslik="Kullanıcılara göre giriş çıkış"
+          baslik="Kullanıcılara göre giriş ve çıkış"
           bilgi="Dönemde her kullanıcının kaç kez giriş yaptığı; son giriş ve son çıkış zamanları dönemden bağımsız, en güncel olanlardır. Çıkış düğmesine basılmadan kapanan (süresi dolan) oturumlar çıkış sayılmaz; bu yüzden son çıkış, son girişten eski olabilir."
         >
           <Table kart>

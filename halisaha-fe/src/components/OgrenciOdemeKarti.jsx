@@ -38,7 +38,7 @@ const degisti = (t, ilk) => {
 };
 
 /**
- * Öğrenci detayındaki aylık ödemeler: seçili yılın 12 ayı için ödenen tutar, ödeme şekli (Havale / EFT'de hesap),
+ * Öğrenci detayındaki aylık ödemeler: seçili yılın 12 ayı için ödenen tutar, ödeme yöntemi (Havale / EFT'de hesap),
  * ödeme tarihi ve not girilir. Sabit tutar ya da üst sınır yoktur; tutar kaydedilen ay Ödendi (yeşil); kaydedilmeyen ay ayın 15'ine kadar Ödeme bekliyor (sarı), sonra Ödenmedi (kırmızı). Renkler kaydedilmiş durumu gösterir.
  * Yalnızca değiştirilen aylar kaydedilir; tutarı boşaltılan ayın kaydı silinir.
  */
@@ -96,7 +96,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
       const t = taslaklar[a.ay];
       if (tutarSayi(t.tutar) < 0 || Number.isNaN(tutarSayi(t.tutar))) return setSatirHata(AYLAR[a.ay - 1] + ': geçerli bir tutar girin.');
       if (tutarSayi(t.tutar) > 0 && !t.sekil) {
-        return setSatirHata(AYLAR[a.ay - 1] + ': ödeme şeklini seçin.');
+        return setSatirHata(AYLAR[a.ay - 1] + ': ödeme yöntemini seçin.');
       }
       if (tutarSayi(t.tutar) > 0 && t.sekil === 'HAVALE_EFT' && !t.hesapId) {
         return setSatirHata(AYLAR[a.ay - 1] + ': Havale / EFT için hesap seçin.');
@@ -158,7 +158,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
       ),
       sekil: (
         <Select
-          aria-label={AYLAR[a.ay - 1] + ' ödeme şekli'}
+          aria-label={AYLAR[a.ay - 1] + ' ödeme yöntemi'}
           disabled={tutar === 0}
           value={t.sekil}
           onChange={(e) => sat(a.ay, { sekil: e.target.value, hesapId: e.target.value === 'HAVALE_EFT' ? t.hesapId : '' })}
@@ -289,7 +289,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                 <tr>
                   <Th>Ay</Th>
                   <Th>Ödenen tutar</Th>
-                  <Th>Ödeme şekli</Th>
+                  <Th>Ödeme yöntemi</Th>
                   <Th>Ödeme tarihi</Th>
                   <Th>Not</Th>
                   <Th>Durum</Th>
