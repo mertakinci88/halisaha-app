@@ -181,7 +181,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     return e && e.adet <= 0 && !zatenTeslim(t, e);
   });
   const hesapEksik = yeniOdeme > 0 && odemeSekli === 'HAVALE_EFT' && (!hesapId || hesapSayisi === 0);
-  const kaydetPasif = dahil.length === 0 || !hepsiSecili || tutar <= 0 || asim || (yeniOdeme > 0 && !odemeSekli) || hesapEksik || kaydediyor;
+  const kaydetPasif = dahil.length === 0 || !hepsiSecili || asim || (yeniOdeme > 0 && !odemeSekli) || hesapEksik || kaydediyor;
 
   /* ── işlemler ── */
   const sifirla = () => {
@@ -657,11 +657,11 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                       </>
                     ) : (
                       sabit ? (
-                        <>Alınan tutarı girin; kalan tutar set tutarından düşer. Tutar tamamlanınca tüm envanterler Ödendi olur. En fazla {tl(toplam)}.</>
+                        <>Alınan tutarı girin; kalan tutar set tutarından düşer. Tutar tamamlanınca tüm envanterler Ödendi olur. Para alınmadıysa boş bırakın; satış ödenmemiş kaydedilir. En fazla {tl(toplam)}.</>
                       ) : (
                         <>
                           Tabloda <b>Ödendi</b> işaretlenen envanterlerin fiyatları otomatik toplanır; tutarı elle de
-                          değiştirebilirsiniz. En fazla {tl(toplam)}.
+                          değiştirebilirsiniz. Para alınmadıysa boş bırakın; satış ödenmemiş kaydedilir. En fazla {tl(toplam)}.
                         </>
                       )
                     )}
@@ -696,7 +696,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
               <div className="text-[14px] text-ink/70">
                 Ödeme durumu:{' '}
                 {durum === 'yok' ? (
-                  <Tag tone="neutral">Ödeme girilmedi</Tag>
+                  <Tag tone="danger">Ödenmedi</Tag>
                 ) : durum === 'gecersiz' ? (
                   <Tag tone="danger">Geçersiz tutar</Tag>
                 ) : durum === 'odendi' ? (
@@ -705,7 +705,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Tag tone="warning">Kısmi ödendi</Tag>
                 )}
               </div>
-              {tutar > 0 && hepsiSecili && !asim ? (
+              {hepsiSecili && !asim ? (
                 <div className="text-[14px]">Kalan tutar: <b>{tl(kalan)}</b></div>
               ) : null}
 
@@ -746,6 +746,8 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
           const durumTag = (s) =>
             s.odemeDurumu === 'ODENDI' ? (
               <Tag tone="neutral" className="bg-basari-100 text-basari-800">Ödendi</Tag>
+            ) : s.odemeDurumu === 'ODENMEDI' ? (
+              <Tag tone="danger">Ödenmedi</Tag>
             ) : (
               <Tag tone="warning">Kısmi ödendi</Tag>
             );

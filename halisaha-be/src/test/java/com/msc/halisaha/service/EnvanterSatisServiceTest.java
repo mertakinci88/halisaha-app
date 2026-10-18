@@ -129,13 +129,28 @@ class EnvanterSatisServiceTest {
     }
 
     @Test
-    void odenenTutarElleDegisebilirAmaSetTutariniAsamazVeBosOlamaz() {
+    void odenenTutarElleDegisebilirAmaSetTutariniAsamaz() {
         var azi = satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), "450"));
         assertEquals(OdemeDurumu.KISMI_ODENDI, azi.odemeDurumu());
         assertEquals(400, hata(() -> satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), "2050.01"))).getStatus().value());
-        assertEquals(400, hata(() -> satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(), null))).getStatus().value());
         var tam = satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(), "2050"));
         assertEquals(OdemeDurumu.ODENDI, tam.odemeDurumu());
+    }
+
+    @Test
+    void hicOdemeAlinmadanSatisKaydedilirVeTeslimEdilebilir() {
+        var satis = satisService.olustur(ogrenci, set("140", "164", List.of(TOZLUK), List.of(), null));
+        assertEquals(OdemeDurumu.ODENMEDI, satis.odemeDurumu());
+        assertEquals(0, satis.odenenTutar().signum());
+        assertEquals(0, new BigDecimal("2050").compareTo(satis.kalanTutar()));
+        assertTrue(satis.odemeler().isEmpty());
+        assertTrue(kalem(satis, TOZLUK).teslimEdildi());
+        assertEquals(39, stok(k.tozluk.id()));
+
+        // sonradan ödeme alınabilir
+        var kismi = satisService.guncelle(ogrenci, satis.id(), set("140", "164", List.of(TOZLUK), List.of(), "500"));
+        assertEquals(OdemeDurumu.KISMI_ODENDI, kismi.odemeDurumu());
+        assertEquals(1, kismi.odemeler().size());
     }
 
     @Test
