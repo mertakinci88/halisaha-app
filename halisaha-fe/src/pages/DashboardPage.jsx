@@ -12,6 +12,7 @@ import { apiHata } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useHata } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
+import { birimAd } from '@/lib/envanter';
 import { hh, saatOf, saatYazi, stokDurumu, sureSaat, tl, toIsoDate } from '@/lib/format';
 
 const ACILIS = 12;
@@ -235,7 +236,7 @@ export default function DashboardPage() {
                                 {stokDurumu(e) === 'TUKENDI' ? (
                                   <Tag tone="danger">Tükendi</Tag>
                                 ) : (
-                                  <Tag tone="neutral">{e.adet} adet kaldı</Tag>
+                                  <Tag tone="neutral">{e.adet} {birimAd(e.tur)} kaldı</Tag>
                                 )}
                               </Td>
                             </Tr>

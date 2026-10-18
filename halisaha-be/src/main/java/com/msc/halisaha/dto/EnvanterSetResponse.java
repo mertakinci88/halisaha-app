@@ -13,17 +13,19 @@ import java.util.List;
 public record EnvanterSetResponse(
         Long id,
         String ad,
-        BigDecimal toplamTutar,
+        String beden,
+        BigDecimal tutar,
         LocalDateTime kayitTarihi,
         LocalDateTime guncellemeTarihi,
         String kaydeden,
         List<KalemResponse> kalemler
 ) {
 
-    public record KalemResponse(Long envanterId, EnvanterTur tur, String turAd, String beden, Integer adet, BigDecimal satisFiyati) {
+    /** Setin kalemi: fiyat içermez (set tutarı sette tutulur). */
+    public record KalemResponse(Long envanterId, EnvanterTur tur, String turAd, String beden, Integer adet) {
 
         static KalemResponse from(Envanter e) {
-            return new KalemResponse(e.getId(), e.getTur(), e.getTur().getAd(), e.getBeden(), e.getAdet(), e.getSatisFiyati());
+            return new KalemResponse(e.getId(), e.getTur(), e.getTur().getAd(), e.getBeden(), e.getAdet());
         }
     }
 
@@ -33,8 +35,7 @@ public record EnvanterSetResponse(
                         .thenComparingInt(e -> EnvanterBeden.sira(e.getBeden())))
                 .map(KalemResponse::from)
                 .toList();
-        BigDecimal toplam = kalemler.stream().map(KalemResponse::satisFiyati).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new EnvanterSetResponse(s.getId(), s.getAd(), toplam, s.getKayitTarihi(), s.getGuncellemeTarihi(),
+        return new EnvanterSetResponse(s.getId(), s.getAd(), s.getBeden(), s.getTutar(), s.getKayitTarihi(), s.getGuncellemeTarihi(),
                 s.getKullanici() != null ? s.getKullanici().getAdSoyad() : null, kalemler);
     }
 }

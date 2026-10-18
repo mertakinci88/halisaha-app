@@ -20,11 +20,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** İşletmenin tanımladığı envanter seti: adı ve envanter kayıtları (tür + beden; her türden en fazla bir tane). */
+/** İşletmenin tanımladığı envanter seti: adı, bedeni, tutarı ve envanter kayıtları (set bedeninden seçilen bedenli ürünler + seçilen bedensiz ürünler). */
 @Entity
 @Table(name = "envanter_set")
 @Getter
@@ -44,6 +45,14 @@ public class EnvanterSet {
 
     @Column(name = "ad", nullable = false, length = 100)
     private String ad;
+
+    /** Setin bedeni: sete seçilen bedenli envanterler bu bedenden olur. */
+    @Column(name = "beden", nullable = false, length = 10)
+    private String beden;
+
+    /** Setin satış tutarı; kalemlerin tek tek fiyatı yoktur. */
+    @Column(name = "tutar", nullable = false, precision = 10, scale = 2)
+    private BigDecimal tutar;
 
     /** Seti son kaydeden kullanıcı. */
     @ManyToOne(fetch = FetchType.LAZY)

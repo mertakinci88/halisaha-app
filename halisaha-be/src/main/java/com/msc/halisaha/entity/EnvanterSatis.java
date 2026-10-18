@@ -57,7 +57,11 @@ public class EnvanterSatis {
     @Column(name = "set_ad", length = 100)
     private String setAd;
 
-    /** Kalemlerin birim fiyat toplamı. */
+    /** Set satışı: tutar sette belirlenmiştir, kalemlerin birim fiyatı yoktur (0). Eski satışlarda false. */
+    @Column(name = "sabit_tutar", nullable = false)
+    private boolean sabitTutar;
+
+    /** Kalemlerin birim fiyat toplamı (sabit tutarlı set satışında setin tutarı). */
     @Column(name = "set_tutari", nullable = false, precision = 10, scale = 2)
     private BigDecimal setTutari;
 
