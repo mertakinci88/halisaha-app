@@ -206,7 +206,7 @@ export default function IsletmeDetayPage() {
               </Field>
               <Button type="submit" variant="primary" disabled={islemde}>
                 <Plus size={16} strokeWidth={1.5} />
-                <span>Kullanıcıyı ekle</span>
+                <span>Kullanıcı ekle</span>
               </Button>
             </Card>
           </form>

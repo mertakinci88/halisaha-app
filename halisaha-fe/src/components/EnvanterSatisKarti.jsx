@@ -330,7 +330,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       : !hepsiSecili
       ? { renk: 'text-yellow-800', metin: 'Önce bedenli envanterlerin bedenini seçin.' }
       : yeniOdeme > 0 && !odemeSekli
-        ? { renk: 'text-yellow-800', metin: 'Ödeme şeklini seçin.' }
+        ? { renk: 'text-yellow-800', metin: 'Ödeme yöntemini seçin.' }
         : stoksuzlar.length
           ? {
               renk: 'text-yellow-800',
@@ -672,7 +672,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
               {!duzenlenen || yeniOdeme > 0 ? (
               <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2">
                 <div>
-                  <label htmlFor="envanter-odeme-sekli" className="mb-1 block text-[13.5px] text-ink/70">Ödeme şekli</label>
+                  <label htmlFor="envanter-odeme-sekli" className="mb-1 block text-[13.5px] text-ink/70">Ödeme yöntemi</label>
                   <Select
                     id="envanter-odeme-sekli"
                     value={odemeSekli}
@@ -819,7 +819,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Th>Envanter</Th>
                   <Th className="text-right">Ödenen tutar</Th>
                   <Th className="text-right">Kalan tutar</Th>
-                  <Th>Ödeme şekli</Th>
+                  <Th>Ödeme yöntemi</Th>
                   <Th>Ödeme durumu</Th>
                   <Th>Ödeme tarihi</Th>
                   <Th>Teslim edilenler</Th>

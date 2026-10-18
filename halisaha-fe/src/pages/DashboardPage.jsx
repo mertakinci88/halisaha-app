@@ -212,7 +212,7 @@ export default function DashboardPage() {
                   </tbody>
                 </Table>
                 <Button variant="gri" className="self-start" onClick={() => navigate('/ogrenciler?odeme=bekleyen')}>
-                  <span>Tüm ödeme bekleyenler</span>
+                  <span>Ödeme bekleyen tüm öğrenciler</span>
                   <ArrowRight size={16} strokeWidth={1.5} />
                 </Button>
               </Card>

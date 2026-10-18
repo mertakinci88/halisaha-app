@@ -36,7 +36,7 @@ public record AbonelikRequest(
         @NotNull(message = "Haftalık ücret zorunludur") @DecimalMin(value = "0.01", message = "Haftalık ücret sıfırdan büyük olmalıdır") BigDecimal haftalikUcret,
         /** Kayıtta alınan depozito ödemesi; depozitoyu aşamaz. */
         @NotNull(message = "Alınan ödeme tutarı zorunludur") @DecimalMin(value = "0.01", message = "Alınan ödeme sıfırdan büyük olmalıdır") BigDecimal odenenTutar,
-        @NotNull(message = "Ödeme şekli seçilmelidir") OdemeYontemi odemeSekli,
+        @NotNull(message = "Ödeme yöntemi seçilmelidir") OdemeYontemi odemeSekli,
         /** Yalnızca Havale / EFT'de dikkate alınır ve o durumda zorunludur. */
         Long hesapId,
         /** Boşsa bugün. */

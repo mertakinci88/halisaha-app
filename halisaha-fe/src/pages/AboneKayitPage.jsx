@@ -139,7 +139,7 @@ export default function AboneKayitPage() {
       return;
     }
     if (!form.odemeSekli) {
-      setHata('Lütfen ödeme şeklini seçiniz.');
+      setHata('Lütfen ödeme yöntemini seçiniz.');
       return;
     }
     setKaydediyor(true);
@@ -316,7 +316,7 @@ export default function AboneKayitPage() {
             </p>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Ödeme şekli">
+            <Field label="Ödeme yöntemi">
               <Select
                 value={form.odemeSekli}
                 onChange={(e) => {

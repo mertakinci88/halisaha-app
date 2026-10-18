@@ -98,7 +98,7 @@ export default function OgrenciDetayPage() {
 
   return (
     <div>
-      <PageHeader kicker="Okul" baslik="Öğrenci detay" />
+      <PageHeader kicker="Okul" baslik="Öğrenci detayı" />
       <Hata mesaj={hata} />
 
       <form

@@ -307,7 +307,7 @@ export default function RezervasyonYeniPage() {
                 </SegOpt>
                 <SegOpt active={form.odemeTuru === 'TAM'} onClick={() => set('odemeTuru', 'TAM')} className="flex-1">
                   <Banknote size={16} strokeWidth={1.5} />
-                  <span>Tüm ödeme</span>
+                  <span>Tamamı</span>
                 </SegOpt>
               </Seg>
 

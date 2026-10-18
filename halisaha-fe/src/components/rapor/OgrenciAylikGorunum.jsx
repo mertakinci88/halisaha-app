@@ -103,7 +103,7 @@ export default function OgrenciAylikGorunum({ baslangic, bitis }) {
               </Kutu>
             </div>
 
-            <Kutu baslik="Ay ay detay" bilgi="Her ay için kayıtlı aktif öğrenci sayısı, ödeme yapan ve yapmayan öğrenciler ile alınan toplam tutar.">
+            <Kutu baslik="Aylık detay" bilgi="Her ay için kayıtlı aktif öğrenci sayısı, ödeme yapan ve yapmayan öğrenciler ile alınan toplam tutar.">
               <Table kart>
                 <thead>
                   <tr>
