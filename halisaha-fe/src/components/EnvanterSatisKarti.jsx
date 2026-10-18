@@ -14,7 +14,7 @@ import { envanterService, envanterSetService, envanterSatisService } from '@/ser
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { ODEME_YONTEMI_LABEL, stokDurumu, tarihSaat, tl } from '@/lib/format';
-import { ENVANTER_TURLERI, STANDART } from '@/lib/envanter';
+import { ENVANTER_TURLERI, STANDART, miktar } from '@/lib/envanter';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
 
@@ -64,6 +64,9 @@ const adBeden = (tur, beden) => (tur.bedenli ? tur.ad + ' (' + beden + ')' : tur
  * girilen fiyat o satış için geçerli olur. Stok yalnızca teslim edilen kalem için düşer; teslim
  * geri alınırsa geri döner. Stoğu biten envanter satılabilir ama teslim edilemez (Eksik envanter'de bekler).
  * Teslim edilmiş kalemin bedeni değiştirilemez.
+ * Set satışında (sabit tutar) tutar ve beden setten gelir: kalemlerde fiyat ve beden seçimi yoktur, kalem bazında
+ * Ödendi / Teslim işaretlenir; ödenen tutar elle girilir, kalan tutar set tutarından hesaplanır ve tutar
+ * tamamlanınca tüm kalemler Ödendi olur.
  */
 export default function EnvanterSatisKarti({ ogrenciId }) {
   const navigate = useNavigate();
@@ -156,10 +159,11 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       ? kayitliTurler.filter((t) => duzenlenen.kalemler.some((k) => k.tur === t.kod))
       : kayitliTurler.filter((t) => seciliSet.kalemler.some((k) => k.tur === t.kod));
   const dahil = setliMod ? gosterilen : gosterilen.filter((t) => ekle.has(t.kod));
+  const sabit = duzenlenen ? duzenlenen.sabitTutar : Boolean(seciliSet); // set satışı: tutar setten, kalem fiyatı yok
   const tutarEtiketi = setliMod ? 'Set tutarı' : 'Toplam tutar';
-  const fiyatlar = dahil.map(fiyatOf);
+  const fiyatlar = dahil.map((t) => (sabit ? (envOf(t) ? 0 : null) : fiyatOf(t)));
   const hepsiSecili = fiyatlar.every((f) => f !== null);
-  const toplam = fiyatlar.reduce((t, f) => t + (f || 0), 0);
+  const toplam = sabit ? Number(duzenlenen ? duzenlenen.setTutari : seciliSet.tutar) : fiyatlar.reduce((t, f) => t + (f || 0), 0);
   const odendiToplam = dahil.reduce((t, tur, i) => t + (odendi.has(tur.kod) ? fiyatlar[i] || 0 : 0), 0);
 
   // Ödendi işaretlenen envanterlerin fiyatları ödenen tutara otomatik yansır (tutar elle değiştirilene kadar)
@@ -171,6 +175,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const asim = hepsiSecili && tutar > toplam;
   const durum = tutar <= 0 ? 'yok' : asim ? 'gecersiz' : tutar === toplam ? 'odendi' : 'kismi';
   const kalan = Math.max(toplam - tutar, 0);
+  const tamOdendi = sabit && toplam > 0 && tutar === toplam; // tutar tamamlandı: tüm kalemler Ödendi
   const stoksuzlar = dahil.filter((t) => {
     const e = envOf(t);
     return e && e.adet <= 0 && !zatenTeslim(t, e);
@@ -271,7 +276,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
         beden: t.bedenli ? secim[t.kod] : null,
         odendi: odendi.has(t.kod),
         teslim: teslim.has(t.kod),
-        birimFiyat: fiyatOf(t),
+        birimFiyat: sabit ? null : fiyatOf(t),
       })),
       odenenTutar: tutar,
       odemeSekli: yeniOdeme > 0 ? odemeSekli : null,
@@ -346,7 +351,9 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       ) : durumu === 'AZ' ? (
         <Tag tone="outline" className="ml-2">Stok az</Tag>
       ) : null;
-    const bedenAlani = tur.bedenli ? (
+    const bedenAlani = sabit ? (
+      <span>{tur.bedenli ? secim[tur.kod] || '—' : 'Standart'}</span>
+    ) : tur.bedenli ? (
       <div className="flex items-center gap-1.5">
         <Select
           value={secim[tur.kod] || ''}
@@ -376,7 +383,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   });
 
   const fiyatKutusu = (r) =>
-    r.fiyat === null ? (
+    sabit ? null : r.fiyat === null ? (
       <span className="text-ink/55">—</span>
     ) : (
       <Input
@@ -431,18 +438,18 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
               {duzenlenen && !duzenlenen.setId && duzenlenen.setAd ? <option value="silindi">{duzenlenen.setAd} (silinmiş set)</option> : null}
               {setler.map((x) => (
                 <option key={x.id} value={String(x.id)}>
-                  {x.ad} · {tl(x.toplamTutar)}
+                  {x.ad} · {tl(x.tutar)}
                 </option>
               ))}
             </Select>
             <p className="m-0 mt-1 text-[13px] text-ink/55">
               {duzenlenen
                 ? (setliMod
-                  ? 'Satışın seti değiştirilemez; beden, Ödendi ve Teslim güncellenebilir.'
+                  ? (sabit ? 'Satışın seti ve tutarı değiştirilemez; ek ödeme alınabilir, Ödendi ve Teslim güncellenebilir.' : 'Satışın seti değiştirilemez; beden, Ödendi ve Teslim güncellenebilir.')
                   : 'Ekle ile envanter ekleyip çıkarabilir, beden, Ödendi ve Teslim güncelleyebilirsiniz.')
                 : setler.length === 0
                   ? 'Henüz set tanımlı değil. Envanter menüsündeki Setler sekmesinden set ekleyebilirsiniz.'
-                  : 'Set seçince envanterler tabloya dolar; bedenleri satırlardan değiştirebilirsiniz.'}
+                  : 'Set seçince setin envanterleri tabloya dolar; tutar setten gelir.'}
             </p>
           </div>
         )}
@@ -480,12 +487,12 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   )}
                   <div className="mt-2">{r.bedenAlani}</div>
                   <div className="mt-1.5 text-[14px] text-ink/70">
-                    Stok: {r.env ? <>{r.env.adet}{r.stokEtiketi}</> : <span>—</span>}
+                    Stok: {r.env ? <>{miktar(r.tur.kod, r.env.adet)}{r.stokEtiketi}</> : <span>—</span>}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-5">
                     <Kutu
-                      on={odendi.has(r.tur.kod)}
-                      pasif={!r.dahilMi}
+                      on={tamOdendi || odendi.has(r.tur.kod)}
+                      pasif={!r.dahilMi || tamOdendi}
                       renk="border-basari-600 bg-basari-600"
                       onChange={() => odendiDegistir(r.tur.kod)}
                       etiket={r.tur.ad + ' ödendi'}
@@ -515,7 +522,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   <Th>Envanter</Th>
                   <Th>Beden</Th>
                   <Th className="text-right">Stok</Th>
-                  <Th className="text-right">Satış fiyatı</Th>
+                  {sabit ? null : <Th className="text-right">Satış fiyatı</Th>}
                   <Th className="text-center">Ödendi</Th>
                   <Th className="text-center">Teslim</Th>
                 </tr>
@@ -537,15 +544,17 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     <Td className="whitespace-nowrap">{r.tur.ad}</Td>
                     <Td>{r.bedenAlani}</Td>
                     <Td className="whitespace-nowrap text-right tabular-nums">
-                      {r.env ? <>{r.env.adet}{r.stokEtiketi}</> : <span className="text-ink/55">—</span>}
+                      {r.env ? <>{miktar(r.tur.kod, r.env.adet)}{r.stokEtiketi}</> : <span className="text-ink/55">—</span>}
                     </Td>
-                    <Td className="whitespace-nowrap text-right tabular-nums">
-                      {fiyatKutusu(r)}
-                    </Td>
+                    {sabit ? null : (
+                      <Td className="whitespace-nowrap text-right tabular-nums">
+                        {fiyatKutusu(r)}
+                      </Td>
+                    )}
                     <Td className="text-center">
                       <Kutu
-                        on={odendi.has(r.tur.kod)}
-                        pasif={!r.dahilMi}
+                        on={tamOdendi || odendi.has(r.tur.kod)}
+                        pasif={!r.dahilMi || tamOdendi}
                         renk="border-basari-600 bg-basari-600"
                         onChange={() => odendiDegistir(r.tur.kod)}
                         etiket={r.tur.ad + ' ödendi'}
@@ -564,9 +573,15 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                 ))}
                 <tr>
                   <Td colSpan={setliMod ? 3 : 4} className="font-bold">{tutarEtiketi}</Td>
-                  <Td className="text-right text-[17px] font-bold tabular-nums">{tl(toplam)}</Td>
-                  <Td />
-                  <Td />
+                  {sabit ? (
+                    <Td colSpan={2} className="text-right text-[17px] font-bold tabular-nums">{tl(toplam)}</Td>
+                  ) : (
+                    <>
+                      <Td className="text-right text-[17px] font-bold tabular-nums">{tl(toplam)}</Td>
+                      <Td />
+                      <Td />
+                    </>
+                  )}
                 </tr>
               </tbody>
             </Table>
@@ -641,10 +656,14 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                         Şimdiye kadar ödenen {tl(mevcutOdenen)}, en fazla {tl(toplam)}.
                       </>
                     ) : (
-                      <>
-                        Tabloda <b>Ödendi</b> işaretlenen envanterlerin fiyatları otomatik toplanır; tutarı elle de
-                        değiştirebilirsiniz. En fazla {tl(toplam)}.
-                      </>
+                      sabit ? (
+                        <>Alınan tutarı girin; kalan tutar set tutarından düşer. Tutar tamamlanınca tüm envanterler Ödendi olur. En fazla {tl(toplam)}.</>
+                      ) : (
+                        <>
+                          Tabloda <b>Ödendi</b> işaretlenen envanterlerin fiyatları otomatik toplanır; tutarı elle de
+                          değiştirebilirsiniz. En fazla {tl(toplam)}.
+                        </>
+                      )
                     )}
                   </p>
                 )}

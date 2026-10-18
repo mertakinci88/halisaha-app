@@ -74,7 +74,7 @@ export default function EnvanterFormu({ baslangic, kaydetEtiketi, kaydediyor, on
               className="text-[16px]"
             />
           </Field>
-          <Field label="Adet">
+          <Field label={form.tur === 'TOZLUK' ? 'Çift' : 'Adet'}>
             <Input
               type="number"
               min="0"

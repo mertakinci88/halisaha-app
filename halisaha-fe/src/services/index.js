@@ -175,10 +175,10 @@ export const envanterService = {
 
 /* ── /api/envanter-setleri (ADMIN ya da ENVANTER yetkisi) ───────── */
 export const envanterSetService = {
-  /** [{ id, ad, toplamTutar, kayitTarihi, guncellemeTarihi, kaydeden, kalemler: [{ envanterId, tur, turAd, beden, adet, satisFiyati }] }] — ada göre */
+  /** [{ id, ad, beden, tutar, kayitTarihi, guncellemeTarihi, kaydeden, kalemler: [{ envanterId, tur, turAd, beden, adet }] }] — ada göre */
   list: () => api.get('/api/envanter-setleri').then((r) => r.data),
   get: (id) => api.get('/api/envanter-setleri/' + id).then((r) => r.data),
-  /** body: { ad, envanterIdleri: [id] } — her türden en fazla bir envanter kaydı (tür + beden) */
+  /** body: { ad, beden, tutar, envanterIdleri: [id] } — seçilen envanterler; bedenliler set bedeninde olmalı, her türden en fazla bir tane, stoksuz ürün 400 */
   create: (body) => api.post('/api/envanter-setleri', body).then((r) => r.data),
   update: (id, body) => api.put('/api/envanter-setleri/' + id, body).then((r) => r.data),
   remove: (id) => api.delete('/api/envanter-setleri/' + id),

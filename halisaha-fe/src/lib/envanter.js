@@ -12,4 +12,10 @@ export const BEDENLER = ['128', '140', '152', '164', '176', 'Small', 'Medium'];
 
 export const STANDART = 'STANDART';
 
+/** Tozluk çift olarak sayılır (1 stok = 1 çift); diğer ürünler adet. */
+export const birimAd = (turKod) => (turKod === 'TOZLUK' ? 'çift' : 'adet');
+
+/** Listelerde miktar: tozlukta "40 çift", diğerlerinde yalnızca sayı (sütun başlığı Adet). */
+export const miktar = (turKod, n) => (turKod === 'TOZLUK' ? n + ' çift' : n);
+
 export const turBul = (kod) => ENVANTER_TURLERI.find((t) => t.kod === kod);

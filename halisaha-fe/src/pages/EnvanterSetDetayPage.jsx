@@ -46,7 +46,12 @@ export default function EnvanterSetDetayPage() {
       <PageHeader kicker="Tanımlar" baslik="Seti güncelle" />
       <Hata mesaj={hata} />
       <EnvanterSetFormu
-        baslangic={{ ad: set.ad, envanterIdleri: set.kalemler.map((k) => k.envanterId) }}
+        baslangic={{
+          ad: set.ad,
+          beden: set.beden,
+          tutar: set.tutar,
+          envanterIdleri: set.kalemler.map((k) => k.envanterId),
+        }}
         kaydetEtiketi="Seti güncelle"
         kaydediyor={kaydediyor}
         onKaydet={kaydet}

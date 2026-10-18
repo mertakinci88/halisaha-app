@@ -13,6 +13,7 @@ import { envanterService, envanterSetService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { stokDurumu, tl } from '@/lib/format';
+import { miktar } from '@/lib/envanter';
 
 export default function EnvanterListePage() {
   const navigate = useNavigate();
@@ -105,18 +106,20 @@ export default function EnvanterListePage() {
             <thead>
               <tr>
                 <Th>Set adı</Th>
+                <Th>Beden</Th>
                 <Th>Envanterler</Th>
-                <Th className="text-right">Toplam tutar</Th>
+                <Th className="text-right">Set tutarı</Th>
                 <Th />
               </tr>
             </thead>
             <tbody>
               {setler.length === 0 ? (
-                <Bos colSpan={4}>Henüz set tanımlı değil.</Bos>
+                <Bos colSpan={5}>Henüz set tanımlı değil.</Bos>
               ) : (
                 setler.map((s) => (
                   <Tr key={s.id}>
                     <Td tam className="font-semibold sm:font-normal">{s.ad}</Td>
+                    <Td tam etiket="Beden">{s.beden}</Td>
                     <Td tam etiket="Envanterler">
                       <div className="flex flex-wrap gap-1">
                         {s.kalemler.map((k) => (
@@ -126,7 +129,7 @@ export default function EnvanterListePage() {
                         ))}
                       </div>
                     </Td>
-                    <Td tam etiket="Toplam tutar" className="whitespace-nowrap text-right tabular-nums">{tl(s.toplamTutar)}</Td>
+                    <Td tam etiket="Set tutarı" className="whitespace-nowrap text-right tabular-nums">{tl(s.tutar)}</Td>
                     <Td tam className="whitespace-nowrap text-right">
                       <Button variant="cerceve" size="sm" onClick={() => navigate('/envanter/set/' + s.id)}>
                         <Pencil size={14} strokeWidth={1.5} />
@@ -163,7 +166,7 @@ export default function EnvanterListePage() {
                     <Td tam className="font-semibold sm:font-normal">{e.turAd}</Td>
                     <Td etiket="Beden">{e.bedenli ? e.beden : 'Standart'}</Td>
                     <Td etiket="Satış fiyatı" className="text-right tabular-nums">{tl(e.satisFiyati)}</Td>
-                    <Td etiket="Adet" className="text-right tabular-nums">{e.adet}</Td>
+                    <Td etiket="Adet" className="text-right tabular-nums">{miktar(e.tur, e.adet)}</Td>
                     <Td>
                       {stokDurumu(e) === 'TUKENDI' ? (
                         <Tag tone="danger">Tükendi</Tag>
