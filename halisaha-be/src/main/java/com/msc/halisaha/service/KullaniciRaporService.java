@@ -220,7 +220,7 @@ public class KullaniciRaporService {
                 """, params);
         Map<Long, LocalDateTime> sonCikis = sorgu("""
                 SELECT kullanici_id, MAX(zaman) FROM oturum_log
-                WHERE isletme_id = :isletmeId AND olay IN ('CIKIS', 'OTURUM_SURESI_DOLDU') GROUP BY 1
+                WHERE isletme_id = :isletmeId AND olay IN ('CIKIS', 'OTURUM_SURESI_DOLDU', 'TARAYICI_KAPATILDI') GROUP BY 1
                 """, params, rs -> {
             try {
                 Timestamp t = rs.getTimestamp(2);
@@ -410,27 +410,35 @@ public class KullaniciRaporService {
 
     // ── 6) Giriş geçmişi ─────────────────────────────────────────────────────────────────────
 
-    public KullaniciRaporlari.Giris giris(LocalDate baslangic, LocalDate bitis, Long kullaniciId) {
+    /** Giriş geçmişinde sayfa başına kayıt sayısı. */
+    static final int GIRIS_SAYFA_BOYUTU = 20;
+
+    public KullaniciRaporlari.Giris giris(LocalDate baslangic, LocalDate bitis, Long kullaniciId, int sayfa) {
         RaporAraligi aralik = RaporAraligi.of(baslangic, bitis);
         MapSqlParameterSource params = params(aralik);
-        params.addValue("limit", SATIR_SINIRI + 1);
         String kullaniciFiltre = "";
         if (kullaniciId != null) {
             kullaniciFiltre = " AND l.kullanici_id = :kullaniciId";
             params.addValue("kullaniciId", kullaniciId);
         }
-        List<GirisSatiri> satirlar = new ArrayList<>(jdbc.query("""
+        long toplam = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM oturum_log l
+                WHERE l.isletme_id = :isletmeId AND l.zaman >= :bas AND l.zaman < :bit%s
+                """.formatted(kullaniciFiltre), params, Long.class);
+        int sonSayfa = (int) Math.max((toplam - 1) / GIRIS_SAYFA_BOYUTU, 0);
+        int gecerliSayfa = Math.min(Math.max(sayfa, 0), sonSayfa);
+        params.addValue("limit", GIRIS_SAYFA_BOYUTU);
+        params.addValue("offset", (long) gecerliSayfa * GIRIS_SAYFA_BOYUTU);
+        List<GirisSatiri> satirlar = jdbc.query("""
                 SELECT l.zaman, l.kullanici_id, l.kullanici_adi, k.ad_soyad, l.olay, l.ip, l.tarayici
                 FROM oturum_log l LEFT JOIN kullanici k ON k.id = l.kullanici_id
                 WHERE l.isletme_id = :isletmeId AND l.zaman >= :bas AND l.zaman < :bit%s
-                ORDER BY l.zaman DESC LIMIT :limit
+                ORDER BY l.zaman DESC, l.id DESC LIMIT :limit OFFSET :offset
                 """.formatted(kullaniciFiltre), params, (rs, i) -> {
             long id = rs.getLong("kullanici_id");
             return new GirisSatiri(rs.getTimestamp("zaman").toLocalDateTime(), rs.wasNull() ? null : id, rs.getString("kullanici_adi"),
                     rs.getString("ad_soyad"), rs.getString("olay"), rs.getString("ip"), rs.getString("tarayici"));
-        }));
-        boolean kesildi = satirlar.size() > SATIR_SINIRI;
-        if (kesildi) satirlar = satirlar.subList(0, SATIR_SINIRI);
-        return new KullaniciRaporlari.Giris(aralik.ilk(), aralik.son(), satirlar, kesildi);
+        });
+        return new KullaniciRaporlari.Giris(aralik.ilk(), aralik.son(), satirlar, gecerliSayfa, GIRIS_SAYFA_BOYUTU, toplam);
     }
 }

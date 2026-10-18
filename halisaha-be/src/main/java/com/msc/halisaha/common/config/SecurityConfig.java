@@ -58,7 +58,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/auth/aktif").permitAll()
                         // Yalnızca ayrı yönetim portunda (8081) yayınlanır; Traefik'e açık 8080'de bu yol yoktur.
                         .requestMatchers("/actuator/health/**").permitAll()
                         .anyRequest().authenticated()

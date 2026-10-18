@@ -5,7 +5,7 @@ import { Tag } from '@/components/ui/tag';
 import { Select } from '@/components/ui/input';
 import { kisaTarih, ODEME_YONTEMI_LABEL, tarihSaat, tl } from '@/lib/format';
 import { raporService } from '@/services';
-import { Aciklama, Kutu, Ozet, OzetIzgara, RaporDurumu, useRapor } from './RaporBilesenleri';
+import { Aciklama, Kutu, Ozet, OzetIzgara, RaporDurumu, Sayfalama, useRapor } from './RaporBilesenleri';
 
 const KAYNAK = { REZERVASYON: 'Rezervasyon', OGRENCI: 'Öğrenci ödemesi', ENVANTER: 'Envanter satışı', ABONELIK: 'Abonelik' };
 
@@ -213,13 +213,18 @@ const OLAY = {
   GIRIS: { ad: 'Giriş', sinif: 'bg-basari-100 text-basari-800' },
   CIKIS: { ad: 'Çıkış', sinif: 'bg-neutral-100 text-neutral-800' },
   OTURUM_SURESI_DOLDU: { ad: 'Oturum süresi doldu', sinif: 'bg-amber-100 text-amber-800' },
+  TARAYICI_KAPATILDI: { ad: 'Tarayıcı kapatıldı', sinif: 'bg-neutral-100 text-neutral-800' },
+  OTURUMA_DONDU: { ad: 'Oturuma döndü', sinif: 'bg-basari-100 text-basari-800' },
   BASARISIZ_GIRIS: { ad: 'Başarısız giriş', sinif: 'bg-red-100 text-red-800' },
 };
 
 /** Kim ne zaman giriş / çıkış yaptı, hangi adresten; başarısız denemeler de görünür. */
 export function GirisGorunumu({ baslangic, bitis }) {
   const [kullaniciId, setKullaniciId] = useState('');
+  const [sayfa, setSayfa] = useState(0);
   const [kullanicilar, setKullanicilar] = useState([]);
+  // Tarih aralığı ya da kullanıcı değişince ilk sayfaya dönülür
+  useEffect(() => setSayfa(0), [baslangic, bitis, kullaniciId]);
   useEffect(() => {
     raporService
       .kullaniciIslemler({ baslangic, bitis })
@@ -227,8 +232,8 @@ export function GirisGorunumu({ baslangic, bitis }) {
       .catch(() => setKullanicilar([]));
   }, [baslangic, bitis]);
   const rapor = useRapor(
-    () => raporService.kullaniciGiris({ baslangic, bitis, kullaniciId: kullaniciId || undefined }),
-    [baslangic, bitis, kullaniciId],
+    () => raporService.kullaniciGiris({ baslangic, bitis, kullaniciId: kullaniciId || undefined, sayfa }),
+    [baslangic, bitis, kullaniciId, sayfa],
   );
   return (
     <>
@@ -273,7 +278,7 @@ export function GirisGorunumu({ baslangic, bitis }) {
           <>
             <Kutu
               baslik="Giriş ve çıkış geçmişi"
-              bilgi="Her giriş, çıkış ve başarısız giriş denemesi zamanı ve bağlantı adresiyle kaydedilir. Oturum süresi dolduğu için kendiliğinden kapanan oturumlar çıkış olarak görünmez. Hiç tanımadığımız bir kullanıcı adıyla yapılan denemeler bu listede yer almaz."
+              bilgi="Her giriş, çıkış ve başarısız giriş denemesi zamanı ve bağlantı adresiyle kaydedilir. Çıkış yapmadan tarayıcıyı kapatanlar yaklaşık 10 dakika sonra “Tarayıcı kapatıldı” olarak görünür (zaman olarak son görüldükleri an yazılır); aynı oturumla geri dönerlerse “Oturuma döndü” yazılır. Oturum süresi dolduğu için kapanan oturumlar çıkış olarak görünmez. Hiç tanımadığımız bir kullanıcı adıyla yapılan denemeler bu listede yer almaz."
             >
               <Table kart>
                 <thead>
@@ -299,7 +304,7 @@ export function GirisGorunumu({ baslangic, bitis }) {
                 </tbody>
               </Table>
             </Kutu>
-            <KesildiNotu kesildi={v.kesildi} />
+            <Sayfalama sayfa={v.sayfa} sayfaBoyutu={v.sayfaBoyutu} toplam={v.toplam} onSayfa={setSayfa} yukleniyor={rapor.yukleniyor} />
           </>
         )}
       </RaporDurumu>

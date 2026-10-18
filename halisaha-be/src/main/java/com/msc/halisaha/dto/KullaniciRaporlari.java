@@ -73,10 +73,11 @@ public final class KullaniciRaporlari {
     public record YoklamaKullanici(Long kullaniciId, String ad, long yoklamaGunu, long grupSayisi, LocalDate sonYoklama) {
     }
 
-    public record Giris(LocalDate baslangic, LocalDate bitis, List<GirisSatiri> satirlar, boolean kesildi) {
+    /** Sayfalı liste: sayfa 0'dan başlar; toplam, filtreye uyan tüm kayıt sayısıdır. */
+    public record Giris(LocalDate baslangic, LocalDate bitis, List<GirisSatiri> satirlar, int sayfa, int sayfaBoyutu, long toplam) {
     }
 
-    /** olay: GIRIS, CIKIS, OTURUM_SURESI_DOLDU, BASARISIZ_GIRIS */
+    /** olay: GIRIS, CIKIS, OTURUM_SURESI_DOLDU, TARAYICI_KAPATILDI, OTURUMA_DONDU, BASARISIZ_GIRIS */
     public record GirisSatiri(LocalDateTime zaman, Long kullaniciId, String kullaniciAdi, String ad, String olay, String ip, String tarayici) {
     }
 }

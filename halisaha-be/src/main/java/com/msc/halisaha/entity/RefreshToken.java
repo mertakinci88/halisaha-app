@@ -42,4 +42,12 @@ public class RefreshToken {
 
     @Column(name = "revoked", nullable = false)
     private boolean revoked;
+
+    /** İstemcinin son "buradayım" sinyali (giriş anında da set edilir); eski kayıtlarda boş olabilir. */
+    @Column(name = "son_gorulme")
+    private Instant sonGorulme;
+
+    /** Uzun süre sinyal gelmediği için "tarayıcı kapatıldı" kaydı yazıldı; kullanıcı dönünce sıfırlanır. */
+    @Column(name = "kapanis_yazildi", nullable = false)
+    private boolean kapanisYazildi;
 }

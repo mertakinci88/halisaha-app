@@ -139,7 +139,8 @@ public class RaporController {
     public KullaniciRaporlari.Giris kullaniciGiris(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baslangic,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bitis,
-            @RequestParam(required = false) Long kullaniciId) {
-        return kullaniciRaporService.giris(baslangic, bitis, kullaniciId);
+            @RequestParam(required = false) Long kullaniciId,
+            @RequestParam(defaultValue = "0") int sayfa) {
+        return kullaniciRaporService.giris(baslangic, bitis, kullaniciId, sayfa);
     }
 }

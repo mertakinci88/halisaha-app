@@ -81,6 +81,39 @@ export function Bilgi({ metin }) {
   );
 }
 
+/** Sunucu taraflı sayfalama çubuğu: "51–100 / 1.240" ve Önceki / Sonraki. sayfa 0'dan başlar. */
+export function Sayfalama({ sayfa, sayfaBoyutu, toplam, onSayfa, yukleniyor }) {
+  if (toplam <= sayfaBoyutu) return null;
+  const ilk = sayfa * sayfaBoyutu + 1;
+  const son = Math.min((sayfa + 1) * sayfaBoyutu, toplam);
+  const sonSayfa = Math.ceil(toplam / sayfaBoyutu) - 1;
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <span className="text-[14px] tabular-nums text-ink/70">
+        {ilk}–{son} / {toplam}
+      </span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={sayfa <= 0 || yukleniyor}
+          onClick={() => onSayfa(sayfa - 1)}
+          className="min-h-10 cursor-pointer border border-divider bg-bg px-4 text-[15px] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Önceki
+        </button>
+        <button
+          type="button"
+          disabled={sayfa >= sonSayfa || yukleniyor}
+          onClick={() => onSayfa(sayfa + 1)}
+          className="min-h-10 cursor-pointer border border-divider bg-bg px-4 text-[15px] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Sonraki
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Tek bir göstergeyi büyük rakamla gösteren özet kartı. fark: önceki döneme göre yüzde değişim (opsiyonel). */
 export function Ozet({ etiket, deger, alt, vurgu = false, fark, bilgi }) {
   return (

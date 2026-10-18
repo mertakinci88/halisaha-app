@@ -20,6 +20,16 @@ public class OturumLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void kaydet(OturumOlay olay, Kullanici kullanici, String kullaniciAdi, IstemciBilgisi bilgi) {
+        yaz(olay, kullanici, kullaniciAdi, bilgi);
+    }
+
+    /** Çağıranın işlemine katılır: işlem geri alınırsa kayıt da geri alınır (durum değişikliğiyle birlikte yazılan olaylar için). */
+    @Transactional
+    public void kaydetIslemIcinde(OturumOlay olay, Kullanici kullanici, IstemciBilgisi bilgi) {
+        yaz(olay, kullanici, null, bilgi);
+    }
+
+    private void yaz(OturumOlay olay, Kullanici kullanici, String kullaniciAdi, IstemciBilgisi bilgi) {
         IstemciBilgisi b = bilgi != null ? bilgi : IstemciBilgisi.BILINMIYOR;
         String ad = kullanici != null ? kullanici.getKullaniciAdi() : kullaniciAdi;
         oturumLogRepository.save(OturumLog.builder()
