@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import EnvanterSatisKarti from '@/components/EnvanterSatisKarti';
 import OgrenciTransferKarti from '@/components/OgrenciTransferKarti';
 import OgrenciOdemeKarti from '@/components/OgrenciOdemeKarti';
+import OgrenciYoklamaKarti from '@/components/OgrenciYoklamaKarti';
 
 const BOS = {
   grupId: '',
@@ -211,6 +212,8 @@ export default function OgrenciDetayPage() {
 
       {/* Kartlar personelin öğrenci işlem yetkisine göre görünür (admin hepsini görür) */}
       {yetkiVar('OGRENCI_TRANSFER') ? <OgrenciTransferKarti ogrenciId={id} grupId={grupId} /> : null}
+
+      {yetkiVar('OGRENCI_YOKLAMA') ? <OgrenciYoklamaKarti ogrenciId={id} /> : null}
 
       {yetkiVar('OGRENCI_ODEME') ? <OgrenciOdemeKarti ogrenciId={id} /> : null}
 

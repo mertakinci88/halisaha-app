@@ -16,6 +16,7 @@ export const MODUL_LABEL = {
   OGRENCI_TRANSFER: 'Transfer bilgileri',
   OGRENCI_ODEME: 'Ödeme bilgileri',
   OGRENCI_ENVANTER: 'Envanter bilgileri',
+  OGRENCI_YOKLAMA: 'Yoklama bilgileri',
 };
 
 /** Menü ikonları (kenar çubuğundakilerle aynı) */
@@ -32,6 +33,7 @@ export const MODUL_IKON = {
   OGRENCI_TRANSFER: ArrowRightLeft,
   OGRENCI_ODEME: Wallet,
   OGRENCI_ENVANTER: Package,
+  OGRENCI_YOKLAMA: ClipboardCheck,
 };
 
 export const ModulIkon = ({ modul, size = 16 }) => createElement(MODUL_IKON[modul], { size, strokeWidth: 1.5 });
@@ -41,4 +43,4 @@ export const GRUP_BAGLI_MODULLER = ['OGRENCI', 'YOKLAMA'];
 export const grupYetkisiGecerli = (yetkiler) => GRUP_BAGLI_MODULLER.some((m) => yetkiler.includes(m));
 
 /** Öğrenci detayındaki kartlar için işlem yetkileri; yalnızca Öğrenciler menüsü açıksa verilebilir */
-export const OGRENCI_ISLEM_YETKILERI = ['OGRENCI_TRANSFER', 'OGRENCI_ODEME', 'OGRENCI_ENVANTER'];
+export const OGRENCI_ISLEM_YETKILERI = ['OGRENCI_TRANSFER', 'OGRENCI_ODEME', 'OGRENCI_ENVANTER', 'OGRENCI_YOKLAMA'];
