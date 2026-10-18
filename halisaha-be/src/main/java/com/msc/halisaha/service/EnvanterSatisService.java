@@ -378,7 +378,7 @@ public class EnvanterSatisService {
         return fiyatlar.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Tutar gönderilmediyse Ödendi işaretli kalemlerin toplamı; 0'dan büyük olmalı ve set tutarını aşamaz. */
+    /** Tutar gönderilmediyse Ödendi işaretli kalemlerin toplamı; hiç ödeme alınmamışsa 0 olabilir, set tutarını aşamaz. */
     private BigDecimal odenenTutarBelirle(EnvanterSatisRequest request, Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler,
                                           Map<EnvanterTur, BigDecimal> fiyatlar, BigDecimal set) {
         BigDecimal odenen;
@@ -390,9 +390,6 @@ public class EnvanterSatisService {
                     .map(e -> fiyatlar.get(e.getKey()))
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                     .setScale(2, RoundingMode.HALF_UP);
-        }
-        if (odenen.signum() <= 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Ödenen tutar girilmelidir");
         }
         if (odenen.compareTo(set) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Ödenen tutar set tutarını (" + set + ") aşamaz");
