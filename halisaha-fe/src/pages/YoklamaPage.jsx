@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardCheck, Save, Search } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardCheck, History, Save, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,8 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService, yoklamaService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import { YOKLAMA_KARTI_HASH } from '@/components/OgrenciYoklamaKarti';
 import { kisaTarih, toIsoDate, uzunTarih } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +68,10 @@ function DurumKutusu({ kod, etiket, durum, onSec, ad }) {
 }
 
 export default function YoklamaPage() {
+  const { yetkiVar } = useAuth();
+  const navigate = useNavigate();
+  // Öğrenci detayındaki yoklama kartına geçiş: hem detay sayfasına hem karta yetki gerekir
+  const detayaGidebilir = yetkiVar('OGRENCI') && yetkiVar('OGRENCI_YOKLAMA');
   const toast = useToast();
   const [gun, setGun] = useState(() => new Date());
   const [gruplar, setGruplar] = useState([]);
@@ -306,16 +313,30 @@ export default function YoklamaPage() {
                         />
                       ))}
                     </div>
-                    <Input
-                      type="text"
-                      value={s.not}
-                      maxLength={255}
-                      disabled={!s.durum}
-                      placeholder={s.durum ? 'Not ekle…' : 'Önce durum seçin'}
-                      aria-label={s.adSoyad + ' notu'}
-                      onChange={(e) => notYaz(s.ogrenciId, e.target.value)}
-                      className="text-[16px] disabled:opacity-60"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={s.not}
+                        maxLength={255}
+                        disabled={!s.durum}
+                        placeholder={s.durum ? 'Not ekle…' : 'Önce durum seçin'}
+                        aria-label={s.adSoyad + ' notu'}
+                        onChange={(e) => notYaz(s.ogrenciId, e.target.value)}
+                        className="min-w-0 flex-1 text-[16px] disabled:opacity-60"
+                      />
+                      {detayaGidebilir ? (
+                        <Button
+                          variant="cerceve"
+                          size="sm"
+                          title="Öğrencinin yoklama bilgilerini aç"
+                          onClick={() => onayliDegistir(() => navigate('/ogrenciler/' + s.ogrenciId + YOKLAMA_KARTI_HASH))}
+                          className="shrink-0"
+                        >
+                          <History size={15} strokeWidth={1.5} />
+                          <span>Geçmiş</span>
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 ))
               )}

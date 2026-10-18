@@ -18,5 +18,7 @@ public enum Modul {
     /** Öğrenci detayındaki aylık ödemeler kartı. */
     OGRENCI_ODEME,
     /** Öğrenci detayındaki envanter satışları kartı. */
-    OGRENCI_ENVANTER
+    OGRENCI_ENVANTER,
+    /** Öğrenci detayındaki yoklama bilgileri kartı. */
+    OGRENCI_YOKLAMA
 }

@@ -4,15 +4,21 @@ import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
+import com.msc.halisaha.dto.OgrenciYoklamaSatir;
+import com.msc.halisaha.dto.OgrenciYoklamaSayfa;
+import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.dto.YoklamaKaydetRequest;
 import com.msc.halisaha.dto.YoklamaSatir;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
 import com.msc.halisaha.entity.Yoklama;
+import com.msc.halisaha.entity.YoklamaDurum;
 import com.msc.halisaha.repository.GrupRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import com.msc.halisaha.repository.YoklamaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +56,21 @@ public class YoklamaService {
                             y != null ? y.getDurum() : null, y != null ? y.getAciklama() : null);
                 })
                 .toList();
+    }
+
+    /** Öğrencinin alınmış yoklamaları (en yeni gün üstte), sayfalı; özet sayıları tüm kayıtlar üzerindendir. */
+    public OgrenciYoklamaSayfa ogrenciGecmisi(Long ogrenciId, int sayfa, int boyut) {
+        Long isletmeId = isletmeContext.id();
+        Ogrenci ogrenci = ogrenciRepository.findByIdAndIsletmeId(ogrenciId, isletmeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Öğrenci bulunamadı: " + ogrenciId));
+        grupKapsami.kontrol(ogrenci);
+        PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.DESC, "tarih"));
+        PageResponse<OgrenciYoklamaSatir> sonuc = PageResponse.from(
+                yoklamaRepository.findByIsletmeIdAndOgrenciId(isletmeId, ogrenciId, pageRequest), OgrenciYoklamaSatir::from);
+        return new OgrenciYoklamaSayfa(sonuc,
+                yoklamaRepository.countByIsletmeIdAndOgrenciIdAndDurum(isletmeId, ogrenciId, YoklamaDurum.GELDI),
+                yoklamaRepository.countByIsletmeIdAndOgrenciIdAndDurum(isletmeId, ogrenciId, YoklamaDurum.GELMEDI),
+                yoklamaRepository.countByIsletmeIdAndOgrenciIdAndDurum(isletmeId, ogrenciId, YoklamaDurum.IZINLI));
     }
 
     /**

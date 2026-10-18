@@ -215,11 +215,11 @@ public class KullaniciService {
         refreshTokenRepository.tumunuIptalEt(kullanici.getId());
     }
 
-    /** Öğrenci işlem yetkileri (transfer / ödeme / envanter kartları) Öğrenciler menüsü olmadan anlamsızdır; menü yoksa düşürülür. */
+    /** Öğrenci işlem yetkileri (transfer / ödeme / envanter / yoklama kartları) Öğrenciler menüsü olmadan anlamsızdır; menü yoksa düşürülür. */
     private static Set<Modul> yetkiTemizle(Set<Modul> yetkiler) {
         Set<Modul> sonuc = new HashSet<>(yetkiler);
         if (!sonuc.contains(Modul.OGRENCI)) {
-            sonuc.removeAll(Set.of(Modul.OGRENCI_TRANSFER, Modul.OGRENCI_ODEME, Modul.OGRENCI_ENVANTER));
+            sonuc.removeAll(Set.of(Modul.OGRENCI_TRANSFER, Modul.OGRENCI_ODEME, Modul.OGRENCI_ENVANTER, Modul.OGRENCI_YOKLAMA));
         }
         return sonuc;
     }

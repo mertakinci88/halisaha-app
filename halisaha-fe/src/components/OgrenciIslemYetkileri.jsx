@@ -1,7 +1,7 @@
 import { SegOpt } from '@/components/ui/seg';
 import { MODUL_LABEL, ModulIkon, OGRENCI_ISLEM_YETKILERI } from '@/lib/yetki';
 
-/** Öğrenci detayında hangi kartların görüneceği ve işlem yapılabileceği (transfer / ödeme / envanter). */
+/** Öğrenci detayında hangi kartların görüneceği ve işlem yapılabileceği (transfer / ödeme / envanter / yoklama). */
 export default function OgrenciIslemYetkileri({ yetkiler, onTogla }) {
   return (
     <div className="flex flex-wrap gap-2">

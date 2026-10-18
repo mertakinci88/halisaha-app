@@ -131,6 +131,12 @@ export const ogrenciService = {
   remove: (id) => api.delete('/api/ogrenciler/' + id),
 };
 
+/* ── /api/ogrenciler/{id}/yoklamalar (öğrenci detayındaki yoklama bilgileri) ── */
+export const ogrenciYoklamaService = {
+  /** { sayfa: { icerik: [{ tarih, durum: GELDI|GELMEDI|IZINLI, not, kaydeden }], sayfa, boyut, toplamKayit, toplamSayfa }, geldi, gelmedi, izinli } — tarihe göre yeniden eskiye */
+  gecmis: (ogrenciId, params) => api.get('/api/ogrenciler/' + ogrenciId + '/yoklamalar', { params }).then((r) => r.data),
+};
+
 /* ── /api/ogrenciler/{id}/odemeler (öğrenci detayındaki aylık ödemeleri) ── */
 export const ogrenciOdemeService = {
   /** { yil, bugun (sunucu tarihi), aylar: [{ yil, ay, odenenTutar, durum (ODENDI | ODENMEDI), odemeSekli, hesapId, hesapAd, odemeTarihi, not }] (12 ay), toplamOdenen, yillar } */
