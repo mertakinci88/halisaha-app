@@ -224,7 +224,7 @@ export const envanterSatisService = {
 
 /* ── /api/abonelikler (haftalık sabit rezervasyon: Aboneler menüsü) ── */
 export const aboneService = {
-  /** params: { durum: AKTIF | IPTAL, sahaId, haftaGunu (1 = Pazartesi ... 7 = Pazar), q, sayfa (0 tabanlı), boyut } — filtre boşsa uygulanmaz; sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  /** params: { durum: AKTIF | IPTAL, antrenman (true = yalnızca antrenman, false = yalnızca ücretli abone), sahaId, haftaGunu (1 = Pazartesi ... 7 = Pazar), q, sayfa (0 tabanlı), boyut } — filtre boşsa uygulanmaz; sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/abonelikler', { params }).then((r) => r.data),
   /** Detay: ödemeler ve haftalık rezervasyon listesi (haftalar) dahil */
   get: (id) => api.get('/api/abonelikler/' + id).then((r) => r.data),

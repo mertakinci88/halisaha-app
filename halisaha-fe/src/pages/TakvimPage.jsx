@@ -281,7 +281,7 @@ export default function TakvimPage() {
                         className={cn(
                           'absolute z-[2] flex cursor-pointer flex-col justify-center gap-0.5 overflow-hidden border px-1.5 py-1 text-left font-body sm:px-2.5',
                           rez.antrenman
-                            ? 'border-ink/25 bg-ink/10 text-ink'
+                            ? 'border-neutral-500 bg-neutral-300 text-neutral-800'
                             : rez.abonelikId
                             ? 'border-basari-300 bg-basari-100 text-basari-800'
                             : 'border-accent-400 bg-accent-200 text-accent-900',

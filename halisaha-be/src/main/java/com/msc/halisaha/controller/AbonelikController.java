@@ -38,16 +38,17 @@ public class AbonelikController {
 
     private final AbonelikService abonelikService;
 
-    /** Sayfalı abone listesi; durum, saha, gün ve arama boşsa o filtre uygulanmaz. */
+    /** Sayfalı abone listesi; durum, tür (antrenman), saha, gün ve arama boşsa o filtre uygulanmaz. */
     @GetMapping
     public PageResponse<AbonelikResponse> listele(
             @RequestParam(required = false) AbonelikDurum durum,
+            @RequestParam(required = false) Boolean antrenman,
             @RequestParam(required = false) Long sahaId,
             @RequestParam(required = false) Integer haftaGunu,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int sayfa,
             @RequestParam(defaultValue = "20") int boyut) {
-        return abonelikService.sayfa(durum, sahaId, haftaGunu, q, sayfa, boyut);
+        return abonelikService.sayfa(durum, antrenman, sahaId, haftaGunu, q, sayfa, boyut);
     }
 
     /** Standart abonelik ücreti: kayıt formunda ücret alanını doldurur. */
