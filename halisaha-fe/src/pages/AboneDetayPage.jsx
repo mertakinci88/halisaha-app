@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Ban, Plus, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ban, Goal, Plus, Save, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
@@ -23,8 +23,9 @@ import { gunAdi, saatAraligi } from '@/lib/abone';
 const BUGUN = toIsoDate(new Date());
 
 /** Haftalık rezervasyonun ödeme bilgisi: depozitodan karşılanan (ücreti 0) haftalar ayrı gösterilir, iptal edilenlerde ödeme gösterilmez. */
-const haftaOdemeEtiketi = (h) => {
+const haftaOdemeEtiketi = (h, antrenman) => {
   if (h.durum === 'IPTAL') return <span className="text-ink/55">—</span>;
+  if (antrenman) return <Tag tone="outline">Antrenman</Tag>;
   if (Number(h.odenecekTutar) === 0) return <Tag tone="outline">Depozitodan</Tag>;
   return <OdemeDurumuEtiketi durum={h.odemeDurumu} />;
 };
@@ -52,6 +53,7 @@ export default function AboneDetayPage() {
   const [silinecekOdeme, setSilinecekOdeme] = useState(null);
   const [odeme, setOdeme] = useState({ tutar: '', sekil: '', hesapId: '', tarih: BUGUN });
   const [odemeEkliyor, setOdemeEkliyor] = useState(false);
+  const [cevirAcik, setCevirAcik] = useState(false);
 
   const uygula = (a) => {
     setAbone(a);
@@ -82,12 +84,15 @@ export default function AboneDetayPage() {
   }
 
   const aktif = abone.durum === 'AKTIF';
+  const antrenman = abone.antrenman;
   const degisti =
     form.adSoyad !== abone.adSoyad ||
     '0' + form.telNo !== abone.telNo ||
-    Number(form.depozito) !== Number(abone.depozito) ||
-    Number(form.haftalikUcret) !== Number(abone.haftalikUcret) ||
+    (!antrenman && (Number(form.depozito) !== Number(abone.depozito) || Number(form.haftalikUcret) !== Number(abone.haftalikUcret))) ||
     (form.not || '') !== (abone.not || '');
+  // Antrenmana çevrilince ücreti sıfırlanacak haftalar: bugünden itibaren olan aktif haftalar
+  const bugunBasi = new Date(BUGUN + 'T00:00:00');
+  const cevrilecekHafta = abone.haftalar.filter((h) => h.durum === 'AKTIF' && new Date(h.baslangicTarih) >= bugunBasi).length;
   const kalan = Number(abone.kalanTutar);
 
   const kaydet = async (e) => {
@@ -102,11 +107,15 @@ export default function AboneDetayPage() {
       uygula(await aboneService.update(id, {
         adSoyad: form.adSoyad.trim(),
         telNo: '0' + form.telNo,
-        depozito: Number(String(form.depozito).replace(',', '.')),
-        haftalikUcret: Number(String(form.haftalikUcret).replace(',', '.')),
+        ...(antrenman
+          ? {}
+          : {
+              depozito: Number(String(form.depozito).replace(',', '.')),
+              haftalikUcret: Number(String(form.haftalikUcret).replace(',', '.')),
+            }),
         not: form.not.trim() || null,
       }));
-      toast.basari('Abonelik güncellendi.');
+      toast.basari(antrenman ? 'Antrenman güncellendi.' : 'Abonelik güncellendi.');
     } catch (err) {
       setHata(apiHata(err));
     } finally {
@@ -148,7 +157,20 @@ export default function AboneDetayPage() {
         iadeSekli: iadeGerekli ? iptalSecim.sekil : null,
         hesapId: iadeGerekli && iptalSecim.sekil === 'HAVALE_EFT' && iptalSecim.hesapId ? Number(iptalSecim.hesapId) : null,
       }));
-      toast.basari('Abonelik iptal edildi; kalan depozito kadar hafta oynanacak, diğer haftalar iptal edildi.');
+      toast.basari(antrenman
+        ? 'Antrenman iptal edildi; bugünden sonraki haftalar kaldırıldı, saatler takvimde boşaldı.'
+        : 'Abonelik iptal edildi; kalan depozito kadar hafta oynanacak, diğer haftalar iptal edildi.');
+    } catch (err) {
+      setHata(apiHata(err));
+    }
+  };
+
+  const antrenmanaCevir = async () => {
+    setCevirAcik(false);
+    setHata('');
+    try {
+      uygula(await aboneService.antrenmanaCevir(id, { odemeleriSil: Number(abone.odenenTutar) > 0 }));
+      toast.basari('Abonelik antrenmana çevrildi.');
     } catch (err) {
       setHata(apiHata(err));
     }
@@ -211,7 +233,10 @@ export default function AboneDetayPage() {
           <Card className="gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-[22px]">Rezervasyon bilgileri</h4>
-              <span className="ml-auto"><AboneDurumEtiketi abone={abone} /></span>
+              <span className="ml-auto flex gap-1.5">
+                {antrenman ? <Tag tone="outline">Antrenman</Tag> : null}
+                <AboneDurumEtiketi abone={abone} />
+              </span>
             </div>
             {bilgiSatiri('Saha', abone.sahaAd)}
             {bilgiSatiri('Gün ve saat', gunAdi(abone.haftaGunu) + ' · ' + saatAraligi(abone.baslangicDakika, abone.sureDakika))}
@@ -221,12 +246,12 @@ export default function AboneDetayPage() {
             {abone.durum === 'IPTAL' ? bilgiSatiri('İptal eden', abone.iptalEdenAd || 'Kayıt yok') : null}
             {abone.iptalNeden ? bilgiSatiri('İptal nedeni', abone.iptalNeden) : null}
             <p className="m-0 text-[13px] text-ink/55">
-              Gün, saat ve tarihler değiştirilemez; değişiklik için aboneliği iptal edip yeni abonelik açın.
+              Gün, saat ve tarihler değiştirilemez; değişiklik için {antrenman ? 'antrenmanı iptal edip yeni antrenman' : 'aboneliği iptal edip yeni abonelik'} açın.
             </p>
           </Card>
 
           <Card className="gap-3.5">
-            <h4 className="text-[22px]">Abone bilgileri</h4>
+            <h4 className="text-[22px]">{antrenman ? 'Antrenman bilgileri' : 'Abone bilgileri'}</h4>
             <form onSubmit={kaydet} className="grid gap-3.5">
               <Field label="Ad soyad">
                 <Input value={form.adSoyad} onChange={(e) => setForm({ ...form, adSoyad: e.target.value })} required maxLength={255} />
@@ -234,33 +259,38 @@ export default function AboneDetayPage() {
               <Field label="Telefon">
                 <TelInput value={form.telNo} onChange={(v) => setForm({ ...form, telNo: v })} required />
               </Field>
-              <Field label="Depozito (₺)">
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={form.depozito}
-                  onChange={(e) => setForm({ ...form, depozito: tutarSinirla(e.target.value, 10000000) })}
-                  required
-                />
-              </Field>
-              <Field label="Haftalık maç ücreti (₺)">
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={form.haftalikUcret}
-                  onChange={(e) => setForm({ ...form, haftalikUcret: tutarSinirla(e.target.value, 10000000) })}
-                  required
-                />
-              </Field>
+              {antrenman ? null : (
+                <>
+                  <Field label="Depozito (₺)">
+                    <Input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.depozito}
+                      onChange={(e) => setForm({ ...form, depozito: tutarSinirla(e.target.value, 10000000) })}
+                      required
+                    />
+                  </Field>
+                  <Field label="Haftalık maç ücreti (₺)">
+                    <Input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.haftalikUcret}
+                      onChange={(e) => setForm({ ...form, haftalikUcret: tutarSinirla(e.target.value, 10000000) })}
+                      required
+                    />
+                  </Field>
+                </>
+              )}
               <Field label="Not">
                 <Input value={form.not} onChange={(e) => setForm({ ...form, not: e.target.value })} maxLength={255} />
               </Field>
               <p className="m-0 text-[13px] text-ink/55">
-                Ad ve telefon değişirse henüz gerçekleşmemiş haftalık rezervasyonlarda da güncellenir. Haftalık ücret değişirse yalnızca henüz oynanmamış ve ödemesi alınmamış haftalara yansır.
+                Ad ve telefon değişirse henüz gerçekleşmemiş haftalık rezervasyonlarda da güncellenir.
+                {antrenman ? ' Antrenman ücretsizdir; ödeme alınmaz ve raporlara girmez.' : ' Haftalık ücret değişirse yalnızca henüz oynanmamış ve ödemesi alınmamış haftalara yansır.'}
               </p>
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" className="flex-1" disabled={!degisti || kaydediyor}>
@@ -274,15 +304,27 @@ export default function AboneDetayPage() {
                     onClick={iptalAc}
                   >
                     <Ban size={16} strokeWidth={1.5} />
-                    <span>Aboneliği iptal et</span>
+                    <span>{antrenman ? 'Antrenmanı iptal et' : 'Aboneliği iptal et'}</span>
                   </Button>
                 ) : null}
               </div>
+              {aktif && !antrenman ? (
+                <div className="grid gap-1.5 border-t border-divider pt-3">
+                  <Button type="button" variant="cerceve" className="justify-self-start" onClick={() => setCevirAcik(true)}>
+                    <Goal size={16} strokeWidth={1.5} />
+                    <span>Antrenmana çevir</span>
+                  </Button>
+                  <p className="m-0 text-[13px] text-ink/55">
+                    Yanlışlıkla ücretli girilmişse: bugünden sonraki haftalar ücretsiz olur ve raporlara girmez; saatler takvimde dolu kalır.
+                  </p>
+                </div>
+              ) : null}
             </form>
           </Card>
         </div>
 
         <div className="grid content-start gap-5">
+          {antrenman ? null : (
           <Card className="gap-3.5">
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-[22px]">Depozito</h4>
@@ -377,6 +419,7 @@ export default function AboneDetayPage() {
               </form>
             ) : null}
           </Card>
+          )}
 
           <Card className="gap-3">
             <h4 className="text-[22px]">Haftalık rezervasyonlar</h4>
@@ -408,7 +451,7 @@ export default function AboneDetayPage() {
                       <Td etiket="Tutar" className="whitespace-nowrap text-right tabular-nums">{h.durum === 'IPTAL' ? '—' : tl(h.odenecekTutar)}</Td>
                       <Td etiket="Ödenen" className="whitespace-nowrap text-right tabular-nums">{h.durum === 'IPTAL' || Number(h.odenenTutar) === 0 ? '—' : tl(h.odenenTutar)}</Td>
                       <Td etiket="Kalan" className="whitespace-nowrap text-right tabular-nums">{h.durum === 'IPTAL' || Number(h.kalanTutar) === 0 ? '—' : tl(h.kalanTutar)}</Td>
-                      <Td etiket="Ödeme">{haftaOdemeEtiketi(h)}</Td>
+                      <Td etiket="Ödeme">{haftaOdemeEtiketi(h, antrenman)}</Td>
                     </Tr>
                   ))}
                 </tbody>
@@ -420,10 +463,12 @@ export default function AboneDetayPage() {
 
       <ConfirmDialog
         open={!!iptalPlan}
-        title="Abonelik iptal edilsin mi?"
-        description="Kalan depozito ile kalan haftalar oynanır, diğer haftalar iptal edilir. Geçmiş haftalar ve alınan ödemeler silinmez. Bu işlem geri alınamaz."
+        title={antrenman ? 'Antrenman iptal edilsin mi?' : 'Abonelik iptal edilsin mi?'}
+        description={antrenman
+          ? 'Bugünden sonraki haftalar iptal edilir ve saatler takvimde boşalır. Geçmiş haftalar silinmez. Bu işlem geri alınamaz.'
+          : 'Kalan depozito ile kalan haftalar oynanır, diğer haftalar iptal edilir. Geçmiş haftalar ve alınan ödemeler silinmez. Bu işlem geri alınamaz.'}
         isim={abone.adSoyad + ' · ' + gunAdi(abone.haftaGunu) + ' ' + saatAraligi(abone.baslangicDakika, abone.sureDakika)}
-        confirmLabel="Aboneliği iptal et"
+        confirmLabel={antrenman ? 'Antrenmanı iptal et' : 'Aboneliği iptal et'}
         tehlikeli
         onConfirm={iptalEt}
         onCancel={() => setIptalPlan(null)}
@@ -431,8 +476,12 @@ export default function AboneDetayPage() {
         {iptalPlan ? (
           <div className="grid gap-3 text-[14.5px]">
             <div className="grid gap-1 border border-divider px-3 py-2">
-              <div className="flex justify-between gap-3"><span>İşletmede kalan depozito</span><b className="tabular-nums">{tl(iptalPlan.kalanDepozito)}</b></div>
-              <div className="flex justify-between gap-3"><span>Depozito ile oynanacak</span><b>{iptalPlan.oynanacakHafta} hafta</b></div>
+              {antrenman ? null : (
+                <>
+                  <div className="flex justify-between gap-3"><span>İşletmede kalan depozito</span><b className="tabular-nums">{tl(iptalPlan.kalanDepozito)}</b></div>
+                  <div className="flex justify-between gap-3"><span>Depozito ile oynanacak</span><b>{iptalPlan.oynanacakHafta} hafta</b></div>
+                </>
+              )}
               <div className="flex justify-between gap-3"><span>İptal edilecek</span><b>{iptalPlan.iptalEdilecekHafta + (iptalPlan.kismiHaftaVar && iptalSecim.artanIade ? 1 : 0)} hafta</b></div>
             </div>
             {iptalPlan.kismiHaftaVar ? (
@@ -478,6 +527,21 @@ export default function AboneDetayPage() {
           </div>
         ) : null}
       </ConfirmDialog>
+      <ConfirmDialog
+        open={cevirAcik}
+        title="Antrenmana çevrilsin mi?"
+        description={
+          'Bugünden sonraki ' + cevrilecekHafta + ' haftanın ücreti sıfırlanır, ödeme borcu kalkar ve bu haftalar raporlara girmez; saatler takvimde dolu kalır. Geçmiş haftalar değişmez.' +
+          (Number(abone.odenenTutar) > 0
+            ? ' Ayrıca aboneliğe kayıtlı ' + tl(abone.odenenTutar) + ' depozito ödemesi silinir ve kasadan düşer.'
+            : '')
+        }
+        isim={abone.adSoyad + ' · ' + gunAdi(abone.haftaGunu) + ' ' + saatAraligi(abone.baslangicDakika, abone.sureDakika)}
+        confirmLabel="Antrenmana çevir"
+        tehlikeli={Number(abone.odenenTutar) > 0}
+        onConfirm={antrenmanaCevir}
+        onCancel={() => setCevirAcik(false)}
+      />
       <ConfirmDialog
         open={!!silinecekOdeme}
         title="Ödeme silinsin mi?"

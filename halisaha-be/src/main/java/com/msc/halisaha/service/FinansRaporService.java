@@ -113,7 +113,7 @@ public class FinansRaporService {
                     SELECT (SELECT COALESCE(SUM(k.tutar), 0) FROM rezervasyon_kalem k WHERE k.rezervasyon_id = r.id) AS toplam,
                            (SELECT COALESCE(SUM(o.tutar), 0) FROM rezervasyon_odeme o WHERE o.rezervasyon_id = r.id) AS odenen
                     FROM rezervasyon r
-                    WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF'
+                    WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF' AND NOT r.antrenman
                       AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %s)
                 ) t
                 """.formatted(ISLETME_GUNU, ISLETME_GUNU), params, BigDecimal.class);

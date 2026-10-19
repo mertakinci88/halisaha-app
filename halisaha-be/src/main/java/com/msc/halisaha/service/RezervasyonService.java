@@ -195,6 +195,7 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse sahaTutariGuncelle(Long id, BigDecimal tutar) {
         Rezervasyon rezervasyon = getEntity(id);
+        antrenmanDegilDogrula(rezervasyon, "Antrenman rezervasyonu ücretsizdir, tutarı değiştirilemez");
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyonun tutarı değiştirilemez");
         }
@@ -204,6 +205,32 @@ public class RezervasyonService {
         sahaKalemiTutariBelirle(kalem, tutar);
         recalculate(rezervasyon);
         return toResponse(rezervasyon);
+    }
+
+    /**
+     * Abonelik haftalık rezervasyonunu antrenmana çevirir: saha ücreti sıfırlanır, ödeme durumu "ödendi" olur ve raporlara girmez.
+     * Ödemesi alınmış ya da ürün eklenmiş rezervasyon çevrilemez (hata verir).
+     */
+    @Transactional
+    public void antrenmanYap(Long id) {
+        Rezervasyon rezervasyon = getEntity(id);
+        List<RezervasyonKalem> kalemler = kalemRepository.findByRezervasyonIdOrderByIdAsc(id);
+        if (rezervasyon.getAbonelik() == null || rezervasyonOdemeRepository.existsByRezervasyonId(id)
+                || kalemler.stream().anyMatch(k -> k.getTip() == KalemTip.URUN)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Ödemesi alınmış ya da ürün eklenmiş rezervasyon antrenmana çevrilemez");
+        }
+        kalemler.stream().filter(k -> k.getTip() == KalemTip.SAHA).findFirst().ifPresent(kalem -> {
+            sahaKalemiTutariBelirle(kalem, BigDecimal.ZERO);
+            kalem.setAciklama(rezervasyon.getSaha().getAd() + " · Antrenman");
+        });
+        rezervasyon.setAntrenman(true);
+        recalculate(rezervasyon);
+    }
+
+    private void antrenmanDegilDogrula(Rezervasyon rezervasyon, String mesaj) {
+        if (rezervasyon.isAntrenman()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, mesaj);
+        }
     }
 
     private void sahaKalemiTutariBelirle(RezervasyonKalem kalem, BigDecimal tutar) {
@@ -251,6 +278,7 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse urunEkle(Long rezervasyonId, RezervasyonUrunRequest request) {
         Rezervasyon rezervasyon = getEntity(rezervasyonId);
+        antrenmanDegilDogrula(rezervasyon, "Antrenman rezervasyonuna ürün eklenemez");
         if (rezervasyon.getDurum() == RezervasyonDurum.IPTAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen rezervasyona ürün eklenemez");
         }
@@ -313,6 +341,7 @@ public class RezervasyonService {
     @Transactional
     public RezervasyonResponse odemeEkle(Long rezervasyonId, OdemeRequest request) {
         Rezervasyon rezervasyon = getEntity(rezervasyonId);
+        antrenmanDegilDogrula(rezervasyon, "Antrenman rezervasyonu ücretsizdir, ödeme alınmaz");
         if (request.tip() == OdemeTipi.KAPORA) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Kapora yalnızca rezervasyon kaydı sırasında alınır; sonraki ödemeler kısmi ödeme olarak alınır");
         }
@@ -366,7 +395,7 @@ public class RezervasyonService {
                     "Rezervasyon tutarı alınan ödemenin (" + odenen + ") altına düşürülemez");
         }
         rezervasyon.setOdenecekTutar(toplam);
-        rezervasyon.setOdemeDurumu(OdemeDurumu.hesapla(odenen, toplam));
+        rezervasyon.setOdemeDurumu(rezervasyon.isAntrenman() ? OdemeDurumu.ODENDI : OdemeDurumu.hesapla(odenen, toplam));
     }
 
     private BigDecimal odenenToplam(Collection<RezervasyonOdeme> odemeler) {
@@ -499,7 +528,8 @@ public class RezervasyonService {
                 r.getAbonelik() != null ? r.getAbonelik().getId() : null,
                 r.getIptalTarih(),
                 r.getIptalEden() != null ? r.getIptalEden().getAdSoyad() : null,
-                r.getIptalNeden()
+                r.getIptalNeden(),
+                r.isAntrenman()
         );
     }
 

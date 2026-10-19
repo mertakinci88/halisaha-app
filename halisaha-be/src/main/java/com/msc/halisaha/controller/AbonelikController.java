@@ -1,6 +1,7 @@
 package com.msc.halisaha.controller;
 
 import com.msc.halisaha.dto.AbonelikAyarRequest;
+import com.msc.halisaha.dto.AntrenmanaCevirRequest;
 import com.msc.halisaha.dto.AbonelikAyarResponse;
 import com.msc.halisaha.dto.AbonelikGuncelleRequest;
 import com.msc.halisaha.dto.AbonelikOdemeRequest;
@@ -91,6 +92,12 @@ public class AbonelikController {
     @PutMapping("/{id}/iptal")
     public AbonelikResponse iptalEt(@PathVariable Long id, @Valid @RequestBody(required = false) AbonelikIptalRequest request) {
         return abonelikService.iptalEt(id, request != null ? request : new AbonelikIptalRequest(null, null, null, null));
+    }
+
+    /** Yanlışlıkla ücretli girilmiş aboneliği antrenmana (ücretsiz) çevirir; depozito ödemesi varsa odemeleriSil gerekir. */
+    @PutMapping("/{id}/antrenmana-cevir")
+    public AbonelikResponse antrenmanaCevir(@PathVariable Long id, @RequestBody(required = false) AntrenmanaCevirRequest request) {
+        return abonelikService.antrenmanaCevir(id, request != null ? request : new AntrenmanaCevirRequest(null));
     }
 
     @PostMapping("/{id}/odemeler")

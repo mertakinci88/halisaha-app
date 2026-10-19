@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ban, ChevronLeft, ChevronRight, CircleCheck, Eye, List, Pencil, Plus, Save, Search, X } from 'lucide-react';
+import { Ban, ChevronLeft, ChevronRight, CircleCheck, Eye, Pencil, Plus, Save, Search, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ export default function AboneListePage() {
   const toast = useToast();
   const { isAdmin } = useAuth();
   const [hata, setHata] = useHata();
-  const [durum, setDurum] = useState(''); // '' (tümü) | AKTIF | IPTAL
+  const [durum, setDurum] = useState('AKTIF'); // AKTIF | IPTAL
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sahaId, setSahaId] = useState(''); // '' = Tüm sahalar
@@ -101,11 +101,11 @@ export default function AboneListePage() {
     setSayfa(0);
   };
 
-  // Varsayılan görünümden (Tümü, Tüm sahalar, Tüm günler, boş arama) farklı bir filtre var mı
-  const filtreVar = durum !== '' || sahaId !== '' || gun !== '' || aramaAktif !== '' || arama !== '';
+  // Varsayılan görünümden (Aktif, Tüm sahalar, Tüm günler, boş arama) farklı bir filtre var mı
+  const filtreVar = durum !== 'AKTIF' || sahaId !== '' || gun !== '' || aramaAktif !== '' || arama !== '';
 
   const filtreleriTemizle = () => {
-    setDurum('');
+    setDurum('AKTIF');
     setSahaId('');
     setGun('');
     setArama('');
@@ -224,10 +224,6 @@ export default function AboneListePage() {
             ))}
           </Select>
           <Seg>
-            <SegOpt active={durum === ''} onClick={() => durumSec('')}>
-              <List size={16} strokeWidth={1.5} />
-              <span>Tümü</span>
-            </SegOpt>
             <SegOpt active={durum === 'AKTIF'} onClick={() => durumSec('AKTIF')}>
               <CircleCheck size={16} strokeWidth={1.5} />
               <span>Aktif</span>
@@ -274,7 +270,10 @@ export default function AboneListePage() {
                 veri.icerik.map((a) => (
                   <Tr key={a.id} className="cursor-pointer" onClick={() => navigate('/aboneler/' + a.id)}>
                     <Td tam className="font-semibold sm:font-normal">
-                      <div>{a.adSoyad}</div>
+                      <div>
+                        {a.adSoyad}
+                        {a.antrenman ? <Tag tone="outline" className="ml-2">Antrenman</Tag> : null}
+                      </div>
                       <div className="text-[13px] text-ink/55">{telGoster(a.telNo)}</div>
                     </Td>
                     <Td etiket="Saha">{a.sahaAd}</Td>
@@ -284,12 +283,12 @@ export default function AboneListePage() {
                     <Td etiket="Dönem" className="whitespace-nowrap">
                       {kisaTarih(a.baslangicTarih)} – {kisaTarih(a.bitisTarih)}
                     </Td>
-                    <Td etiket="Depozito" className="whitespace-nowrap text-right tabular-nums">{tl(a.depozito)}</Td>
-                    <Td etiket="Haftalık" className="whitespace-nowrap text-right tabular-nums">{tl(a.haftalikUcret)}</Td>
+                    <Td etiket="Depozito" className="whitespace-nowrap text-right tabular-nums">{a.antrenman ? '—' : tl(a.depozito)}</Td>
+                    <Td etiket="Haftalık" className="whitespace-nowrap text-right tabular-nums">{a.antrenman ? '—' : tl(a.haftalikUcret)}</Td>
                     <Td etiket="Eksik depozito" className="whitespace-nowrap text-right tabular-nums">
                       {Number(a.kalanTutar) > 0 ? tl(a.kalanTutar) : '—'}
                     </Td>
-                    <Td etiket="Ödeme"><OdemeDurumuEtiketi durum={a.odemeDurumu} /></Td>
+                    <Td etiket="Ödeme">{a.antrenman ? '—' : <OdemeDurumuEtiketi durum={a.odemeDurumu} />}</Td>
                     <Td etiket="Durum"><AboneDurumEtiketi abone={a} /></Td>
                     <Td tam className="text-right">
                       <Button variant="cerceve" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/aboneler/' + a.id); }}>

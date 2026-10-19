@@ -46,7 +46,7 @@ public class RezervasyonRaporService {
                                 FILTER (WHERE r.durum = 'AKTIF'), 0) AS saat,
                        COALESCE(SUM(g.tutar) FILTER (WHERE r.durum = 'AKTIF'), 0) AS gelir
                 FROM saha s
-                LEFT JOIN rezervasyon r ON r.saha_id = s.id
+                LEFT JOIN rezervasyon r ON r.saha_id = s.id AND NOT r.antrenman
                      AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
                 LEFT JOIN LATERAL (SELECT SUM(k.tutar) AS tutar FROM rezervasyon_kalem k
                                    WHERE k.rezervasyon_id = r.id AND k.tip = 'SAHA') g ON TRUE
@@ -75,7 +75,7 @@ public class RezervasyonRaporService {
         jdbc.query("""
                 SELECT EXTRACT(HOUR FROM r.baslangic_tarih)::int AS saat, COUNT(*) AS adet
                 FROM rezervasyon r
-                WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF'
+                WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF' AND NOT r.antrenman
                   AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY 1
                 """.formatted(ISLETME_GUNU), params, rs -> {
@@ -93,7 +93,7 @@ public class RezervasyonRaporService {
         jdbc.query("""
                 SELECT EXTRACT(ISODOW FROM r.baslangic_tarih - %1$s)::int AS gun, COUNT(*) AS adet
                 FROM rezervasyon r
-                WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF'
+                WHERE r.isletme_id = :isletmeId AND r.durum = 'AKTIF' AND NOT r.antrenman
                   AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %1$s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %1$s)
                 GROUP BY 1
                 """.formatted(ISLETME_GUNU), params, rs -> {

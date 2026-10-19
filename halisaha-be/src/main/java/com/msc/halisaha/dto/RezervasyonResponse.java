@@ -37,6 +37,8 @@ public record RezervasyonResponse(
         /** İptal edilmişse: zaman, iptal eden kullanıcının adı ve neden (eski kayıtlarda boş olabilir). */
         LocalDateTime iptalTarih,
         String iptalEdenAd,
-        String iptalNeden
+        String iptalNeden,
+        /** Antrenman aboneliğinin haftasıysa true: ücretsizdir, ödeme ve ürün eklenemez. */
+        boolean antrenman
 ) {
 }

@@ -5,6 +5,7 @@ import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.AbonelikAyarRequest;
+import com.msc.halisaha.dto.AntrenmanaCevirRequest;
 import com.msc.halisaha.dto.AbonelikAyarResponse;
 import com.msc.halisaha.dto.AbonelikGuncelleRequest;
 import com.msc.halisaha.dto.AbonelikIptalOnizlemeResponse;
@@ -154,13 +155,32 @@ public class AbonelikService {
         if (request.baslangicTarih().isBefore(bugun)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Başlangıç tarihi geçmişte olamaz");
         }
-        BigDecimal depozito = request.depozito().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal haftalik = request.haftalikUcret().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal odenen = request.odenenTutar().setScale(2, RoundingMode.HALF_UP);
-        if (odenen.compareTo(depozito) > 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Alınan ödeme depozitoyu (" + depozito + ") aşamaz");
+        boolean antrenman = Boolean.TRUE.equals(request.antrenman());
+        BigDecimal depozito = BigDecimal.ZERO.setScale(2);
+        BigDecimal haftalik = depozito;
+        BigDecimal odenen = depozito;
+        LocalDate odemeTarihi = null;
+        if (!antrenman) {
+            if (request.depozito() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Depozito zorunludur");
+            }
+            if (request.haftalikUcret() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Haftalık ücret zorunludur");
+            }
+            if (request.odenenTutar() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Alınan ödeme tutarı zorunludur");
+            }
+            if (request.odemeSekli() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme yöntemi seçilmelidir");
+            }
+            depozito = request.depozito().setScale(2, RoundingMode.HALF_UP);
+            haftalik = request.haftalikUcret().setScale(2, RoundingMode.HALF_UP);
+            odenen = request.odenenTutar().setScale(2, RoundingMode.HALF_UP);
+            if (odenen.compareTo(depozito) > 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Alınan ödeme depozitoyu (" + depozito + ") aşamaz");
+            }
+            odemeTarihi = odemeTarihi(request.odemeTarihi(), bugun);
         }
-        LocalDate odemeTarihi = odemeTarihi(request.odemeTarihi(), bugun);
 
         List<LocalDate> tarihler = tarihler(request.baslangicTarih(), request.haftaGunu());
         LocalDate bitis = tarihler.get(tarihler.size() - 1);
@@ -185,12 +205,15 @@ public class AbonelikService {
                 .baslangicTarih(request.baslangicTarih())
                 .bitisTarih(bitis)
                 .durum(AbonelikDurum.AKTIF)
+                .antrenman(antrenman)
                 .depozito(depozito)
                 .haftalikUcret(haftalik)
                 .not(not)
                 .kullanici(mevcutKullanici.getir())
                 .build();
-        abonelik.getOdemeler().add(odemeOlustur(abonelik, odenen, request.odemeSekli(), request.hesapId(), odemeTarihi));
+        if (!antrenman) {
+            abonelik.getOdemeler().add(odemeOlustur(abonelik, odenen, request.odemeSekli(), request.hesapId(), odemeTarihi));
+        }
         abonelikRepository.save(abonelik);
 
         LocalDateTime simdi = AppZaman.simdi();
@@ -205,7 +228,8 @@ public class AbonelikService {
                     .baslangicTarih(baslangic)
                     .bitisTarih(baslangic.plusMinutes(request.sureDakika()))
                     .durum(RezervasyonDurum.AKTIF)
-                    .odemeDurumu(OdemeDurumu.ODENMEDI)
+                    .antrenman(antrenman)
+                    .odemeDurumu(antrenman ? OdemeDurumu.ODENDI : OdemeDurumu.ODENMEDI)
                     .odenecekTutar(haftalik)
                     .kayitTarih(simdi)
                     .kullanici(abonelik.getKullanici())
@@ -213,13 +237,14 @@ public class AbonelikService {
                     .build());
         }
         rezervasyonRepository.saveAll(rezervasyonlar);
+        BigDecimal kalemTutari = haftalik;
         kalemRepository.saveAll(rezervasyonlar.stream().map(r -> RezervasyonKalem.builder()
                 .rezervasyon(r)
                 .tip(KalemTip.SAHA)
-                .aciklama(saha.getAd() + " · Abonelik")
+                .aciklama(saha.getAd() + (antrenman ? " · Antrenman" : " · Abonelik"))
                 .miktar(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP))
-                .birimFiyat(haftalik.divide(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP), 2, RoundingMode.HALF_UP))
-                .tutar(haftalik)
+                .birimFiyat(kalemTutari.divide(BigDecimal.valueOf(request.sureDakika()).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP), 2, RoundingMode.HALF_UP))
+                .tutar(kalemTutari)
                 .build()).toList());
 
         return yanit(abonelik);
@@ -232,6 +257,15 @@ public class AbonelikService {
     @Transactional
     public AbonelikResponse guncelle(Long id, AbonelikGuncelleRequest request) {
         Abonelik abonelik = getEntity(id);
+        if (abonelik.isAntrenman()) {
+            return antrenmanGuncelle(abonelik, request);
+        }
+        if (request.depozito() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Depozito zorunludur");
+        }
+        if (request.haftalikUcret() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Haftalık ücret zorunludur");
+        }
         BigDecimal depozito = request.depozito().setScale(2, RoundingMode.HALF_UP);
         BigDecimal haftalik = request.haftalikUcret().setScale(2, RoundingMode.HALF_UP);
         BigDecimal odenen = odenenToplam(abonelik);
@@ -255,6 +289,64 @@ public class AbonelikService {
                 }
             }
         }
+        return yanit(abonelik);
+    }
+
+    /** Antrenman aboneliğinde yalnızca ad, telefon ve not değişir (tutar yoktur). */
+    private AbonelikResponse antrenmanGuncelle(Abonelik abonelik, AbonelikGuncelleRequest request) {
+        abonelik.setAdSoyad(request.adSoyad().trim());
+        abonelik.setTelNo(request.telNo());
+        abonelik.setNot(request.not() != null && !request.not().isBlank() ? request.not().trim() : null);
+        LocalDateTime simdi = AppZaman.simdi();
+        for (Rezervasyon r : rezervasyonRepository.findByAbonelikId(abonelik.getId())) {
+            if (r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi)) {
+                r.setAdSoyad(abonelik.getAdSoyad());
+                r.setTelNo(abonelik.getTelNo());
+            }
+        }
+        return yanit(abonelik);
+    }
+
+    /**
+     * Ücretli (yanlış girilmiş) aboneliği antrenmana çevirir: bugünden itibaren olan haftalık rezervasyonların ücreti sıfırlanır,
+     * ödeme durumu "ödendi" olur ve raporlara girmez; geçmiş haftalar olduğu gibi kalır. Aboneliğin depozito ödemeleri varsa
+     * yalnızca {@code odemeleriSil} ile silinir (kasadan düşer). İade kaydı, ödemesi alınmış ya da ürün eklenmiş hafta varsa çevrilmez.
+     */
+    @Transactional
+    public AbonelikResponse antrenmanaCevir(Long id, AntrenmanaCevirRequest request) {
+        Abonelik abonelik = getEntity(id);
+        if (abonelik.isAntrenman()) {
+            return yanit(abonelik);
+        }
+        if (abonelik.getDurum() != AbonelikDurum.AKTIF) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "İptal edilen abonelik antrenmana çevrilemez");
+        }
+        if (iadeRepository.abonelikToplami(id).signum() > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "Bu abonelik için iade kaydı var, antrenmana çevrilemez");
+        }
+        LocalDateTime bugun = AppZaman.bugun().atStartOfDay();
+        List<Rezervasyon> haftalar = rezervasyonRepository.findByAbonelikId(id).stream()
+                .filter(r -> r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(bugun))
+                .toList();
+        for (Rezervasyon r : haftalar) {
+            if (rezervasyonOdemeRepository.existsByRezervasyonId(r.getId())) {
+                throw new ApiException(HttpStatus.CONFLICT, r.getBaslangicTarih().toLocalDate().format(TARIH)
+                        + " tarihli haftanın ödemesi alınmış, aboneliği antrenmana çevirmeden önce bu ödemeyi kontrol edin");
+            }
+        }
+        BigDecimal odenen = odenenToplam(abonelik);
+        if (odenen.signum() > 0 && !Boolean.TRUE.equals(request.odemeleriSil())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Bu abonelikte " + odenen + " ₺ depozito ödemesi kayıtlı. "
+                    + "Antrenmana çevrilirse bu ödeme kayıtları silinir ve kasadan düşer; onay gerekir");
+        }
+        for (Rezervasyon r : haftalar) {
+            rezervasyonService.antrenmanYap(r.getId());
+        }
+        abonelik.getOdemeler().clear();
+        abonelik.setDepozito(BigDecimal.ZERO.setScale(2));
+        abonelik.setHaftalikUcret(BigDecimal.ZERO.setScale(2));
+        abonelik.setAntrenman(true);
+        abonelikRepository.flush();
         return yanit(abonelik);
     }
 
@@ -319,16 +411,25 @@ public class AbonelikService {
 
     /** Kalan depozito (alınan - iade), oynanabilecek gelecek haftalar ve artan tutarın dökümü. */
     private IptalPlani planla(Abonelik abonelik) {
+        if (abonelik.isAntrenman()) {
+            // Ücretsiz: oynanacak hafta yoktur, gelecek haftaların hepsi iptal edilir
+            return new IptalPlani(BigDecimal.ZERO, gelecekHaftalar(abonelik), 0, BigDecimal.ZERO, false);
+        }
         BigDecimal kalan = odenenToplam(abonelik).subtract(iadeRepository.abonelikToplami(abonelik.getId())).max(BigDecimal.ZERO);
-        LocalDateTime simdi = AppZaman.simdi();
-        List<Rezervasyon> adaylar = rezervasyonRepository.findByAbonelikId(abonelik.getId()).stream()
-                .filter(r -> r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi))
-                .filter(r -> !rezervasyonOdemeRepository.existsByRezervasyonId(r.getId()))
-                .toList();
+        List<Rezervasyon> adaylar = gelecekHaftalar(abonelik);
         BigDecimal haftalik = abonelik.getHaftalikUcret();
         int tam = (int) Math.min(kalan.divideToIntegralValue(haftalik).longValue(), adaylar.size());
         BigDecimal artan = kalan.subtract(haftalik.multiply(BigDecimal.valueOf(tam)));
         return new IptalPlani(kalan, adaylar, tam, artan, artan.signum() > 0 && tam < adaylar.size());
+    }
+
+    /** Henüz oynanmamış, aktif ve ödemesi alınmamış haftalık rezervasyonlar. */
+    private List<Rezervasyon> gelecekHaftalar(Abonelik abonelik) {
+        LocalDateTime simdi = AppZaman.simdi();
+        return rezervasyonRepository.findByAbonelikId(abonelik.getId()).stream()
+                .filter(r -> r.getDurum() == RezervasyonDurum.AKTIF && !r.getBaslangicTarih().isBefore(simdi))
+                .filter(r -> !rezervasyonOdemeRepository.existsByRezervasyonId(r.getId()))
+                .toList();
     }
 
     private record IptalPlani(BigDecimal kalanDepozito, List<Rezervasyon> adaylar, int tamHafta, BigDecimal artan, boolean kismiHafta) {
@@ -341,6 +442,9 @@ public class AbonelikService {
     @Transactional
     public AbonelikResponse odemeEkle(Long id, AbonelikOdemeRequest request) {
         Abonelik abonelik = getEntity(id);
+        if (abonelik.isAntrenman()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Antrenman aboneliği ücretsizdir, ödeme alınmaz");
+        }
         BigDecimal tutar = request.tutar().setScale(2, RoundingMode.HALF_UP);
         BigDecimal kalan = abonelik.getDepozito().subtract(odenenToplam(abonelik));
         if (tutar.compareTo(kalan) > 0) {

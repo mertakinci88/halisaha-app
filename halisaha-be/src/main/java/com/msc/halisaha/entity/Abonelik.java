@@ -99,6 +99,10 @@ public class Abonelik {
     @Column(name = "\"not\"", length = 255)
     private String not;
 
+    /** Antrenman: ücretsiz abonelik; yalnızca günü ve saati takvimde kapatır (depozito, ücret ve ödeme yoktur, raporlara girmez). */
+    @Column(name = "antrenman", nullable = false)
+    private boolean antrenman;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kullanici_id")
     private Kullanici kullanici;

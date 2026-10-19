@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, TriangleAlert, X } from 'lucide-react';
+import { Goal, Save, Tag as TagIcon, TriangleAlert, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select, TelInput } from '@/components/ui/input';
+import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import HesapSecimi from '@/components/HesapSecimi';
 import { aboneService, sahaService } from '@/services';
@@ -41,6 +42,7 @@ export default function AboneKayitPage() {
     hesapId: '',
     odemeTarihi: BUGUN,
     not: '',
+    antrenman: false,
   });
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -114,6 +116,7 @@ export default function AboneKayitPage() {
   const haftalik = Number(String(form.haftalikUcret).replace(',', '.')) || 0;
   const odenen = Number(String(form.odenen).replace(',', '.')) || 0;
   const cakisma = onizleme?.cakismalar?.length > 0;
+  const antrenman = form.antrenman;
 
   const kaydet = async (e) => {
     e.preventDefault();
@@ -122,25 +125,27 @@ export default function AboneKayitPage() {
       setHata('Telefon numarası 10 haneli olmalı ve 5 ile başlamalıdır (örn. 546 976 46 13).');
       return;
     }
-    if (!(depozito > 0)) {
-      setHata('Depozito tutarını giriniz.');
-      return;
-    }
-    if (!(haftalik > 0)) {
-      setHata('Haftalık maç ücretini giriniz.');
-      return;
-    }
-    if (!(odenen > 0)) {
-      setHata('Alınan depozito tutarını giriniz.');
-      return;
-    }
-    if (odenen > depozito) {
-      setHata('Alınan ödeme depozitoyu (' + tl(depozito) + ') aşamaz.');
-      return;
-    }
-    if (!form.odemeSekli) {
-      setHata('Lütfen ödeme yöntemini seçiniz.');
-      return;
+    if (!antrenman) {
+      if (!(depozito > 0)) {
+        setHata('Depozito tutarını giriniz.');
+        return;
+      }
+      if (!(haftalik > 0)) {
+        setHata('Haftalık maç ücretini giriniz.');
+        return;
+      }
+      if (!(odenen > 0)) {
+        setHata('Alınan depozito tutarını giriniz.');
+        return;
+      }
+      if (odenen > depozito) {
+        setHata('Alınan ödeme depozitoyu (' + tl(depozito) + ') aşamaz.');
+        return;
+      }
+      if (!form.odemeSekli) {
+        setHata('Lütfen ödeme yöntemini seçiniz.');
+        return;
+      }
     }
     setKaydediyor(true);
     try {
@@ -152,15 +157,20 @@ export default function AboneKayitPage() {
         baslangicDakika: Number(form.baslangicDakika),
         sureDakika: Number(form.sureDakika),
         baslangicTarih: form.baslangic,
-        depozito,
-        haftalikUcret: haftalik,
-        odenenTutar: odenen,
-        odemeSekli: form.odemeSekli,
-        hesapId: form.odemeSekli === 'HAVALE_EFT' && form.hesapId ? Number(form.hesapId) : null,
-        odemeTarihi: form.odemeTarihi || null,
+        antrenman,
+        ...(antrenman
+          ? {}
+          : {
+              depozito,
+              haftalikUcret: haftalik,
+              odenenTutar: odenen,
+              odemeSekli: form.odemeSekli,
+              hesapId: form.odemeSekli === 'HAVALE_EFT' && form.hesapId ? Number(form.hesapId) : null,
+              odemeTarihi: form.odemeTarihi || null,
+            }),
         not: form.not.trim() || null,
       });
-      toast.basari('Abonelik oluşturuldu; ' + a.haftalar.length + ' haftalık rezervasyon takvime eklendi.');
+      toast.basari((antrenman ? 'Antrenman' : 'Abonelik') + ' oluşturuldu; ' + a.haftalar.length + ' haftalık rezervasyon takvime eklendi.');
       navigate('/aboneler/' + a.id, { replace: true });
     } catch (err) {
       setHata(apiHata(err));
@@ -173,12 +183,27 @@ export default function AboneKayitPage() {
 
   return (
     <div>
-      <PageHeader kicker="Abonelik" baslik="Yeni abonelik" />
+      <PageHeader kicker="Abonelik" baslik={antrenman ? 'Yeni antrenman' : 'Yeni abonelik'} />
       <Hata mesaj={hata} />
 
       <form onSubmit={kaydet} className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))]">
         <Card className="gap-3.5">
-          <h4 className="text-[22px]">Abone ve rezervasyon</h4>
+          <h4 className="text-[22px]">{antrenman ? 'Antrenman ve rezervasyon' : 'Abone ve rezervasyon'}</h4>
+          <Seg className="self-start">
+            <SegOpt active={!antrenman} onClick={() => set('antrenman', false)}>
+              <TagIcon size={16} strokeWidth={1.5} />
+              <span>Ücretli abonelik</span>
+            </SegOpt>
+            <SegOpt active={antrenman} onClick={() => set('antrenman', true)}>
+              <Goal size={16} strokeWidth={1.5} />
+              <span>Antrenman</span>
+            </SegOpt>
+          </Seg>
+          {antrenman ? (
+            <p className="m-0 text-[13.5px] text-ink/55">
+              Antrenman ücretsizdir: yalnızca seçilen gün ve saati takvimde kapatır. Ödeme alınmaz, raporlara girmez.
+            </p>
+          ) : null}
           <Field label="Ad soyad">
             <Input value={form.adSoyad} onChange={(e) => set('adSoyad', e.target.value)} required maxLength={255} />
           </Field>
@@ -260,7 +285,9 @@ export default function AboneKayitPage() {
         </Card>
 
         <Card className="gap-3.5">
-          <h4 className="text-[22px]">Depozito ve ödeme</h4>
+          <h4 className="text-[22px]">{antrenman ? 'Not' : 'Depozito ve ödeme'}</h4>
+          {antrenman ? null : (
+          <>
           <Field label="Depozito (₺)">
             <Input
               type="number"
@@ -336,6 +363,8 @@ export default function AboneKayitPage() {
             </Field>
           </div>
           {form.odemeSekli === 'HAVALE_EFT' ? <HesapSecimi value={form.hesapId} onChange={(v) => set('hesapId', v)} /> : null}
+          </>
+          )}
           <Field label="Not (isteğe bağlı)">
             <Input value={form.not} onChange={(e) => set('not', e.target.value)} maxLength={255} />
           </Field>
@@ -343,7 +372,7 @@ export default function AboneKayitPage() {
           <div className="flex gap-2 pt-1">
             <Button type="submit" variant="primary" className="flex-1" disabled={kaydediyor || cakisma || sahalar.length === 0}>
               <Save size={16} strokeWidth={1.5} />
-              <span>{kaydediyor ? 'Kaydediliyor…' : 'Aboneliği kaydet'}</span>
+              <span>{kaydediyor ? 'Kaydediliyor…' : antrenman ? 'Antrenmanı kaydet' : 'Aboneliği kaydet'}</span>
             </Button>
             <Button type="button" variant="cerceveHata" onClick={() => navigate('/aboneler')}>
               <X size={16} strokeWidth={1.5} />
