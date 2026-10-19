@@ -139,11 +139,18 @@ export const ogrenciYoklamaService = {
 
 /* ── /api/ogrenciler/{id}/odemeler (öğrenci detayındaki aylık ödemeleri) ── */
 export const ogrenciOdemeService = {
-  /** { yil, bugun (sunucu tarihi), aylar: [{ yil, ay, odenenTutar, durum (ODENDI | ODENMEDI), odemeSekli, hesapId, hesapAd, odemeTarihi, not }] (12 ay), toplamOdenen, yillar } */
+  /**
+   * { yil, bugun (sunucu tarihi), aylar (12 ay): [{ yil, ay, durum (ODENDI | KISMI_ODENDI | KISMI_GECIKMIS | ODEME_BEKLIYOR | ODENMEDI), odenenTutar (ayın ödeme toplamı),
+   *   odemeler: [{ id, odenenTutar, tamam, odemeSekli, hesapId, hesapAd, odemeTarihi, not }] }], toplamOdenen, yillar }
+   */
   getir: (ogrenciId, yil) => api.get('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil).then((r) => r.data),
-  /** body: { aylar: [{ ay, odenenTutar, odemeSekli, hesapId, odemeTarihi }] } — yalnızca gönderilen aylar kaydedilir; tutar 0/boş ise o ayın kaydı silinir */
-  kaydet: (ogrenciId, yil, body) =>
-    api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil, body).then((r) => r.data),
+  /** Ayın yeni ödemesi. body: { odenenTutar, odemeSekli, hesapId, odemeTarihi, not, tamam } — tutar boşsa not zorunlu (tamam: true ile ay parasız kapanır). Yıl yanıtı döner. */
+  ekle: (ogrenciId, yil, ay, body) =>
+    api.post('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil + '/' + ay, body).then((r) => r.data),
+  guncelle: (ogrenciId, yil, ay, odemeId, body) =>
+    api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil + '/' + ay + '/' + odemeId, body).then((r) => r.data),
+  sil: (ogrenciId, yil, ay, odemeId) =>
+    api.delete('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil + '/' + ay + '/' + odemeId).then((r) => r.data),
 };
 
 /* ── Öğrenci grup transferi ───────────────────────────────────── */

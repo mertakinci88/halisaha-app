@@ -1,11 +1,12 @@
 import { Tag } from '@/components/ui/tag';
 import { ODEME_DURUMU_LABEL } from '@/lib/format';
 
-// Ödendi yeşil, Ödeme bekliyor / Kısmi ödendi sarı, Ödenmedi kırmızı
+// Ödendi yeşil, Ödeme bekliyor / Kısmi ödendi sarı, Ödenmedi / Kısmi gecikmiş kırmızı
 const RENK = {
   ODENDI: 'bg-basari-100 text-basari-800',
   ODEME_BEKLIYOR: 'bg-yellow-100 text-yellow-800',
   KISMI_ODENDI: 'bg-yellow-100 text-yellow-800',
+  KISMI_GECIKMIS: 'bg-red-100 text-red-800',
   ODENMEDI: 'bg-red-100 text-red-800',
 };
 
@@ -14,6 +15,7 @@ const CERCEVE = {
   ODENDI: 'border border-basari-600',
   ODEME_BEKLIYOR: 'border border-yellow-600',
   KISMI_ODENDI: 'border border-yellow-600',
+  KISMI_GECIKMIS: 'border border-hata-600',
   ODENMEDI: 'border border-hata-600',
 };
 

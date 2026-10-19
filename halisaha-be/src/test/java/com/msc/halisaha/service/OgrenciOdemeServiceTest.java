@@ -3,8 +3,8 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.TestOturum;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.dto.HesapRequest;
-import com.msc.halisaha.dto.OgrenciOdemeAyRequest;
-import com.msc.halisaha.dto.OgrenciOdemeKaydetRequest;
+import com.msc.halisaha.dto.OgrenciOdemeAyResponse;
+import com.msc.halisaha.dto.OgrenciOdemeRequest;
 import com.msc.halisaha.dto.OgrenciOdemeYilResponse;
 import com.msc.halisaha.entity.HesapDurum;
 import com.msc.halisaha.entity.Isletme;
@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,60 +57,118 @@ class OgrenciOdemeServiceTest {
         TestOturum.temizle();
     }
 
-    private static OgrenciOdemeAyRequest ay(int ay, String tutar, OdemeYontemi sekil, Long hesapId) {
-        return new OgrenciOdemeAyRequest(ay, tutar != null ? new BigDecimal(tutar) : null, sekil, hesapId, LocalDate.of(2030, ay, 5), null);
+    private static OgrenciOdemeRequest odeme(String tutar, OdemeYontemi sekil, Long hesapId, boolean tamam) {
+        return new OgrenciOdemeRequest(tutar != null ? new BigDecimal(tutar) : null, sekil, hesapId, LocalDate.of(2030, 1, 5), null, tamam);
     }
 
-    private OgrenciOdemeYilResponse kaydet(OgrenciOdemeAyRequest... aylar) {
-        return odemeService.kaydet(ogrenci.getId(), 2030, new OgrenciOdemeKaydetRequest(List.of(aylar)));
+    private OgrenciOdemeYilResponse ekle(int ay, OgrenciOdemeRequest istek) {
+        return odemeService.ekle(ogrenci.getId(), 2030, ay, istek);
+    }
+
+    private static OgrenciOdemeAyResponse ay(OgrenciOdemeYilResponse r, int ay) {
+        return r.aylar().get(ay - 1);
     }
 
     @Test
     void yilHerZamanOnIkiAyDondurur() {
         OgrenciOdemeYilResponse r = odemeService.getir(ogrenci.getId(), 2030);
         assertEquals(12, r.aylar().size());
-        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, r.aylar().get(0).durum());
+        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, ay(r, 1).durum());
         assertEquals(0, BigDecimal.ZERO.compareTo(r.toplamOdenen()));
     }
 
     @Test
-    void ayAyKaydedilirTutarVarsaOdendiYoksaOdenmedi() {
-        OgrenciOdemeYilResponse r = kaydet(ay(1, "1000", OdemeYontemi.NAKIT, null), ay(2, "400", OdemeYontemi.KART, null));
-        assertEquals(OgrenciOdemeDurumu.ODENDI, r.aylar().get(0).durum());
-        assertEquals(OgrenciOdemeDurumu.ODENDI, r.aylar().get(1).durum());          // tam / kısmi ayrımı yok
-        assertEquals(OdemeYontemi.KART, r.aylar().get(1).odemeSekli());
-        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, r.aylar().get(2).durum());
-        assertEquals(0, new BigDecimal("1400").compareTo(r.toplamOdenen()));
+    void tamamOdemeAyiOdendiYapar() {
+        OgrenciOdemeYilResponse r = ekle(1, odeme("1000", OdemeYontemi.NAKIT, null, true));
+        assertEquals(OgrenciOdemeDurumu.ODENDI, ay(r, 1).durum());
+        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, ay(r, 2).durum());
+        assertEquals(0, new BigDecimal("1000").compareTo(r.toplamOdenen()));
+    }
+
+    @Test
+    void kismiOdemelerAyiAcikTutarTamamOdemeKapatir() {
+        OgrenciOdemeYilResponse r = ekle(2, odeme("1000", OdemeYontemi.NAKIT, null, false));
+        assertEquals(OgrenciOdemeDurumu.KISMI_ODENDI, ay(r, 2).durum());
+        assertEquals(0, new BigDecimal("1000").compareTo(ay(r, 2).odenenTutar()));
+
+        r = ekle(2, odeme("500", OdemeYontemi.KART, null, false));
+        assertEquals(OgrenciOdemeDurumu.KISMI_ODENDI, ay(r, 2).durum());
+        assertEquals(2, ay(r, 2).odemeler().size());
+        assertEquals(0, new BigDecimal("1500").compareTo(ay(r, 2).odenenTutar()));
+
+        r = ekle(2, odeme("1500", OdemeYontemi.NAKIT, null, true));
+        assertEquals(OgrenciOdemeDurumu.ODENDI, ay(r, 2).durum());
+        assertEquals(3, ay(r, 2).odemeler().size());
+        assertEquals(0, new BigDecimal("3000").compareTo(r.toplamOdenen()));
+    }
+
+    @Test
+    void tamamOdemeSilinincedenAyTekrarKismiOlur() {
+        ekle(3, odeme("400", OdemeYontemi.NAKIT, null, false));
+        OgrenciOdemeYilResponse r = ekle(3, odeme("600", OdemeYontemi.NAKIT, null, true));
+        assertEquals(OgrenciOdemeDurumu.ODENDI, ay(r, 3).durum());
+        Long tamamId = ay(r, 3).odemeler().get(1).id();
+        r = odemeService.sil(ogrenci.getId(), 2030, 3, tamamId);
+        assertEquals(OgrenciOdemeDurumu.KISMI_ODENDI, ay(r, 3).durum());
+        assertEquals(1, ay(r, 3).odemeler().size());
+    }
+
+    @Test
+    void odemeGuncellenirTamamKismiDegisebilir() {
+        OgrenciOdemeYilResponse r = ekle(4, odeme("700", OdemeYontemi.NAKIT, null, false));
+        Long id = ay(r, 4).odemeler().get(0).id();
+        r = odemeService.guncelle(ogrenci.getId(), 2030, 4, id, odeme("900", OdemeYontemi.KART, null, true));
+        assertEquals(OgrenciOdemeDurumu.ODENDI, ay(r, 4).durum());
+        assertEquals(0, new BigDecimal("900").compareTo(ay(r, 4).odenenTutar()));
+        assertEquals(OdemeYontemi.KART, ay(r, 4).odemeler().get(0).odemeSekli());
+        // yanlış ay ile erişim bulunamaz
+        assertEquals(404, assertThrows(ApiException.class, () -> odemeService.sil(ogrenci.getId(), 2030, 5, id)).getStatus().value());
+    }
+
+    @Test
+    void parasizKapatmaAciklamaIleAyiOdendiYapar() {
+        var parasiz = new OgrenciOdemeRequest(null, null, null, null, "Burslu", true);
+        OgrenciOdemeYilResponse r = ekle(5, parasiz);
+        assertEquals(OgrenciOdemeDurumu.ODENDI, ay(r, 5).durum());
+        assertEquals(0, BigDecimal.ZERO.compareTo(ay(r, 5).odenenTutar()));
+        assertNull(ay(r, 5).odemeler().get(0).odemeSekli());
+        assertNull(ay(r, 5).odemeler().get(0).odemeTarihi());
+        // açıklamasız parasız kayıt reddedilir
+        assertEquals(400, assertThrows(ApiException.class, () -> ekle(6, new OgrenciOdemeRequest(null, null, null, null, " ", true))).getStatus().value());
+    }
+
+    @Test
+    void sadeceNotAyiOdenmisSaymaz() {
+        OgrenciOdemeYilResponse r = ekle(9, new OgrenciOdemeRequest(null, null, null, null, "İzinli, ödeme sonra", false));
+        assertEquals("İzinli, ödeme sonra", ay(r, 9).odemeler().get(0).not());
+        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, ay(r, 9).durum());      // 2030: vadesi gelmemiş, tutar yok
     }
 
     @Test
     void tutarinUstSiniriYoktur() {
-        OgrenciOdemeYilResponse r = kaydet(ay(3, "25000.50", OdemeYontemi.NAKIT, null));
-        assertEquals(0, new BigDecimal("25000.50").compareTo(r.aylar().get(2).odenenTutar()));
+        OgrenciOdemeYilResponse r = ekle(7, odeme("25000.50", OdemeYontemi.NAKIT, null, true));
+        assertEquals(0, new BigDecimal("25000.50").compareTo(ay(r, 7).odenenTutar()));
     }
 
     @Test
-    void notKaydedilirBosGelinceTemizlenir() {
-        var notlu = new OgrenciOdemeAyRequest(8, new BigDecimal("500"), OdemeYontemi.NAKIT, null, LocalDate.of(2030, 8, 5), "  Babası getirdi ");
-        assertEquals("Babası getirdi", kaydet(notlu).aylar().get(7).not());
-        var notsuz = new OgrenciOdemeAyRequest(8, new BigDecimal("500"), OdemeYontemi.NAKIT, null, LocalDate.of(2030, 8, 5), " ");
-        assertNull(kaydet(notsuz).aylar().get(7).not());
+    void notTemizlenir() {
+        var notlu = new OgrenciOdemeRequest(new BigDecimal("500"), OdemeYontemi.NAKIT, null, LocalDate.of(2030, 8, 5), "  Babası getirdi ", true);
+        assertEquals("Babası getirdi", ay(ekle(8, notlu), 8).odemeler().get(0).not());
     }
 
     @Test
     void havaleIcinHesapZorunluDigerYontemlerdeTutulmaz() {
-        assertEquals(400, assertThrows(ApiException.class, () -> kaydet(ay(6, "100", OdemeYontemi.HAVALE_EFT, null))).getStatus().value());
+        assertEquals(400, assertThrows(ApiException.class, () -> ekle(6, odeme("100", OdemeYontemi.HAVALE_EFT, null, true))).getStatus().value());
         var hesap = hesapService.create(new HesapRequest("Garanti", IBAN, "Ali Veli", HesapDurum.AKTIF));
-        OgrenciOdemeYilResponse havale = kaydet(ay(6, "100", OdemeYontemi.HAVALE_EFT, hesap.id()));
-        assertEquals(hesap.id(), havale.aylar().get(5).hesapId());
-        OgrenciOdemeYilResponse nakit = kaydet(ay(6, "100", OdemeYontemi.NAKIT, hesap.id()));
-        assertNull(nakit.aylar().get(5).hesapId());
+        OgrenciOdemeYilResponse havale = ekle(6, odeme("100", OdemeYontemi.HAVALE_EFT, hesap.id(), true));
+        assertEquals(hesap.id(), ay(havale, 6).odemeler().get(0).hesapId());
+        OgrenciOdemeYilResponse nakit = ekle(10, odeme("100", OdemeYontemi.NAKIT, hesap.id(), true));
+        assertNull(ay(nakit, 10).odemeler().get(0).hesapId());
     }
 
     @Test
-    void ayniAyIkiKezGonderilemez() {
-        assertEquals(400, assertThrows(ApiException.class,
-                () -> kaydet(ay(7, "100", OdemeYontemi.NAKIT, null), ay(7, "200", OdemeYontemi.NAKIT, null))).getStatus().value());
+    void tutarVarsaOdemeSekliSecilmelidir() {
+        assertEquals(400, assertThrows(ApiException.class, () -> ekle(10, odeme("100", null, null, true))).getStatus().value());
     }
 
     @Test
@@ -119,31 +176,5 @@ class OgrenciOdemeServiceTest {
         Isletme diger = TestOturum.isletme(isletmeRepository, "Diğer");
         TestOturum.girisYap(TestOturum.kullanici(kullaniciRepository, diger, Rol.ADMIN));
         assertEquals(404, assertThrows(ApiException.class, () -> odemeService.getir(ogrenci.getId(), 2030)).getStatus().value());
-    }
-
-    @Test
-    void sadeceNotKaydedilebilirAyOdenmisSayilmaz() {
-        var sadeceNot = new OgrenciOdemeAyRequest(9, null, null, null, null, "İzinli, ödeme sonra");
-        OgrenciOdemeYilResponse r = kaydet(sadeceNot);
-        assertEquals("İzinli, ödeme sonra", r.aylar().get(8).not());
-        assertEquals(OgrenciOdemeDurumu.ODEME_BEKLIYOR, r.aylar().get(8).durum());      // 2030: vadesi gelmemiş
-        assertNull(r.aylar().get(8).odemeSekli());
-        assertEquals(0, BigDecimal.ZERO.compareTo(r.aylar().get(8).odenenTutar()));
-        // not da boşaltılırsa kayıt silinir
-        OgrenciOdemeYilResponse silinmis = kaydet(new OgrenciOdemeAyRequest(9, null, null, null, null, " "));
-        assertNull(silinmis.aylar().get(8).not());
-    }
-
-    @Test
-    void tutarVarsaOdemeSekliSecilmelidir() {
-        assertEquals(400, assertThrows(ApiException.class, () -> kaydet(ay(10, "100", null, null))).getStatus().value());
-    }
-
-    @Test
-    void notlaBirlikteTutarGirilinceOdendiOlur() {
-        var tam = new OgrenciOdemeAyRequest(11, new BigDecimal("300"), OdemeYontemi.KART, null, LocalDate.of(2030, 11, 2), "Not");
-        OgrenciOdemeYilResponse r = kaydet(tam);
-        assertEquals(OgrenciOdemeDurumu.ODENDI, r.aylar().get(10).durum());
-        assertEquals("Not", r.aylar().get(10).not());
     }
 }

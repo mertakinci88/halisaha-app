@@ -119,19 +119,25 @@ public class OgrenciService {
         return OgrenciResponse.from(ogrenci, buAyDurumlari(List.of(ogrenci)).get(ogrenci.getId()));
     }
 
-    /** İçinde bulunulan ayın durumu: ödeme kaydı varsa ODENDI; yoksa ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */
+    /** İçinde bulunulan ayın durumu: tamamı ödendi işaretli ödeme varsa ODENDI; ödeme var ama tamam değilse KISMI_*; yoksa ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */
     private Map<Long, OgrenciOdemeDurumu> buAyDurumlari(Collection<Ogrenci> ogrenciler) {
         if (ogrenciler.isEmpty()) {
             return Map.of();
         }
         LocalDate bugun = AppZaman.bugun();
-        Set<Long> odeyenler = ogrenciOdemeRepository
-                .findDonem(ogrenciler.stream().map(Ogrenci::getId).toList(), bugun.getYear(), bugun.getMonthValue()).stream()
-                .map(k -> k.getOgrenci().getId())
-                .collect(Collectors.toSet());
+        Set<Long> tamamlar = new java.util.HashSet<>();
+        Set<Long> kismiler = new java.util.HashSet<>();
+        for (var k : ogrenciOdemeRepository.findDonem(ogrenciler.stream().map(Ogrenci::getId).toList(), bugun.getYear(), bugun.getMonthValue())) {
+            if (k.isTamam()) {
+                tamamlar.add(k.getOgrenci().getId());
+            } else if (k.getOdenenTutar().signum() > 0) {
+                kismiler.add(k.getOgrenci().getId());
+            }
+        }
         Map<Long, OgrenciOdemeDurumu> sonuc = new HashMap<>();
         for (Ogrenci o : ogrenciler) {
-            sonuc.put(o.getId(), OgrenciOdemeDurumu.hesapla(odeyenler.contains(o.getId()), bugun.getYear(), bugun.getMonthValue(), bugun));
+            sonuc.put(o.getId(), OgrenciOdemeDurumu.hesapla(tamamlar.contains(o.getId()), kismiler.contains(o.getId()),
+                    bugun.getYear(), bugun.getMonthValue(), bugun));
         }
         return sonuc;
     }

@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/** Öğrencinin bir aya ait ödeme kaydı. Yalnızca ödeme alınmış ya da not girilmiş aylar için kayıt vardır. */
+/** Öğrencinin bir aya ait tek bir ödemesi. Bir ayın birden fazla ödemesi olabilir (kısmi ödeme); ödeme girilmemiş aylar için kayıt yoktur. */
 @Entity
 @Table(name = "ogrenci_odeme")
 @Getter
@@ -50,9 +50,14 @@ public class OgrenciOdeme {
     @Column(name = "ay", nullable = false)
     private int ay;
 
-    /** Ödenen tutar; 0 ise yalnızca not vardır (ay ödenmiş sayılmaz). */
+    /** Ödenen tutar; 0 ise ya yalnızca not vardır ya da ay parasız kapatılmıştır (tamam = true). */
     @Column(name = "odenen_tutar", nullable = false, precision = 10, scale = 2)
     private BigDecimal odenenTutar;
+
+    /** Bu ödeme ayı tamamlıyor mu; ayda en az bir tamam ödeme varsa ay "Ödendi" sayılır, yoksa tutar varsa "Kısmi ödendi". */
+    @Builder.Default
+    @Column(name = "tamam", nullable = false)
+    private boolean tamam = true;
 
     /** Tutar girilmişse zorunlu. */
     @Enumerated(EnumType.STRING)
