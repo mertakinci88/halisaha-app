@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Eye, List, PackageX, Plus, Search, Wallet } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, List, PackageX, Plus, Search, Wallet, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
 import { Tag } from '@/components/ui/tag';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
-import { ogrenciService } from '@/services';
+import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
 import { tl } from '@/lib/format';
@@ -25,6 +25,9 @@ export default function OgrenciListePage() {
   const odemeBekleyen = params.get('odeme') === 'bekleyen';
   // ?envanter=eksik: ödemesi alınmış ama teslim edilmemiş envanteri olan öğrenciler
   const envanterEksik = params.get('envanter') === 'eksik';
+  // ?grup=<id>: Gruplar sayfasından seçilen grubun öğrencileri
+  const grupId = Number(params.get('grup')) || null;
+  const [grupAd, setGrupAd] = useState('');
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
@@ -53,22 +56,43 @@ export default function OgrenciListePage() {
     setYukleniyor(true);
     setHata('');
     ogrenciService
-      .list({ q: aramaAktif || undefined, odemeBekleyen: odemeBekleyen || undefined, envanterEksik: envanterEksik || undefined, sayfa, boyut: BOYUT })
+      .list({ q: aramaAktif || undefined, grupId: grupId || undefined, odemeBekleyen: odemeBekleyen || undefined, envanterEksik: envanterEksik || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [aramaAktif, odemeBekleyen, envanterEksik, sayfa]);
+  }, [aramaAktif, grupId, odemeBekleyen, envanterEksik, sayfa]);
 
   useEffect(() => {
     yukle();
   }, [yukle]);
 
+  // Seçili grubun adı (filtre etiketi için); grup listesi alınamazsa etiket genel kalır
+  useEffect(() => {
+    if (!grupId) {
+      setGrupAd('');
+      return;
+    }
+    grupService
+      .list()
+      .then((liste) => setGrupAd(liste.find((g) => g.id === grupId)?.ad || ''))
+      .catch(() => setGrupAd(''));
+  }, [grupId]);
+
+  // Grup seçimi, ödeme / envanter filtresi değişirken korunur
   const filtreSec = (filtre) => {
     setSayfa(0);
     setParams(
-      filtre === 'odeme' ? { odeme: 'bekleyen' } : filtre === 'envanter' ? { envanter: 'eksik' } : {},
+      {
+        ...(grupId ? { grup: String(grupId) } : {}),
+        ...(filtre === 'odeme' ? { odeme: 'bekleyen' } : filtre === 'envanter' ? { envanter: 'eksik' } : {}),
+      },
       { replace: true },
     );
+  };
+
+  const grupFiltreKaldir = () => {
+    setSayfa(0);
+    setParams(odemeBekleyen ? { odeme: 'bekleyen' } : envanterEksik ? { envanter: 'eksik' } : {}, { replace: true });
   };
 
   const toplamSayfa = Math.max(1, veri.toplamSayfa);
@@ -107,6 +131,14 @@ export default function OgrenciListePage() {
               <span>Eksik envanter</span>
             </SegOpt>
           </Seg>
+          {grupId ? (
+            <Tag tone="accent" className="gap-1.5 py-1.5 text-[13.5px]">
+              Grup: {grupAd || 'Seçili grup'}
+              <button type="button" aria-label="Grup filtresini kaldır" className="cursor-pointer" onClick={grupFiltreKaldir}>
+                <X size={14} strokeWidth={1.5} />
+              </button>
+            </Tag>
+          ) : null}
           <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
           <Button variant="primary" className="ml-auto" onClick={() => navigate('/ogrenciler/yeni')}>
             <Plus size={16} strokeWidth={1.5} />
@@ -133,7 +165,7 @@ export default function OgrenciListePage() {
               </thead>
               <tbody>
                 {veri.icerik.length === 0 ? (
-                  <Bos colSpan={8}>{odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : envanterEksik ? 'Eksik envanteri olan öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
+                  <Bos colSpan={8}>{grupId && !odemeBekleyen && !envanterEksik ? 'Bu grupta öğrenci yok.' : odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : envanterEksik ? 'Eksik envanteri olan öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
                 ) : (
                   veri.icerik.map((o) => (
                     <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>

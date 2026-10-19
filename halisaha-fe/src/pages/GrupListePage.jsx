@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,9 @@ export default function GrupListePage() {
   };
 
   useEffect(yukle, []);
+
+  // Grubu seçince öğrenciler sayfası o grubun öğrencileriyle açılır
+  const ogrencilereGit = (g) => navigate('/ogrenciler?grup=' + g.id);
 
   const sil = async () => {
     const g = silinecek;
@@ -75,26 +78,35 @@ export default function GrupListePage() {
               {gruplar.length === 0 ? (
                 <Bos colSpan={3}>Grup kaydı bulunamadı.</Bos>
               ) : (
-                gruplar.map((g) => (
-                  <Tr key={g.id}>
+                gruplar.map((g) => {
+                  const ogrenciSayisi = ogrenciler.filter((o) => o.grupId === g.id).length;
+                  return (
+                  <Tr key={g.id} className={ogrenciSayisi > 0 ? 'cursor-pointer' : undefined} onClick={ogrenciSayisi > 0 ? () => ogrencilereGit(g) : undefined}>
                     <Td tam className="font-semibold sm:font-normal">{g.ad}</Td>
                     <Td etiket="Öğrenci sayısı" className="text-right tabular-nums">
-                      {ogrenciler.filter((o) => o.grupId === g.id).length}
+                      {ogrenciSayisi}
                     </Td>
                     <Td tam className="text-right">
                       <div className="flex justify-end gap-1 whitespace-nowrap max-sm:justify-start">
-                        <Button variant="cerceve" size="sm" onClick={() => navigate('/gruplar/' + g.id)}>
+                        {ogrenciSayisi > 0 ? (
+                          <Button variant="cerceve" size="sm" onClick={(e) => { e.stopPropagation(); ogrencilereGit(g); }}>
+                            <Users size={14} strokeWidth={1.5} />
+                            <span>Öğrenciler</span>
+                          </Button>
+                        ) : null}
+                        <Button variant="cerceve" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/gruplar/' + g.id); }}>
                           <Pencil size={14} strokeWidth={1.5} />
                           <span>Güncelle</span>
                         </Button>
-                        <Button variant="cerceveHata" size="sm" onClick={() => setSilinecek(g)}>
+                        <Button variant="cerceveHata" size="sm" onClick={(e) => { e.stopPropagation(); setSilinecek(g); }}>
                           <Trash2 size={14} strokeWidth={1.5} />
                           <span>Sil</span>
                         </Button>
                       </div>
                     </Td>
                   </Tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </Table>
