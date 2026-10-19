@@ -51,7 +51,7 @@ export default function DashboardPage() {
       rezervasyonService.list({ tarih: toIsoDate(new Date()) }),
       sahaService.list(),
       // Yetkisi olmayan menünün verisi çekilmez; kartı da gösterilmez
-      ogrenciYetkisi ? ogrenciService.list({ boyut: 1000 }) : Promise.resolve({ icerik: [] }),
+      ogrenciYetkisi ? ogrenciService.list({ durum: 'AKTIF', boyut: 1000 }) : Promise.resolve({ icerik: [] }),
       urunYetkisi ? urunService.list() : Promise.resolve([]),
       envanterYetkisi ? envanterService.list() : Promise.resolve([]),
       envanterYetkisi ? envanterService.teslimBekleyenler() : Promise.resolve({ kalemSayisi: 0, ogrenciler: [] }),
@@ -103,7 +103,7 @@ export default function DashboardPage() {
       liste.push({
         etiket: 'Ödeme bekleyen',
         deger: String(bekleyen.length),
-        alt: veri.ogrenciler.length + ' kayıtlı öğrenci',
+        alt: veri.ogrenciler.length + ' aktif öğrenci',
       });
     }
     return liste;

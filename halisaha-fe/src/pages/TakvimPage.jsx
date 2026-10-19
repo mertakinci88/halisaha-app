@@ -280,7 +280,9 @@ export default function TakvimPage() {
                         }}
                         className={cn(
                           'absolute z-[2] flex cursor-pointer flex-col justify-center gap-0.5 overflow-hidden border px-1.5 py-1 text-left font-body sm:px-2.5',
-                          rez.abonelikId
+                          rez.antrenman
+                            ? 'border-ink/25 bg-ink/10 text-ink'
+                            : rez.abonelikId
                             ? 'border-basari-300 bg-basari-100 text-basari-800'
                             : 'border-accent-400 bg-accent-200 text-accent-900',
                         )}
@@ -292,7 +294,9 @@ export default function TakvimPage() {
                         {kisa ? null : (
                           <span className="block truncate text-[12.5px] tabular-nums opacity-75">
                             <span className="hidden sm:inline">{hh(rez.bas)} – {hh(rez.bas + sureSaat(rez.baslangicTarih, rez.bitisTarih))} · </span>
-                            {rez.abonelikId && Number(rez.odenecekTutar) === 0 ? (
+                            {rez.antrenman ? (
+                              <span className="font-semibold uppercase tracking-[0.1em]">Antrenman</span>
+                            ) : rez.abonelikId && Number(rez.odenecekTutar) === 0 ? (
                               <span className="font-semibold uppercase tracking-[0.1em]">Abone</span>
                             ) : (
                               <>

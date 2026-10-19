@@ -117,7 +117,7 @@ public class RaporService {
                 FROM rezervasyon r
                 JOIN rezervasyon_kalem k ON k.rezervasyon_id = r.id
                 WHERE r.isletme_id = :isletmeId
-                  AND r.durum = 'AKTIF'
+                  AND r.durum = 'AKTIF' AND NOT r.antrenman
                   AND r.baslangic_tarih >= (CAST(:bas AS timestamp) + %s) AND r.baslangic_tarih < (CAST(:bit AS timestamp) + %s)%s
                 GROUP BY 1
                 ORDER BY 1

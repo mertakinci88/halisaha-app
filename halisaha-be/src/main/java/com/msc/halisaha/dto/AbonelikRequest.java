@@ -31,16 +31,26 @@ public record AbonelikRequest(
         @NotNull(message = "Süre zorunludur") @Min(value = 30, message = "Süre en az 30 dakika olmalıdır") Integer sureDakika,
         @NotNull(message = "Başlangıç tarihi zorunludur") LocalDate baslangicTarih,
         /** Bırakılan depozito (standart depozitodan gelir, elle değiştirilebilir). */
-        @NotNull(message = "Depozito zorunludur") @DecimalMin(value = "0.01", message = "Depozito sıfırdan büyük olmalıdır") BigDecimal depozito,
+        @DecimalMin(value = "0.01", message = "Depozito sıfırdan büyük olmalıdır") BigDecimal depozito,
         /** Maç başına ücret (sahanın ücretinden gelir, elle değiştirilebilir). */
-        @NotNull(message = "Haftalık ücret zorunludur") @DecimalMin(value = "0.01", message = "Haftalık ücret sıfırdan büyük olmalıdır") BigDecimal haftalikUcret,
+        @DecimalMin(value = "0.01", message = "Haftalık ücret sıfırdan büyük olmalıdır") BigDecimal haftalikUcret,
         /** Kayıtta alınan depozito ödemesi; depozitoyu aşamaz. */
-        @NotNull(message = "Alınan ödeme tutarı zorunludur") @DecimalMin(value = "0.01", message = "Alınan ödeme sıfırdan büyük olmalıdır") BigDecimal odenenTutar,
-        @NotNull(message = "Ödeme yöntemi seçilmelidir") OdemeYontemi odemeSekli,
+        @DecimalMin(value = "0.01", message = "Alınan ödeme sıfırdan büyük olmalıdır") BigDecimal odenenTutar,
+        OdemeYontemi odemeSekli,
         /** Yalnızca Havale / EFT'de dikkate alınır ve o durumda zorunludur. */
         Long hesapId,
         /** Boşsa bugün. */
         LocalDate odemeTarihi,
-        @Size(max = 255, message = "Not en fazla 255 karakter olabilir") String not
+        @Size(max = 255, message = "Not en fazla 255 karakter olabilir") String not,
+        /** true ise antrenman (ücretsiz) abonelik: depozito, haftalık ücret ve ödeme gönderilmez; diğer durumda üçü de zorunludur. */
+        Boolean antrenman
 ) {
+
+    /** Antrenman olmayan (ücretli) abonelik. */
+    public AbonelikRequest(Long sahaId, String adSoyad, String telNo, Integer haftaGunu, Integer baslangicDakika, Integer sureDakika,
+                           LocalDate baslangicTarih, BigDecimal depozito, BigDecimal haftalikUcret, BigDecimal odenenTutar,
+                           OdemeYontemi odemeSekli, Long hesapId, LocalDate odemeTarihi, String not) {
+        this(sahaId, adSoyad, telNo, haftaGunu, baslangicDakika, sureDakika, baslangicTarih, depozito, haftalikUcret, odenenTutar,
+                odemeSekli, hesapId, odemeTarihi, not, false);
+    }
 }

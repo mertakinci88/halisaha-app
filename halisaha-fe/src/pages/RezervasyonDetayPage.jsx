@@ -226,7 +226,7 @@ export default function RezervasyonDetayPage() {
     { etiket: 'Saat', deger: saatOf(rez.baslangicTarih) + ' – ' + saatOf(rez.bitisTarih) },
     { etiket: 'Telefon', deger: telGoster(rez.telNo) },
     { etiket: 'Son ödeme yöntemi', deger: ODEME_YONTEMI_LABEL[rez.odemeYontemi] || '—' },
-    { etiket: 'Ödeme durumu', deger: rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Depozito kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
+    { etiket: 'Ödeme durumu', deger: rez.antrenman ? 'Antrenman (ücretsiz)' : rez.abonelikId && Number(rez.odenecekTutar) === 0 ? 'Depozito kapsamında' : ODEME_DURUMU_LABEL[rez.odemeDurumu] || '—' },
     { etiket: 'Kayıt tarihi', deger: tarihSaat(rez.kayitTarih) },
     { etiket: 'Kaydeden', deger: rez.kaydedenAd || '—' },
     ...(rez.durum === 'IPTAL'
@@ -242,7 +242,15 @@ export default function RezervasyonDetayPage() {
     <div>
       <PageHeader kicker="Rezervasyon" baslik="Rezervasyon detayı" />
       <Hata mesaj={hata} />
-      {rez.abonelikId ? (
+      {rez.antrenman ? (
+        <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 border border-basari-300 bg-basari-100 px-4 py-2.5 text-[14.5px] text-basari-800">
+          <b>Antrenman</b>
+          <span>Bu saat antrenman için ayrılmıştır; ücretsizdir, ödeme alınmaz ve raporlara girmez.</span>
+          {yetkiVar('ABONELIK') ? (
+            <Link to={'/aboneler/' + rez.abonelikId} className="ml-auto text-basari-800 underline">Aboneliği aç</Link>
+          ) : null}
+        </div>
+      ) : rez.abonelikId ? (
         <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 border border-basari-300 bg-basari-100 px-4 py-2.5 text-[14.5px] text-basari-800">
           <b>Abone rezervasyonu</b>
           <span>Bu rezervasyon, haftalık sabit rezervasyon (abonelik) kapsamındadır; maç ücreti her hafta normal rezervasyon gibi alınır. Abonelik iptal edildiyse ücreti depozitodan karşılanır.</span>
@@ -271,6 +279,7 @@ export default function RezervasyonDetayPage() {
             </div>
           </Card>
 
+          {rez.antrenman ? null : (
           <Card>
             <h4 className="text-[22px]">Kafeterya ürünü ekle</h4>
             <p className="m-0 text-[13.5px] text-ink/55">
@@ -309,6 +318,7 @@ export default function RezervasyonDetayPage() {
               </tbody>
             </Table>
           </Card>
+          )}
         </div>
 
         <Card className="gap-3">
@@ -318,7 +328,7 @@ export default function RezervasyonDetayPage() {
               etiket={rez.sahaAd + ' · ' + saatYazi(sure) + ' saat'}
               tutar={tl(sahaTutar)}
               eylem={
-                aktif && tutarDuzen === null ? (
+                aktif && !rez.antrenman && tutarDuzen === null ? (
                   <Button variant="secondary" size="sm" disabled={islemde} onClick={() => setTutarDuzen(String(sahaTutar))}>
                     <Pencil size={14} strokeWidth={1.75} />
                     <span>Düzenle</span>
@@ -486,7 +496,9 @@ export default function RezervasyonDetayPage() {
               onClick={() => odemeAl('ODEME', kalan)}
             >
               <CircleCheck size={16} strokeWidth={1.5} />
-              <span>{rez.odemeDurumu === 'ODENDI'
+              <span>{rez.antrenman
+                ? 'Antrenman · ödeme alınmaz'
+                : rez.odemeDurumu === 'ODENDI'
                 ? 'Ödeme alındı'
                 : !aktif
                   ? 'İptal edildi · ödeme alınamaz'

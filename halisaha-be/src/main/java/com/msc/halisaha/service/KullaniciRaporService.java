@@ -187,7 +187,7 @@ public class KullaniciRaporService {
                 """, params);
         Map<Long, Long> iptal = sayilar("""
                 SELECT iptal_eden_id, COUNT(*) FROM rezervasyon
-                WHERE isletme_id = :isletmeId AND durum = 'IPTAL' AND COALESCE(iptal_neden, '') <> :abonelikIptali
+                WHERE isletme_id = :isletmeId AND durum = 'IPTAL' AND NOT antrenman AND COALESCE(iptal_neden, '') <> :abonelikIptali
                   AND iptal_tarih >= :bas AND iptal_tarih < :bit GROUP BY 1
                 """, params);
         Map<Long, Long> ogrenciOdeme = sayilar("""
@@ -200,7 +200,7 @@ public class KullaniciRaporService {
                 """, params);
         Map<Long, Long> abonelik = sayilar("""
                 SELECT kullanici_id, COUNT(*) FROM abonelik
-                WHERE isletme_id = :isletmeId AND kayit_tarih >= :bas AND kayit_tarih < :bit GROUP BY 1
+                WHERE isletme_id = :isletmeId AND NOT antrenman AND kayit_tarih >= :bas AND kayit_tarih < :bit GROUP BY 1
                 """, params);
         Map<Long, Long> yoklama = sayilar("""
                 SELECT kullanici_id, COUNT(DISTINCT tarih) FROM yoklama
@@ -307,7 +307,7 @@ public class KullaniciRaporService {
 
         // Aboneliğin iptali sonucu iptal edilen haftalık rezervasyonlar ayrıca sayılmaz; iptal tek kayıt olarak aboneliktedir
         String rezervasyonKosulu = """
-                r.isletme_id = :isletmeId AND r.durum = 'IPTAL' AND COALESCE(r.iptal_neden, '') <> :abonelikIptali
+                r.isletme_id = :isletmeId AND r.durum = 'IPTAL' AND NOT r.antrenman AND COALESCE(r.iptal_neden, '') <> :abonelikIptali
                 AND ((r.iptal_tarih >= :bas AND r.iptal_tarih < :bit)
                      OR (r.iptal_tarih IS NULL AND r.baslangic_tarih >= :bas AND r.baslangic_tarih < :bit))
                 """;
@@ -319,7 +319,7 @@ public class KullaniciRaporService {
                 UNION ALL
                 SELECT 'ABONELIK', a.id, a.ad_soyad, a.baslangic_tarih::timestamp, sh.ad, a.iptal_tarih, k.ad_soyad, a.iptal_neden
                 FROM abonelik a JOIN saha sh ON sh.id = a.saha_id LEFT JOIN kullanici k ON k.id = a.iptal_eden_id
-                WHERE a.isletme_id = :isletmeId AND a.durum = 'IPTAL' AND a.iptal_tarih >= :bas AND a.iptal_tarih < :bit
+                WHERE a.isletme_id = :isletmeId AND a.durum = 'IPTAL' AND NOT a.antrenman AND a.iptal_tarih >= :bas AND a.iptal_tarih < :bit
                 ORDER BY iptal_tarih DESC NULLS LAST, seans DESC LIMIT :limit
                 """.formatted(rezervasyonKosulu), params, (rs, i) -> {
             Timestamp seans = rs.getTimestamp("seans");
@@ -337,7 +337,7 @@ public class KullaniciRaporService {
                 """.formatted(rezervasyonKosulu), params);
         Map<Long, Long> abonelik = sayilar("""
                 SELECT iptal_eden_id, COUNT(*) FROM abonelik
-                WHERE isletme_id = :isletmeId AND durum = 'IPTAL' AND iptal_tarih >= :bas AND iptal_tarih < :bit GROUP BY 1
+                WHERE isletme_id = :isletmeId AND durum = 'IPTAL' AND NOT antrenman AND iptal_tarih >= :bas AND iptal_tarih < :bit GROUP BY 1
                 """, params);
         List<IptalKisi> kisiler = new ArrayList<>();
         long toplam = 0;

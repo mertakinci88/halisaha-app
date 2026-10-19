@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, CircleCheck, CircleOff, Eye, List, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CircleCheck, CircleOff, Eye, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,7 @@ export default function OgrenciListePage() {
   // ?devamsiz=<n>: son 30 günde en az n kez "Gelmedi" yoklaması olan öğrenciler
   const devamsiz = Number(params.get('devamsiz')) > 0 ? String(Math.floor(Number(params.get('devamsiz')))) : '';
   const [gruplar, setGruplar] = useState([]);
-  const [durum, setDurum] = useState(''); // '' (tümü) | AKTIF | PASIF
+  const [durum, setDurum] = useState('AKTIF'); // AKTIF | PASIF
   const [panelAcik, setPanelAcik] = useState(Boolean(odeme || envanter || kayit || antrenman || transferBekleyen || devamsiz));
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
@@ -139,13 +139,13 @@ export default function OgrenciListePage() {
   // Panelde kaç filtre açık (düğmede rozet olarak gösterilir)
   const panelFiltreSayisi = [odeme, envanter, kayit, antrenman, transferBekleyen, devamsiz].filter(Boolean).length;
 
-  // Varsayılan görünümden (Tümü, Tüm gruplar, boş arama, panel filtresiz) farklı bir filtre var mı
-  const filtreVar = Boolean(grupId) || durum !== '' || panelFiltreSayisi > 0 || aramaAktif !== '' || arama !== '';
+  // Varsayılan görünümden (Aktif, Tüm gruplar, boş arama, panel filtresiz) farklı bir filtre var mı
+  const filtreVar = Boolean(grupId) || durum !== 'AKTIF' || panelFiltreSayisi > 0 || aramaAktif !== '' || arama !== '';
 
   const filtreleriTemizle = () => {
     setArama('');
     setAramaAktif('');
-    setDurum('');
+    setDurum('AKTIF');
     setSayfa(0);
     setParams({}, { replace: true });
   };
@@ -188,10 +188,6 @@ export default function OgrenciListePage() {
             ))}
           </Select>
           <Seg>
-            <SegOpt active={durum === ''} onClick={() => durumSec('')}>
-              <List size={16} strokeWidth={1.5} />
-              <span>Tümü</span>
-            </SegOpt>
             <SegOpt active={durum === 'AKTIF'} onClick={() => durumSec('AKTIF')}>
               <CircleCheck size={16} strokeWidth={1.5} />
               <span>Aktif</span>

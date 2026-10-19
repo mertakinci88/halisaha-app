@@ -94,6 +94,10 @@ public class Rezervasyon {
     @JoinColumn(name = "abonelik_id")
     private Abonelik abonelik;
 
+    /** Antrenman aboneliğinin haftalık rezervasyonu: takvimde dolu görünür, ücreti ve ödemesi yoktur, raporlara girmez. */
+    @Column(name = "antrenman", nullable = false)
+    private boolean antrenman;
+
     @PrePersist
     void prePersist() {
         if (durum == null) {

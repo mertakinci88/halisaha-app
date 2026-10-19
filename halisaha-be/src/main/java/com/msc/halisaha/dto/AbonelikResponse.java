@@ -27,6 +27,8 @@ public record AbonelikResponse(
         AbonelikDurum durum,
         /** Durum aktif olduğu halde bitiş tarihi geçmişse true. */
         boolean suresiDoldu,
+        /** Antrenman (ücretsiz) abonelik: yalnızca saati kapatır, ödeme ve ücret yoktur. */
+        boolean antrenman,
         /** Anlaşılan depozito ve maç başına (haftalık) ücret. */
         BigDecimal depozito,
         BigDecimal haftalikUcret,
@@ -73,8 +75,9 @@ public record AbonelikResponse(
                 a.getHaftaGunu(), a.getBaslangicDakika(), a.getSureDakika(), a.getBaslangicTarih(), a.getBitisTarih(),
                 a.getDurum(),
                 a.getDurum() == AbonelikDurum.AKTIF && a.getBitisTarih().isBefore(bugun),
+                a.isAntrenman(),
                 a.getDepozito(), a.getHaftalikUcret(), odenen, a.getDepozito().subtract(odenen).max(BigDecimal.ZERO),
-                OdemeDurumu.hesapla(odenen, a.getDepozito()),
+                a.isAntrenman() ? OdemeDurumu.ODENDI : OdemeDurumu.hesapla(odenen, a.getDepozito()),
                 iade, odenen.subtract(iade).max(BigDecimal.ZERO),
                 a.getNot(), a.getIptalTarih(),
                 a.getIptalEden() != null ? a.getIptalEden().getAdSoyad() : null, a.getIptalNeden(), a.getKayitTarih(),
