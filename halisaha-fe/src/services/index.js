@@ -123,7 +123,7 @@ export const raporService = {
 
 /* ── /api/ogrenciler ───────────────────────────────────────── */
 export const ogrenciService = {
-  /** params: { grupId, q, odemeBekleyen, envanterEksik, sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
+  /** params: { grupId, q, durum (AKTIF | PASIF), odeme (ODENDI | BEKLEYEN | HIC | KISMI | GECIKMIS), envanter (TESLIM_BEKLEYEN | BORCLU | ALMAMIS | TAMAM), envanterTur (örn. TOZLUK; teslim bekleyenle birlikte anlamlı), kayit (BU_AY | SON_3_AY), antrenmanGun, transferBekleyen, devamsizlik (son 30 günde en az bu kadar Gelmedi), sayfa (0 tabanlı), boyut } — sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/ogrenciler', { params }).then((r) => r.data),
   get: (id) => api.get('/api/ogrenciler/' + id).then((r) => r.data),
   create: (body) => api.post('/api/ogrenciler', body).then((r) => r.data),
@@ -224,7 +224,7 @@ export const envanterSatisService = {
 
 /* ── /api/abonelikler (haftalık sabit rezervasyon: Aboneler menüsü) ── */
 export const aboneService = {
-  /** params: { durum: AKTIF | IPTAL, q } — durum boşsa hepsi */
+  /** params: { durum: AKTIF | IPTAL, sahaId, haftaGunu (1 = Pazartesi ... 7 = Pazar), q, sayfa (0 tabanlı), boyut } — filtre boşsa uygulanmaz; sayfalı yanıt { icerik, sayfa, boyut, toplamKayit, toplamSayfa } döner */
   list: (params) => api.get('/api/abonelikler', { params }).then((r) => r.data),
   /** Detay: ödemeler ve haftalık rezervasyon listesi (haftalar) dahil */
   get: (id) => api.get('/api/abonelikler/' + id).then((r) => r.data),

@@ -22,7 +22,8 @@ public record OgrenciAylikRaporu(
         List<AySatiri> aylar,
         List<GrupSatiri> gruplar
 ) {
-    public record AySatiri(int yil, int ay, long ogrenci, long odeyen, long odemeyen, BigDecimal oran, BigDecimal tutar) {
+    /** odemeyen: ayını tamamlamayanlar (kısmi dahil); kismi: bunlardan ödeme almış ama ayı tamamlamamış olanlar. */
+    public record AySatiri(int yil, int ay, long ogrenci, long odeyen, long odemeyen, long kismi, BigDecimal oran, BigDecimal tutar) {
     }
 
     public record GrupSatiri(Long grupId, String grupAd, long aktif, BigDecimal toplamTutar, BigDecimal ortalamaOran) {

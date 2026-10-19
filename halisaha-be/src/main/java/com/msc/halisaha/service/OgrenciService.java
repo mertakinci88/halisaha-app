@@ -4,9 +4,13 @@ import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.OgrenciRequest;
 import com.msc.halisaha.common.AppZaman;
+import com.msc.halisaha.dto.OgrenciFiltre;
 import com.msc.halisaha.dto.OgrenciResponse;
 import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.entity.Grup;
+import com.msc.halisaha.entity.EnvanterDurumFiltre;
+import com.msc.halisaha.entity.OgrenciKayitFiltre;
+import com.msc.halisaha.entity.OgrenciOdemeFiltre;
 import com.msc.halisaha.entity.OgrenciOdemeDurumu;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
@@ -23,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.HashMap;
@@ -42,11 +47,29 @@ public class OgrenciService {
     private final OgrenciOdemeRepository ogrenciOdemeRepository;
     private final GrupKapsami grupKapsami;
 
-    /**
-     * odemeBekleyen: yalnızca içinde bulunulan ayda ödemesi girilmemiş (Ödeme bekliyor / Ödenmedi) öğrenciler.
-     * envanterEksik: yalnızca ödemesi alınmış ama teslim edilmemiş envanteri olan öğrenciler.
-     */
+    /** Devamsızlık filtresinde bakılan dönem (gün). */
+    static final int DEVAMSIZLIK_GUN = 30;
+
+    /** Kayıt filtresinin başlangıç zamanı; filtre yoksa her kaydı kapsayan çok eski bir tarih. */
+    private static LocalDateTime kayitBaslangic(OgrenciKayitFiltre kayit, LocalDate bugun) {
+        if (kayit == null) {
+            return LocalDateTime.of(1900, 1, 1, 0, 0);
+        }
+        return (kayit == OgrenciKayitFiltre.BU_AY ? bugun.withDayOfMonth(1) : bugun.withDayOfMonth(1).minusMonths(2)).atStartOfDay();
+    }
+
+    /** Eski çağrı biçimi: odemeBekleyen = ödeme filtresi BEKLEYEN. */
     public PageResponse<OgrenciResponse> list(Long grupId, String q, boolean odemeBekleyen, boolean envanterEksik, int sayfa, int boyut) {
+        return list(new OgrenciFiltre(grupId, q, null, odemeBekleyen ? OgrenciOdemeFiltre.BEKLEYEN : null, envanterEksik), sayfa, boyut);
+    }
+
+    /**
+     * Filtreler birlikte uygulanır. odeme: içinde bulunulan ayın ödeme durumu (bkz. {@link OgrenciOdemeFiltre});
+     * envanter / envanterTur: envanter durumuna ve türüne göre filtre (bkz. {@link EnvanterDurumFiltre}).
+     */
+    public PageResponse<OgrenciResponse> list(OgrenciFiltre filtre, int sayfa, int boyut) {
+        Long grupId = filtre.grupId();
+        String q = filtre.q();
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
         LocalDate bugun = AppZaman.bugun();
         Long isletmeId = isletmeContext.id();
@@ -62,7 +85,20 @@ public class OgrenciService {
             grupKapsami.kontrolGrup(grupId);
         }
         List<Long> izinliListe = izinli == null || izinli.isEmpty() ? List.of(-1L) : List.copyOf(izinli);
-        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeId, grupId, q, odemeBekleyen, envanterEksik,
+        OgrenciOdemeFiltre odeme = filtre.odeme();
+        // Gecikmiş: ödeme günü (15'i) geçmeden kimse gecikmiş sayılmaz
+        if (odeme == OgrenciOdemeFiltre.GECIKMIS && bugun.getDayOfMonth() <= OgrenciOdemeDurumu.ODEME_GUNU) {
+            return new PageResponse<>(List.of(), sayfa, boyut, 0, 0);
+        }
+        // Durum seçilmeden yalnızca tür seçilirse o türden kalemi olanlar (SAHIP) gelir
+        String envanterFiltre = filtre.envanter() != null ? filtre.envanter().name() : filtre.envanterTur() != null ? "SAHIP" : "";
+        int devamsizlik = filtre.devamsizlik() != null && filtre.devamsizlik() > 0 ? filtre.devamsizlik() : 0;
+        boolean tamamlanmis = odeme == OgrenciOdemeFiltre.ODENDI;
+        boolean tamamlanmamis = odeme != null && !tamamlanmis;
+        int tutarDurumu = odeme == OgrenciOdemeFiltre.HIC ? 1 : odeme == OgrenciOdemeFiltre.KISMI ? 2 : 0;
+        Page<Ogrenci> sonuc = ogrenciRepository.ara(isletmeId, grupId, q, filtre.durum(), tamamlanmis, tamamlanmamis, tutarDurumu, envanterFiltre, filtre.envanterTur(),
+                kayitBaslangic(filtre.kayit(), bugun), filtre.antrenmanGun(), filtre.transferBekleyen(),
+                devamsizlik, bugun.minusDays(DEVAMSIZLIK_GUN),
                 bugun.getYear(), bugun.getMonthValue(), arananGruplar, izinli != null, izinliListe, pageRequest);
         Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
         return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));

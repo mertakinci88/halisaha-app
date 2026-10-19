@@ -10,7 +10,10 @@ public record OgrenciRaporu(
         long aktifOgrenci,
         long pasifOgrenci,
         long odeyen,
+        /** Ayını tamamlamamış aktif öğrenciler (kısmi ödeme yapanlar dahil). */
         long odemeyen,
+        /** Odemeyen içinden: ödeme almış ama ayı tamamlamamış olanlar; hiç ödeme yapmayan = odemeyen - kismiOdeyen. */
+        long kismiOdeyen,
         /** Ödeyen / aktif öğrenci, yüzde (aktif öğrenci yoksa 0). */
         BigDecimal tahsilatOrani,
         /** Seçilen ay ve bir önceki ay hiç ödeme yapmamış aktif öğrenci sayısı. */

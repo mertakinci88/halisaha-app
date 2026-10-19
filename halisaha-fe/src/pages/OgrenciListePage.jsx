@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Eye, List, PackageX, Plus, Search, Wallet, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CircleCheck, CircleOff, Eye, List, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Field, Input, Select } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
 import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
 import { Tag } from '@/components/ui/tag';
@@ -13,21 +13,62 @@ import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
-import { tl } from '@/lib/format';
+import { AYLAR, tl } from '@/lib/format';
+import { ENVANTER_TURLERI } from '@/lib/envanter';
+import BilgiIkonu, { BilgiMaddeleri } from '@/components/BilgiIkonu';
 
 const BOYUT = 10;
+const ODEME_PARAMLARI = ['odendi', 'bekleyen', 'hic', 'kismi', 'gecikmis'];
+const ODEME_SECENEKLERI = [
+  { deger: 'odendi', ad: 'Ödendi' },
+  { deger: 'bekleyen', ad: 'Ödeme bekleyen' },
+  { deger: 'hic', ad: '\u00a0\u00a0– Hiç ödeme yapmamış' },
+  { deger: 'kismi', ad: '\u00a0\u00a0– Kısmi ödeme yapmış' },
+  { deger: 'gecikmis', ad: '\u00a0\u00a0– Gecikmiş' },
+];
+// ?envanter=teslim | borclu | almamis | tamam (eksik = teslim; eski bağlantılar için): envanter durumuna göre filtre
+const ENVANTER_PARAMLARI = {
+  teslim: 'TESLIM_BEKLEYEN',
+  eksik: 'TESLIM_BEKLEYEN',
+  borclu: 'BORCLU',
+  almamis: 'ALMAMIS',
+  tamam: 'TAMAM',
+};
+const ENVANTER_SECENEKLERI = [
+  { deger: 'teslim', ad: 'Teslim bekleyen' },
+  { deger: 'borclu', ad: 'Ödeme borcu olan' },
+  { deger: 'almamis', ad: 'Envanter almamış' },
+  { deger: 'tamam', ad: 'Hepsi tamam' },
+];
+// ?kayit=bu_ay | son_3_ay: kayıt tarihine göre filtre
+const KAYIT_SECENEKLERI = [
+  { deger: 'bu_ay', ad: 'Bu ay kayıt olanlar' },
+  { deger: 'son_3_ay', ad: 'Son 3 ayda kayıt olanlar' },
+];
+// ?antrenman=2 | 3 | 4: haftalık antrenman günü sayısı (kayıt formundaki seçeneklerle aynı)
+const ANTRENMAN_GUNLERI = ['2', '3', '4'];
 const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSayfa: 0 };
 
 export default function OgrenciListePage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  // Panelden gelen /ogrenciler?odeme=bekleyen bağlantısı yalnızca ödeme bekleyenleri listeler
-  const odemeBekleyen = params.get('odeme') === 'bekleyen';
-  // ?envanter=eksik: ödemesi alınmış ama teslim edilmemiş envanteri olan öğrenciler
-  const envanterEksik = params.get('envanter') === 'eksik';
+  // ?odeme=odendi | bekleyen | hic | kismi | gecikmis: içinde bulunulan ayın ödeme durumuna göre filtre (panodaki bağlantılar bekleyen kullanır)
+  const odeme = ODEME_PARAMLARI.includes(params.get('odeme')) ? params.get('odeme') : '';
+  const envanterParam = params.get('envanter');
+  const envanter = envanterParam === 'eksik' ? 'teslim' : ENVANTER_PARAMLARI[envanterParam] ? envanterParam : '';
+  // ?tur=<envanter türü>: yalnızca teslim bekleyen filtresiyle anlamlıdır (hangi ürün bekleniyor)
+  const tur = envanter === 'teslim' && ENVANTER_TURLERI.some((t) => t.kod === params.get('tur')) ? params.get('tur') : '';
   // ?grup=<id>: Gruplar sayfasından seçilen grubun öğrencileri
   const grupId = Number(params.get('grup')) || null;
-  const [grupAd, setGrupAd] = useState('');
+  const kayit = KAYIT_SECENEKLERI.some((k) => k.deger === params.get('kayit')) ? params.get('kayit') : '';
+  const antrenman = ANTRENMAN_GUNLERI.includes(params.get('antrenman')) ? params.get('antrenman') : '';
+  // ?transfer=bekleyen: onay bekleyen grup değişikliği talebi olan öğrenciler
+  const transferBekleyen = params.get('transfer') === 'bekleyen';
+  // ?devamsiz=<n>: son 30 günde en az n kez "Gelmedi" yoklaması olan öğrenciler
+  const devamsiz = Number(params.get('devamsiz')) > 0 ? String(Math.floor(Number(params.get('devamsiz')))) : '';
+  const [gruplar, setGruplar] = useState([]);
+  const [durum, setDurum] = useState(''); // '' (tümü) | AKTIF | PASIF
+  const [panelAcik, setPanelAcik] = useState(Boolean(odeme || envanter || kayit || antrenman || transferBekleyen || devamsiz));
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sayfa, setSayfa] = useState(0);
@@ -56,43 +97,57 @@ export default function OgrenciListePage() {
     setYukleniyor(true);
     setHata('');
     ogrenciService
-      .list({ q: aramaAktif || undefined, grupId: grupId || undefined, odemeBekleyen: odemeBekleyen || undefined, envanterEksik: envanterEksik || undefined, sayfa, boyut: BOYUT })
+      .list({ q: aramaAktif || undefined, grupId: grupId || undefined, durum: durum || undefined, odeme: odeme ? odeme.toUpperCase() : undefined, envanter: envanter ? ENVANTER_PARAMLARI[envanter] : undefined, envanterTur: tur || undefined, kayit: kayit ? kayit.toUpperCase() : undefined, antrenmanGun: antrenman || undefined, transferBekleyen: transferBekleyen || undefined, devamsizlik: devamsiz || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [aramaAktif, grupId, odemeBekleyen, envanterEksik, sayfa]);
+  }, [aramaAktif, grupId, durum, odeme, envanter, tur, kayit, antrenman, transferBekleyen, devamsiz, sayfa]);
 
   useEffect(() => {
     yukle();
   }, [yukle]);
 
-  // Seçili grubun adı (filtre etiketi için); grup listesi alınamazsa etiket genel kalır
+  // Grup seçimi için grup listesi; alınamazsa liste boş kalır
   useEffect(() => {
-    if (!grupId) {
-      setGrupAd('');
-      return;
-    }
-    grupService
-      .list()
-      .then((liste) => setGrupAd(liste.find((g) => g.id === grupId)?.ad || ''))
-      .catch(() => setGrupAd(''));
-  }, [grupId]);
+    grupService.list().then(setGruplar).catch(() => setGruplar([]));
+  }, []);
 
-  // Grup seçimi, ödeme / envanter filtresi değişirken korunur
-  const filtreSec = (filtre) => {
+  // Grup ve ödeme / envanter filtresi adres çubuğundaki parametrelerde tutulur; biri değişirken diğerleri korunur
+  const filtreYaz = (degisen) => {
+    const f = { grup: grupId, odeme, envanter, tur, kayit, antrenman, transfer: transferBekleyen ? 'bekleyen' : '', devamsiz, ...degisen };
     setSayfa(0);
     setParams(
       {
-        ...(grupId ? { grup: String(grupId) } : {}),
-        ...(filtre === 'odeme' ? { odeme: 'bekleyen' } : filtre === 'envanter' ? { envanter: 'eksik' } : {}),
+        ...(f.grup ? { grup: String(f.grup) } : {}),
+        ...(f.odeme ? { odeme: f.odeme } : {}),
+        ...(f.envanter ? { envanter: f.envanter } : {}),
+        ...(f.envanter === 'teslim' && f.tur ? { tur: f.tur } : {}),
+        ...(f.kayit ? { kayit: f.kayit } : {}),
+        ...(f.antrenman ? { antrenman: f.antrenman } : {}),
+        ...(f.transfer ? { transfer: f.transfer } : {}),
+        ...(f.devamsiz ? { devamsiz: f.devamsiz } : {}),
       },
       { replace: true },
     );
   };
 
-  const grupFiltreKaldir = () => {
+  const durumSec = (d) => {
+    setDurum(d);
     setSayfa(0);
-    setParams(odemeBekleyen ? { odeme: 'bekleyen' } : envanterEksik ? { envanter: 'eksik' } : {}, { replace: true });
+  };
+
+  // Panelde kaç filtre açık (düğmede rozet olarak gösterilir)
+  const panelFiltreSayisi = [odeme, envanter, kayit, antrenman, transferBekleyen, devamsiz].filter(Boolean).length;
+
+  // Varsayılan görünümden (Tümü, Tüm gruplar, boş arama, panel filtresiz) farklı bir filtre var mı
+  const filtreVar = Boolean(grupId) || durum !== '' || panelFiltreSayisi > 0 || aramaAktif !== '' || arama !== '';
+
+  const filtreleriTemizle = () => {
+    setArama('');
+    setAramaAktif('');
+    setDurum('');
+    setSayfa(0);
+    setParams({}, { replace: true });
   };
 
   const toplamSayfa = Math.max(1, veri.toplamSayfa);
@@ -117,34 +172,158 @@ export default function OgrenciListePage() {
               <span>Ara</span>
             </Button>
           </form>
-          <Seg>
-            <SegOpt active={!odemeBekleyen && !envanterEksik} onClick={() => filtreSec(null)}>
-              <List size={16} strokeWidth={1.5} />
-              <span>Tümü</span>
-            </SegOpt>
-            <SegOpt active={odemeBekleyen} onClick={() => filtreSec('odeme')}>
-              <Wallet size={16} strokeWidth={1.5} />
-              <span>Ödeme bekleyen</span>
-            </SegOpt>
-            <SegOpt active={envanterEksik} onClick={() => filtreSec('envanter')}>
-              <PackageX size={16} strokeWidth={1.5} />
-              <span>Eksik envanter</span>
-            </SegOpt>
-          </Seg>
-          {grupId ? (
-            <Tag tone="accent" className="gap-1.5 py-1.5 text-[13.5px]">
-              Grup: {grupAd || 'Seçili grup'}
-              <button type="button" aria-label="Grup filtresini kaldır" className="cursor-pointer" onClick={grupFiltreKaldir}>
-                <X size={14} strokeWidth={1.5} />
-              </button>
-            </Tag>
-          ) : null}
-          <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
           <Button variant="primary" className="ml-auto" onClick={() => navigate('/ogrenciler/yeni')}>
             <Plus size={16} strokeWidth={1.5} />
             <span>Yeni öğrenci</span>
           </Button>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Select aria-label="Grup" className="w-auto" value={grupId || ''} onChange={(e) => filtreYaz({ grup: e.target.value })}>
+            <option value="">Tüm gruplar</option>
+            {gruplar.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.ad}
+              </option>
+            ))}
+          </Select>
+          <Seg>
+            <SegOpt active={durum === ''} onClick={() => durumSec('')}>
+              <List size={16} strokeWidth={1.5} />
+              <span>Tümü</span>
+            </SegOpt>
+            <SegOpt active={durum === 'AKTIF'} onClick={() => durumSec('AKTIF')}>
+              <CircleCheck size={16} strokeWidth={1.5} />
+              <span>Aktif</span>
+            </SegOpt>
+            <SegOpt active={durum === 'PASIF'} onClick={() => durumSec('PASIF')}>
+              <CircleOff size={16} strokeWidth={1.5} />
+              <span>Pasif</span>
+            </SegOpt>
+          </Seg>
+          <Button variant={panelFiltreSayisi > 0 ? 'cerceve' : 'secondary'} aria-expanded={panelAcik} onClick={() => setPanelAcik((a) => !a)}>
+            <SlidersHorizontal size={16} strokeWidth={1.5} />
+            <span>Filtreler{panelFiltreSayisi > 0 ? ' (' + panelFiltreSayisi + ')' : ''}</span>
+            <ChevronDown size={15} strokeWidth={1.5} className={panelAcik ? 'rotate-180' : ''} />
+          </Button>
+          <span className="text-[13.5px] text-ink/55">{veri.toplamKayit} öğrenci</span>
+          {filtreVar ? (
+            <Button variant="ghost" size="sm" onClick={filtreleriTemizle}>
+              <X size={14} strokeWidth={1.5} />
+              <span>Filtreleri temizle</span>
+            </Button>
+          ) : null}
+        </div>
+
+        {panelAcik ? (
+          <div className="grid gap-3 border border-hairline bg-ink/3 p-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label={<>Bu ayki ödeme durumu<BilgiIkonu
+                  metin={
+                    <BilgiMaddeleri
+                      giris={`Yalnızca içinde bulunulan ay (${AYLAR[new Date().getMonth()]} ${new Date().getFullYear()}) için geçerlidir; geçmiş aylar listelenmez.`}
+                      maddeler={[
+                        ['Ödendi', 'Ayı tamamlamış (Tamamı ödendi işaretli ya da parasız kapatılmış).'],
+                        ['Ödeme bekleyen', 'Ayı henüz tamamlamamış; kısmi ödeme yapanlar da dahil.'],
+                        ['Hiç ödeme yapmamış', 'Bu ay için hiç ödeme girilmemiş.'],
+                        ['Kısmi ödeme yapmış', 'Ödeme almış ama ayı tamamlamamış.'],
+                        ['Gecikmiş', 'Ayın 15\'i geçtiği halde ayı tamamlamamış.'],
+                      ]}
+                    />
+                  }
+                /></>}>
+              <Select value={odeme} onChange={(e) => filtreYaz({ odeme: e.target.value })}>
+                <option value="">Tümü</option>
+                {ODEME_SECENEKLERI.map((o) => (
+                  <option key={o.deger} value={o.deger}>
+                    {o.ad}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="grid content-start gap-3">
+            <Field label={<>Envanter durumu<BilgiIkonu
+                  metin={
+                    <BilgiMaddeleri
+                      maddeler={[
+                        ['Teslim bekleyen', 'Ödemesi alınmış ama teslim edilmemiş ürünü olan.'],
+                        ['Ödeme borcu olan', 'En az bir envanter setinin tutarı tam ödenmemiş olan.'],
+                        ['Envanter almamış', 'Hiç envanter satışı olmayan.'],
+                        ['Hepsi tamam', 'Ödeme borcu ve teslim bekleyen ürünü kalmamış olan.'],
+                      ]}
+                    />
+                  }
+                /></>}>
+              <Select value={envanter} onChange={(e) => filtreYaz({ envanter: e.target.value, tur: '' })}>
+                <option value="">Tümü</option>
+                {ENVANTER_SECENEKLERI.map((o) => (
+                  <option key={o.deger} value={o.deger}>
+                    {o.ad}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {envanter === 'teslim' ? (
+              <Field label={<>Teslim bekleyen ürün<BilgiIkonu metin="Hangi ürünü teslim bekleyen öğrencileri görmek için ürünü seçin." /></>}>
+                <Select value={tur} onChange={(e) => filtreYaz({ tur: e.target.value })}>
+                  <option value="">Tüm ürünler</option>
+                  {ENVANTER_TURLERI.map((t) => (
+                    <option key={t.kod} value={t.kod}>
+                      {t.ad}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null}
+            </div>
+            <Field label={<>Kayıt tarihi<BilgiIkonu sag metin="Son 3 ay, içinde bulunulan ayı da kapsar." /></>}>
+              <Select value={kayit} onChange={(e) => filtreYaz({ kayit: e.target.value })}>
+                <option value="">Tümü</option>
+                {KAYIT_SECENEKLERI.map((k) => (
+                  <option key={k.deger} value={k.deger}>
+                    {k.ad}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={<>Haftalık antrenman günü<BilgiIkonu metin="Öğrencinin kayıtlı haftalık antrenman günü sayısı." /></>}>
+              <Select value={antrenman} onChange={(e) => filtreYaz({ antrenman: e.target.value })}>
+                <option value="">Tümü</option>
+                {ANTRENMAN_GUNLERI.map((g) => (
+                  <option key={g} value={g}>
+                    {g} gün
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={<>Devamsızlık (son 30 gün)<BilgiIkonu metin="Son 30 günde “Gelmedi” işaretlenen yoklama sayısı. “İzinli” günler sayılmaz." /></>}>
+              <div className="flex items-center gap-2 text-[15px]">
+                <span className="text-ink/70">En az</span>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  placeholder="—"
+                  aria-label="Devamsızlık sayısı"
+                  value={devamsiz}
+                  onChange={(e) => filtreYaz({ devamsiz: e.target.value === '' ? '' : String(Math.max(1, Math.floor(Number(e.target.value)) || 1)) })}
+                  className="w-20 text-right tabular-nums"
+                />
+                <span className="text-ink/70">kez gelmeyenler</span>
+              </div>
+            </Field>
+            <label className="relative flex cursor-pointer items-center gap-2 self-start pt-7 text-[15px]">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--color-accent)]"
+                checked={transferBekleyen}
+                onChange={(e) => filtreYaz({ transfer: e.target.checked ? 'bekleyen' : '' })}
+              />
+              <span>Transfer bekleyenler</span>
+              <BilgiIkonu sag metin="Grup değişikliği talebi onay bekleyen öğrenciler (Transferler sayfasındaki “Onay bekliyor” kayıtları)." />
+            </label>
+          </div>
+        ) : null}
 
         {yukleniyor ? (
           <Yukleniyor />
@@ -165,7 +344,7 @@ export default function OgrenciListePage() {
               </thead>
               <tbody>
                 {veri.icerik.length === 0 ? (
-                  <Bos colSpan={8}>{grupId && !odemeBekleyen && !envanterEksik ? 'Bu grupta öğrenci yok.' : odemeBekleyen ? 'Ödeme bekleyen öğrenci yok.' : envanterEksik ? 'Eksik envanteri olan öğrenci yok.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
+                  <Bos colSpan={8}>{filtreVar ? 'Filtrelere uyan öğrenci bulunamadı.' : 'Öğrenci kaydı bulunamadı.'}</Bos>
                 ) : (
                   veri.icerik.map((o) => (
                     <Tr key={o.id} className="cursor-pointer" onClick={() => navigate('/ogrenciler/' + o.id)}>

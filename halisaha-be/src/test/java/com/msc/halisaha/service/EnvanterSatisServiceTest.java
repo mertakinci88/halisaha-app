@@ -377,6 +377,33 @@ class EnvanterSatisServiceTest {
         assertEquals(3, ogrenciService.list(null, null, false, false, 0, 50).toplamKayit());
     }
 
+    @Test
+    void ogrenciListesiEnvanterDurumuVeTurFiltreleri() {
+        var isletme = k.ogrenciA.getIsletme();
+        Long teslimEdilmis = ogrenciRepository.save(com.msc.halisaha.entity.Ogrenci.builder().isletme(isletme).adSoyad("Teslim Edilmiş")
+                .durum(com.msc.halisaha.entity.OgrenciDurum.AKTIF).build()).getId();
+        ogrenciRepository.save(com.msc.halisaha.entity.Ogrenci.builder().isletme(isletme).adSoyad("Envanteri Yok")
+                .durum(com.msc.halisaha.entity.OgrenciDurum.AKTIF).build());
+        satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), null));                  // ödendi, teslim yok
+        satisService.olustur(teslimEdilmis, set("140", "164", List.of(TOZLUK), List.of(TOZLUK), null));      // ödendi + teslim
+
+        java.util.function.BiFunction<com.msc.halisaha.entity.EnvanterDurumFiltre, EnvanterTur, List<String>> liste = (d, t) ->
+                ogrenciService.list(new com.msc.halisaha.dto.OgrenciFiltre(null, null, null, null, d, t), 0, 50).icerik().stream()
+                        .map(com.msc.halisaha.dto.OgrenciResponse::adSoyad).toList();
+        var teslim = com.msc.halisaha.entity.EnvanterDurumFiltre.TESLIM_BEKLEYEN;
+
+        assertEquals(List.of("Ahmet Test"), liste.apply(teslim, null));
+        assertEquals(List.of("Ahmet Test"), liste.apply(teslim, TOZLUK));
+        assertEquals(List.of(), liste.apply(teslim, YAZLIK_FORMA));                                         // o türden teslim bekleyen yok
+        assertEquals(List.of("Envanteri Yok"), liste.apply(com.msc.halisaha.entity.EnvanterDurumFiltre.ALMAMIS, null));
+        // Her satışta her türden kalem vardır: satışı olan öğrencinin her türü "alınmış" sayılır
+        assertEquals(List.of("Envanteri Yok"), liste.apply(com.msc.halisaha.entity.EnvanterDurumFiltre.ALMAMIS, YAZLIK_FORMA));
+        assertEquals(List.of("Ahmet Test", "Teslim Edilmiş"), liste.apply(null, TOZLUK));                   // yalnızca tür: o türden kalemi olanlar (satışı olan herkes)
+        // Setin yalnızca tozluğu ödenmiş: iki öğrencinin de satışında ödeme borcu var
+        assertEquals(List.of("Ahmet Test", "Teslim Edilmiş"), liste.apply(com.msc.halisaha.entity.EnvanterDurumFiltre.BORCLU, null));
+        assertEquals(List.of(), liste.apply(com.msc.halisaha.entity.EnvanterDurumFiltre.TAMAM, null));
+    }
+
     private EnvanterSatisRequest toplamOdenenle(EnvanterSatisRequest oncekiIstek, String toplam, OdemeYontemi yontem, Long hesapId) {
         return new EnvanterSatisRequest(oncekiIstek.kalemler(), new BigDecimal(toplam), null, yontem, hesapId);
     }

@@ -31,7 +31,7 @@ export function Label({ className, children, ...props }) {
 
 export function Field({ label, children, className }) {
   return (
-    <div className={cn('min-w-0', className)}>
+    <div className={cn('relative min-w-0', className)}>
       {label ? <Label>{label}</Label> : null}
       {children}
     </div>
