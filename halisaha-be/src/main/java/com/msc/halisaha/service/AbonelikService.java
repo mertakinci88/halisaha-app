@@ -103,11 +103,19 @@ public class AbonelikService {
         return new AbonelikAyarResponse(ayar.getStandartUcret());
     }
 
-    /** Sayfalı liste: durum, saha, haftanın günü (1 = Pazartesi ... 7 = Pazar) ve arama (ad soyad / telefon) filtreleriyle; toplamKayit filtrelenmiş abone sayısıdır. */
     public PageResponse<AbonelikResponse> sayfa(AbonelikDurum durum, Long sahaId, Integer haftaGunu, String q, int sayfa, int boyut) {
+        return sayfa(durum, null, sahaId, haftaGunu, q, sayfa, boyut);
+    }
+
+    /**
+     * Sayfalı liste: durum, tür (antrenman: true = yalnızca antrenman, false = yalnızca ücretli abone, null = hepsi), saha,
+     * haftanın günü (1 = Pazartesi ... 7 = Pazar) ve arama (ad soyad / telefon) filtreleriyle; toplamKayit filtrelenmiş kayıt sayısıdır.
+     */
+    public PageResponse<AbonelikResponse> sayfa(AbonelikDurum durum, Boolean antrenman, Long sahaId, Integer haftaGunu, String q, int sayfa, int boyut) {
         sayfa = Math.max(sayfa, 0);
         boyut = Math.min(Math.max(boyut, 1), 200);
         List<AbonelikResponse> tumu = listele(durum, q).stream()
+                .filter(a -> antrenman == null || antrenman == a.antrenman())
                 .filter(a -> sahaId == null || sahaId.equals(a.sahaId()))
                 .filter(a -> haftaGunu == null || haftaGunu == a.haftaGunu())
                 .toList();

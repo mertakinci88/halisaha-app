@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ban, ChevronLeft, ChevronRight, CircleCheck, Eye, Pencil, Plus, Save, Search, X } from 'lucide-react';
+import { Ban, ChevronLeft, ChevronRight, CircleCheck, Eye, Goal, Pencil, Plus, Save, Search, Users, X } from 'lucide-react';
 import { PageHeader } from '@/components/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,8 @@ export function AboneDurumEtiketi({ abone }) {
 
 const BOYUT = 10;
 const BOS_SAYFA = { icerik: [], sayfa: 0, boyut: BOYUT, toplamKayit: 0, toplamSayfa: 0 };
-const KISA_ETIKET = { AKTIF: 'aktif abone', IPTAL: 'iptal abone', '': 'abone' };
-const TOPLAM_ETIKET = { AKTIF: 'Toplam aktif abone', IPTAL: 'Toplam iptal abone', '': 'Toplam abone' };
+const DURUM_AD = { AKTIF: 'aktif', IPTAL: 'iptal' };
+const TUR_AD = { ABONE: 'abone', ANTRENMAN: 'antrenman' };
 
 export default function AboneListePage() {
   const navigate = useNavigate();
@@ -35,6 +35,7 @@ export default function AboneListePage() {
   const { isAdmin } = useAuth();
   const [hata, setHata] = useHata();
   const [durum, setDurum] = useState('AKTIF'); // AKTIF | IPTAL
+  const [tur, setTur] = useState('ABONE'); // ABONE (ücretli abonelik) | ANTRENMAN
   const [arama, setArama] = useState('');
   const [aramaAktif, setAramaAktif] = useState('');
   const [sahaId, setSahaId] = useState(''); // '' = Tüm sahalar
@@ -51,11 +52,11 @@ export default function AboneListePage() {
     setYukleniyor(true);
     setHata('');
     aboneService
-      .list({ durum: durum || undefined, sahaId: sahaId || undefined, haftaGunu: gun || undefined, q: aramaAktif || undefined, sayfa, boyut: BOYUT })
+      .list({ durum: durum || undefined, antrenman: tur === 'ANTRENMAN', sahaId: sahaId || undefined, haftaGunu: gun || undefined, q: aramaAktif || undefined, sayfa, boyut: BOYUT })
       .then(setVeri)
       .catch((e) => setHata(apiHata(e), { sessiz: true }))
       .finally(() => setYukleniyor(false));
-  }, [durum, sahaId, gun, aramaAktif, sayfa]);
+  }, [durum, tur, sahaId, gun, aramaAktif, sayfa]);
 
   useEffect(() => {
     yukle();
@@ -91,6 +92,11 @@ export default function AboneListePage() {
     setSayfa(0);
   };
 
+  const turSec = (t) => {
+    setTur(t);
+    setSayfa(0);
+  };
+
   const sahaSec = (id) => {
     setSahaId(id);
     setSayfa(0);
@@ -102,10 +108,11 @@ export default function AboneListePage() {
   };
 
   // Varsayılan görünümden (Aktif, Tüm sahalar, Tüm günler, boş arama) farklı bir filtre var mı
-  const filtreVar = durum !== 'AKTIF' || sahaId !== '' || gun !== '' || aramaAktif !== '' || arama !== '';
+  const filtreVar = durum !== 'AKTIF' || tur !== 'ABONE' || sahaId !== '' || gun !== '' || aramaAktif !== '' || arama !== '';
 
   const filtreleriTemizle = () => {
     setDurum('AKTIF');
+    setTur('ABONE');
     setSahaId('');
     setGun('');
     setArama('');
@@ -224,6 +231,16 @@ export default function AboneListePage() {
             ))}
           </Select>
           <Seg>
+            <SegOpt active={tur === 'ABONE'} onClick={() => turSec('ABONE')}>
+              <Users size={16} strokeWidth={1.5} />
+              <span>Abone</span>
+            </SegOpt>
+            <SegOpt active={tur === 'ANTRENMAN'} onClick={() => turSec('ANTRENMAN')}>
+              <Goal size={16} strokeWidth={1.5} />
+              <span>Antrenman</span>
+            </SegOpt>
+          </Seg>
+          <Seg>
             <SegOpt active={durum === 'AKTIF'} onClick={() => durumSec('AKTIF')}>
               <CircleCheck size={16} strokeWidth={1.5} />
               <span>Aktif</span>
@@ -234,7 +251,7 @@ export default function AboneListePage() {
             </SegOpt>
           </Seg>
           <span className="text-[13.5px] text-ink/55">
-            {veri.toplamKayit} {KISA_ETIKET[durum]}
+            {veri.toplamKayit} {DURUM_AD[durum]} {TUR_AD[tur]}
           </span>
           {filtreVar ? (
             <Button variant="ghost" size="sm" onClick={filtreleriTemizle}>
@@ -265,7 +282,7 @@ export default function AboneListePage() {
             </thead>
             <tbody>
               {veri.icerik.length === 0 ? (
-                <Bos colSpan={10}>{aramaAktif ? 'Aramaya uyan abonelik bulunamadı.' : 'Abonelik kaydı bulunamadı.'}</Bos>
+                <Bos colSpan={10}>{aramaAktif ? 'Aramaya uyan kayıt bulunamadı.' : tur === 'ANTRENMAN' ? 'Antrenman kaydı bulunamadı.' : 'Abonelik kaydı bulunamadı.'}</Bos>
               ) : (
                 veri.icerik.map((a) => (
                   <Tr key={a.id} className="cursor-pointer" onClick={() => navigate('/aboneler/' + a.id)}>
@@ -317,7 +334,7 @@ export default function AboneListePage() {
               </Button>
             </div>
             <span className="order-3 text-[13.5px] text-ink/55 sm:absolute sm:right-0 sm:order-none">
-              {TOPLAM_ETIKET[durum]}: {veri.toplamKayit}
+              Toplam {DURUM_AD[durum]} {TUR_AD[tur]}: {veri.toplamKayit}
             </span>
           </div>
           </>

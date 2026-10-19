@@ -197,4 +197,19 @@ class AbonelikAntrenmanTest {
         assertEquals(0, new BigDecimal("1000").compareTo(gecmis.getOdenecekTutar()));
         assertTrue(hafta(c, 1).isAntrenman());
     }
+
+    @Test
+    void listeAboneVeAntrenmanOlarakFiltrelenir() {
+        abonelikService.olustur(ucretliIstek());
+        AbonelikResponse antrenman = abonelikService.olustur(new AbonelikRequest(saha.getId(), "Antrenman", "05469764613",
+                baslangic.plusDays(1).getDayOfWeek().getValue(), 1260, 60, baslangic, null, null, null, null, null, null, null, true));
+
+        assertEquals(2, abonelikService.sayfa(null, null, null, null, null, 0, 20).toplamKayit());
+        var yalnizAbone = abonelikService.sayfa(null, false, null, null, null, 0, 20);
+        assertEquals(1, yalnizAbone.toplamKayit());
+        assertFalse(yalnizAbone.icerik().get(0).antrenman());
+        var yalnizAntrenman = abonelikService.sayfa(null, true, null, null, null, 0, 20);
+        assertEquals(1, yalnizAntrenman.toplamKayit());
+        assertEquals(antrenman.id(), yalnizAntrenman.icerik().get(0).id());
+    }
 }
