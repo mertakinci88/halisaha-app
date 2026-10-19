@@ -3,9 +3,9 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
-import com.msc.halisaha.dto.OgrenciOdemeAyRequest;
 import com.msc.halisaha.dto.OgrenciOdemeAyResponse;
-import com.msc.halisaha.dto.OgrenciOdemeKaydetRequest;
+import com.msc.halisaha.dto.OgrenciOdemeRequest;
+import com.msc.halisaha.dto.OgrenciOdemeResponse;
 import com.msc.halisaha.dto.OgrenciOdemeYilResponse;
 import com.msc.halisaha.entity.OgrenciOdemeDurumu;
 import com.msc.halisaha.entity.Hesap;
@@ -24,19 +24,19 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Öğrencinin aylık ödemeleri. Her ay için ne kadar ödendiği elle girilir (ödeme yöntemi, tarih ve not ile); sabit tutar ya da
- * üst sınır yoktur. Ödeme yöntemi kullanıcı seçimidir (tutar girilmişse zorunlu). Kayıt, tutar girilmişse ya da yalnızca not
- * yazılmışsa tutulur; ikisi de boşsa ayın kaydı silinir. Tutar (> 0) girilmiş ay "Ödendi" sayılır; girilmemiş ay her ayın 15'ine kadar "Ödeme bekliyor", sonrasında "Ödenmedi" olur
- * (durum kaydedilmez, okunurken bugünün tarihinden hesaplanır). Tam / kısmi ayrımı yapılmaz.
+ * Öğrencinin aylık ödemeleri. Bir ayın birden fazla ödemesi olabilir (kısmi ödeme); her ödemenin tutarı, yöntemi, tarihi ve notu
+ * elle girilir, sabit tutar ya da üst sınır yoktur. Her ödemede "tamamı ödendi" ya da "kısmi" seçilir: ayda en az bir tamam ödeme
+ * varsa ay Ödendi, yalnızca kısmi ödemeler varsa Kısmi ödendi (ayın 15'inden sonra Kısmi gecikmiş), hiç ödeme yoksa 15'ine kadar
+ * Ödeme bekliyor, sonrasında Ödenmedi olur (durum kaydedilmez, okunurken hesaplanır). Tutarsız (0) ödeme, açıklamalı olarak ayı
+ * parasız kapatır (tamam) ya da yalnızca not düşer (kısmi).
+ * Kalan para başka bir ayda alınırsa ödeme borcu olan aya, gerçek ödeme tarihiyle girilir; kasa raporları ödeme tarihine göre çalışır.
  */
 @Service
 @RequiredArgsConstructor
@@ -57,38 +57,57 @@ public class OgrenciOdemeService {
     }
 
     @Transactional
-    public OgrenciOdemeYilResponse kaydet(Long ogrenciId, int yil, OgrenciOdemeKaydetRequest request) {
+    public OgrenciOdemeYilResponse ekle(Long ogrenciId, int yil, int ay, OgrenciOdemeRequest istek) {
         yilKontrol(yil);
+        ayKontrol(ay);
         Ogrenci ogrenci = ogrenciGetir(ogrenciId);
-        Map<Integer, OgrenciOdeme> mevcut = odemeRepository.findByOgrenciIdAndYil(ogrenciId, yil).stream()
-                .collect(Collectors.toMap(OgrenciOdeme::getAy, Function.identity()));
+        OgrenciOdeme kayit = OgrenciOdeme.builder().ogrenci(ogrenci).yil(yil).ay(ay).build();
+        doldur(kayit, istek);
+        odemeRepository.saveAndFlush(kayit);
+        return yanit(ogrenciId, yil);
+    }
 
-        Set<Integer> gorulen = new HashSet<>();
-        for (OgrenciOdemeAyRequest ayIstek : request.aylar()) {
-            if (!gorulen.add(ayIstek.ay())) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Aynı ay birden fazla kez gönderildi: " + ayIstek.ay());
-            }
-            aySakla(ogrenci, yil, ayIstek, mevcut.get(ayIstek.ay()));
+    @Transactional
+    public OgrenciOdemeYilResponse guncelle(Long ogrenciId, int yil, int ay, Long odemeId, OgrenciOdemeRequest istek) {
+        ogrenciGetir(ogrenciId);
+        OgrenciOdeme kayit = odemeBul(ogrenciId, yil, ay, odemeId);
+        // İadesi yapılmış ödeme, iade edilen tutarın altına düşürülemez
+        BigDecimal iade = iadeRepository.ogrenciOdemeToplami(kayit.getId());
+        if (tutar(istek).compareTo(iade) < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu ödeme için " + iade + " iade kaydı var; tutar iade tutarının altına düşürülemez");
         }
+        doldur(kayit, istek);
+        odemeRepository.saveAndFlush(kayit);
+        return yanit(ogrenciId, yil);
+    }
+
+    @Transactional
+    public OgrenciOdemeYilResponse sil(Long ogrenciId, int yil, int ay, Long odemeId) {
+        ogrenciGetir(ogrenciId);
+        OgrenciOdeme kayit = odemeBul(ogrenciId, yil, ay, odemeId);
+        if (iadeRepository.ogrenciOdemeToplami(kayit.getId()).signum() > 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu ödeme için iade kaydı var; ödeme silinemez");
+        }
+        odemeRepository.delete(kayit);
         odemeRepository.flush();
         return yanit(ogrenciId, yil);
     }
 
-    private void aySakla(Ogrenci ogrenci, int yil, OgrenciOdemeAyRequest istek, OgrenciOdeme kayit) {
-        BigDecimal odenen = istek.odenenTutar() != null ? istek.odenenTutar().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    private OgrenciOdeme odemeBul(Long ogrenciId, int yil, int ay, Long odemeId) {
+        return odemeRepository.findByIdAndOgrenciId(odemeId, ogrenciId)
+                .filter(k -> k.getYil() == yil && k.getAy() == ay)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ödeme bulunamadı: " + odemeId));
+    }
+
+    private static BigDecimal tutar(OgrenciOdemeRequest istek) {
+        return istek.odenenTutar() != null ? istek.odenenTutar().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
+
+    private void doldur(OgrenciOdeme kayit, OgrenciOdemeRequest istek) {
+        BigDecimal odenen = tutar(istek);
         String not = istek.not() != null && !istek.not().isBlank() ? istek.not().trim() : null;
-        // İadesi yapılmış ayın ödemesi, iade edilen tutarın altına düşürülemez ve silinemez
-        if (kayit != null) {
-            BigDecimal iade = iadeRepository.ogrenciOdemeToplami(kayit.getId());
-            if (odenen.compareTo(iade) < 0) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Bu ay için " + iade + " iade kaydı var; ödeme iade tutarının altına düşürülemez (ay: " + istek.ay() + ")");
-            }
-        }
         if (odenen.signum() == 0 && not == null) {
-            if (kayit != null) {
-                odemeRepository.delete(kayit);
-            }
-            return;
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Tutar girilmelidir; tutarsız kayıt için açıklama (not) yazılmalıdır");
         }
 
         OdemeYontemi sekil = null;
@@ -96,45 +115,38 @@ public class OgrenciOdemeService {
         LocalDate tarih = null;
         if (odenen.signum() > 0) {
             if (istek.odemeSekli() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme yöntemi seçilmelidir (ay: " + istek.ay() + ")");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Ödeme yöntemi seçilmelidir");
             }
             sekil = istek.odemeSekli();
-            Long mevcutHesapId = kayit != null && kayit.getHesap() != null ? kayit.getHesap().getId() : null;
+            Long mevcutHesapId = kayit.getHesap() != null ? kayit.getHesap().getId() : null;
             hesap = hesapService.coz(istek.hesapId(), sekil, mevcutHesapId);
             tarih = istek.odemeTarihi() != null ? istek.odemeTarihi() : AppZaman.bugun();
         }
-
-        if (kayit == null) {
-            kayit = OgrenciOdeme.builder().ogrenci(ogrenci).yil(yil).ay(istek.ay()).build();
-        }
         kayit.setOdenenTutar(odenen);
+        kayit.setTamam(istek.tamam());
         kayit.setOdemeSekli(sekil);
         kayit.setHesap(hesap);
         kayit.setOdemeTarihi(tarih);
         kayit.setNot(not);
         kayit.setKullanici(mevcutKullanici.getir());
-        odemeRepository.save(kayit);
     }
 
     private OgrenciOdemeYilResponse yanit(Long ogrenciId, int yil) {
         yilKontrol(yil);
-        Map<Integer, OgrenciOdeme> kayitlar = odemeRepository.findByOgrenciIdAndYil(ogrenciId, yil).stream()
-                .collect(Collectors.toMap(OgrenciOdeme::getAy, Function.identity()));
+        Map<Integer, List<OgrenciOdeme>> kayitlar = odemeRepository.findByOgrenciIdAndYil(ogrenciId, yil).stream()
+                .collect(Collectors.groupingBy(OgrenciOdeme::getAy));
 
         LocalDate bugun = AppZaman.bugun();
         List<OgrenciOdemeAyResponse> aylar = new ArrayList<>();
         BigDecimal toplam = BigDecimal.ZERO;
         for (int ay = 1; ay <= 12; ay++) {
-            OgrenciOdeme k = kayitlar.get(ay);
-            if (k == null) {
-                aylar.add(new OgrenciOdemeAyResponse(null, yil, ay, BigDecimal.ZERO, OgrenciOdemeDurumu.hesapla(false, yil, ay, bugun), null, null, null, null, null));
-            } else {
-                toplam = toplam.add(k.getOdenenTutar());
-                aylar.add(new OgrenciOdemeAyResponse(k.getId(), yil, ay, k.getOdenenTutar(),
-                        OgrenciOdemeDurumu.hesapla(k.getOdenenTutar().signum() > 0, yil, ay, bugun), k.getOdemeSekli(),
-                        k.getHesap() != null ? k.getHesap().getId() : null,
-                        k.getHesap() != null ? k.getHesap().getAd() : null, k.getOdemeTarihi(), k.getNot()));
-            }
+            List<OgrenciOdeme> odemeler = kayitlar.getOrDefault(ay, List.of());
+            BigDecimal ayToplami = odemeler.stream().map(OgrenciOdeme::getOdenenTutar).reduce(BigDecimal.ZERO, BigDecimal::add);
+            boolean tamam = odemeler.stream().anyMatch(OgrenciOdeme::isTamam);
+            toplam = toplam.add(ayToplami);
+            aylar.add(new OgrenciOdemeAyResponse(yil, ay,
+                    OgrenciOdemeDurumu.hesapla(tamam, ayToplami.signum() > 0, yil, ay, bugun), ayToplami,
+                    odemeler.stream().map(OgrenciOdemeService::odemeYaniti).toList()));
         }
         Set<Integer> yillar = new TreeSet<>(odemeRepository.yillar(ogrenciId));
         yillar.add(AppZaman.bugun().getYear());
@@ -142,9 +154,21 @@ public class OgrenciOdemeService {
         return new OgrenciOdemeYilResponse(yil, bugun, aylar, toplam, List.copyOf(yillar));
     }
 
+    private static OgrenciOdemeResponse odemeYaniti(OgrenciOdeme k) {
+        return new OgrenciOdemeResponse(k.getId(), k.getOdenenTutar(), k.isTamam(), k.getOdemeSekli(),
+                k.getHesap() != null ? k.getHesap().getId() : null, k.getHesap() != null ? k.getHesap().getAd() : null,
+                k.getOdemeTarihi(), k.getNot());
+    }
+
     private static void yilKontrol(int yil) {
         if (yil < 2000 || yil > 2100) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Yıl 2000-2100 arasında olmalıdır");
+        }
+    }
+
+    private static void ayKontrol(int ay) {
+        if (ay < 1 || ay > 12) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ay 1-12 arasında olmalıdır");
         }
     }
 

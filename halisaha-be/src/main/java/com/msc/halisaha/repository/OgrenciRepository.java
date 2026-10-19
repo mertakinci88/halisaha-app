@@ -24,7 +24,7 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
               AND (:grupId IS NULL OR g.id = :grupId)
               AND (:kisitli = FALSE OR g.id IN :izinliGruplar)
               AND (:odemeBekleyen = FALSE OR NOT EXISTS (
-                     SELECT 1 FROM OgrenciOdeme p WHERE p.ogrenci = o AND p.yil = :yil AND p.ay = :ay AND p.odenenTutar > 0))
+                     SELECT 1 FROM OgrenciOdeme p WHERE p.ogrenci = o AND p.yil = :yil AND p.ay = :ay AND p.tamam = TRUE))
               AND (:envanterEksik = FALSE OR EXISTS (
                      SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND k.odendi = TRUE AND k.teslimEdildi = FALSE))
               AND (:q IS NULL OR :q = ''

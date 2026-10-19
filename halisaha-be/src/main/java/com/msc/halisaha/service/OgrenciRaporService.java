@@ -61,14 +61,14 @@ public class OgrenciRaporService {
                 SELECT COUNT(*) FROM ogrenci o
                 WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND EXISTS (
                     SELECT 1 FROM ogrenci_odeme p
-                    WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.odenen_tutar > 0)
+                    WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)
                 """, params);
         long ardisik = sayi("""
                 SELECT COUNT(*) FROM ogrenci o
                 WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.kayit_tarih < :oncekiAyBasi
                   AND NOT EXISTS (
                     SELECT 1 FROM ogrenci_odeme p
-                    WHERE p.ogrenci_id = o.id AND p.odenen_tutar > 0
+                    WHERE p.ogrenci_id = o.id AND p.tamam
                       AND ((p.yil = :yil AND p.ay = :ay) OR (p.yil = :oncekiYil AND p.ay = :oncekiAy)))
                 """, params);
         long yeni = sayi("""
@@ -85,7 +85,7 @@ public class OgrenciRaporService {
                 SELECT gr.id AS grup_id, COALESCE(gr.ad, 'Grupsuz') AS grup_ad, COUNT(*) AS aktif,
                        COUNT(*) FILTER (WHERE EXISTS (
                            SELECT 1 FROM ogrenci_odeme p
-                           WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.odenen_tutar > 0)) AS odeyen
+                           WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)) AS odeyen
                 FROM ogrenci o LEFT JOIN grup gr ON gr.id = o.grup_id
                 WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF'
                 GROUP BY gr.id, gr.ad
@@ -107,9 +107,9 @@ public class OgrenciRaporService {
                 .addValue("sonYil", donem.getYear()).addValue("sonAy", donem.getMonthValue());
         Map<YearMonth, OgrenciRaporu.AySatiri> bulunan = new HashMap<>();
         jdbc.query("""
-                SELECT p.yil, p.ay, COUNT(DISTINCT p.ogrenci_id) AS odeyen, SUM(p.odenen_tutar) AS tutar
+                SELECT p.yil, p.ay, COUNT(DISTINCT p.ogrenci_id) FILTER (WHERE p.tamam) AS odeyen, SUM(p.odenen_tutar) AS tutar
                 FROM ogrenci_odeme p
-                WHERE p.isletme_id = :isletmeId AND p.odenen_tutar > 0
+                WHERE p.isletme_id = :isletmeId AND (p.odenen_tutar > 0 OR p.tamam)
                   AND (p.yil, p.ay) >= (:ilkYil, :ilkAy) AND (p.yil, p.ay) <= (:sonYil, :sonAy)
                 GROUP BY p.yil, p.ay
                 """, p, rs -> {
@@ -155,15 +155,17 @@ public class OgrenciRaporService {
         Map<YearMonth, BigDecimal> tutarlar = new HashMap<>();
         Map<Long, BigDecimal> grupTutarlari = new HashMap<>();
         jdbc.query("""
-                SELECT p.yil, p.ay, p.ogrenci_id, p.odenen_tutar
+                SELECT p.yil, p.ay, p.ogrenci_id, p.odenen_tutar, p.tamam
                 FROM ogrenci_odeme p
-                WHERE p.isletme_id = :isletmeId AND p.odenen_tutar > 0
+                WHERE p.isletme_id = :isletmeId AND (p.odenen_tutar > 0 OR p.tamam)
                   AND (p.yil, p.ay) >= (:ilkYil, :ilkAy) AND (p.yil, p.ay) <= (:sonYil, :sonAy)
                 """, params, rs -> {
             YearMonth ay = YearMonth.of(rs.getInt("yil"), rs.getInt("ay"));
             long ogrenciId = rs.getLong("ogrenci_id");
             BigDecimal tutar = rs.getBigDecimal("odenen_tutar");
-            odeyenler.computeIfAbsent(ay, k -> new HashSet<>()).add(ogrenciId);
+            if (rs.getBoolean("tamam")) {
+                odeyenler.computeIfAbsent(ay, k -> new HashSet<>()).add(ogrenciId);
+            }
             tutarlar.merge(ay, tutar, BigDecimal::add);
             OgrenciKaydi kayit = ogrenciler.get(ogrenciId);
             grupTutarlari.merge(kayit != null && kayit.grupId() != null ? kayit.grupId() : -1L, tutar, BigDecimal::add);

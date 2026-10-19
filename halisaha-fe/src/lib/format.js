@@ -95,6 +95,7 @@ export const ODEME_DURUMU_LABEL = {
   ODENDI: 'Ödendi',
   ODENMEDI: 'Ödenmedi',
   KISMI_ODENDI: 'Kısmi ödendi',
+  KISMI_GECIKMIS: 'Kısmi ödendi · Gecikmiş',
   ODEME_BEKLIYOR: 'Ödeme bekliyor',
 };
 

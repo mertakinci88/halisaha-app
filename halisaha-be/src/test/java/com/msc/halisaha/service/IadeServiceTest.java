@@ -7,8 +7,7 @@ import com.msc.halisaha.dto.AbonelikOdemeRequest;
 import com.msc.halisaha.dto.AbonelikRequest;
 import com.msc.halisaha.dto.EnvanterSatisResponse;
 import com.msc.halisaha.dto.IadeRequest;
-import com.msc.halisaha.dto.OgrenciOdemeAyRequest;
-import com.msc.halisaha.dto.OgrenciOdemeKaydetRequest;
+import com.msc.halisaha.dto.OgrenciOdemeRequest;
 import com.msc.halisaha.dto.RezervasyonRequest;
 import com.msc.halisaha.dto.RezervasyonResponse;
 import com.msc.halisaha.entity.OdemeYontemi;
@@ -115,20 +114,19 @@ class IadeServiceTest {
     @Test
     void ogrenciOdemesiIadesiOdemeyiIadeninAltinaDusurmeyeIzinVermez() {
         int yil = 2030;
-        var yanit = ogrenciOdemeService.kaydet(k.ogrenciA.getId(), yil, new OgrenciOdemeKaydetRequest(List.of(
-                new OgrenciOdemeAyRequest(1, new BigDecimal("500"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null))));
-        Long odemeId = yanit.aylar().get(0).id();
+        var yanit = ogrenciOdemeService.ekle(k.ogrenciA.getId(), yil, 1,
+                new OgrenciOdemeRequest(new BigDecimal("500"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null, true));
+        Long odemeId = yanit.aylar().get(0).odemeler().get(0).id();
         iadeService.yap(new IadeRequest(null, odemeId, null, null, new BigDecimal("200"), OdemeYontemi.KART, null, null, null));
         assertEquals(400, hata(() -> iadeService.yap(new IadeRequest(null, odemeId, null, null, new BigDecimal("300.01"),
                 OdemeYontemi.NAKIT, null, null, null))).getStatus().value());
 
         // Ödeme iade tutarının altına düşürülemez ve silinemez; üstüne düşürülebilir
-        assertEquals(400, hata(() -> ogrenciOdemeService.kaydet(k.ogrenciA.getId(), yil, new OgrenciOdemeKaydetRequest(List.of(
-                new OgrenciOdemeAyRequest(1, new BigDecimal("100"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null))))).getStatus().value());
-        assertEquals(400, hata(() -> ogrenciOdemeService.kaydet(k.ogrenciA.getId(), yil, new OgrenciOdemeKaydetRequest(List.of(
-                new OgrenciOdemeAyRequest(1, BigDecimal.ZERO, null, null, null, null))))).getStatus().value());
-        ogrenciOdemeService.kaydet(k.ogrenciA.getId(), yil, new OgrenciOdemeKaydetRequest(List.of(
-                new OgrenciOdemeAyRequest(1, new BigDecimal("250"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null))));
+        assertEquals(400, hata(() -> ogrenciOdemeService.guncelle(k.ogrenciA.getId(), yil, 1, odemeId,
+                new OgrenciOdemeRequest(new BigDecimal("100"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null, true))).getStatus().value());
+        assertEquals(400, hata(() -> ogrenciOdemeService.sil(k.ogrenciA.getId(), yil, 1, odemeId)).getStatus().value());
+        ogrenciOdemeService.guncelle(k.ogrenciA.getId(), yil, 1, odemeId,
+                new OgrenciOdemeRequest(new BigDecimal("250"), OdemeYontemi.NAKIT, null, LocalDate.of(yil, 1, 5), null, true));
     }
 
     @Test
