@@ -94,6 +94,27 @@ class AbonelikServiceTest {
     }
 
     @Test
+    void sayfaliListeDurumSahaVeAramaIleFiltrelenir() {
+        AbonelikResponse r = abonelikService.olustur(istek("10000", "4000"));
+        assertEquals(1, abonelikService.sayfa(null, null, null, null, 0, 20).toplamKayit());
+        assertEquals(1, abonelikService.sayfa(AbonelikDurum.AKTIF, saha.getId(), null, "ali", 0, 20).toplamKayit());
+        assertEquals(0, abonelikService.sayfa(AbonelikDurum.IPTAL, null, null, null, 0, 20).toplamKayit());
+        int gun = baslangic.getDayOfWeek().getValue();
+        assertEquals(1, abonelikService.sayfa(null, null, gun, null, 0, 20).toplamKayit());
+        assertEquals(0, abonelikService.sayfa(null, null, gun % 7 + 1, null, 0, 20).toplamKayit());      // başka gün
+        assertEquals(0, abonelikService.sayfa(null, saha.getId() + 999, null, null, 0, 20).toplamKayit());    // başka saha
+        assertEquals(0, abonelikService.sayfa(null, null, null, "yok böyle biri", 0, 20).toplamKayit());
+
+        var sayfa = abonelikService.sayfa(null, null, null, null, 0, 20);
+        assertEquals(r.id(), sayfa.icerik().get(0).id());
+        assertEquals(1, sayfa.toplamSayfa());
+        // sayfa sınırı aşılırsa boş içerik döner, toplam korunur
+        var ileri = abonelikService.sayfa(null, null, null, null, 5, 20);
+        assertEquals(0, ileri.icerik().size());
+        assertEquals(1, ileri.toplamKayit());
+    }
+
+    @Test
     void abonelik52HaftalikRezervasyonOlusturur() {
         AbonelikResponse r = abonelikService.olustur(istek("10000", "4000"));
 

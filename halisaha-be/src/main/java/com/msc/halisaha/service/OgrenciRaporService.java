@@ -63,6 +63,14 @@ public class OgrenciRaporService {
                     SELECT 1 FROM ogrenci_odeme p
                     WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)
                 """, params);
+        long kismi = sayi("""
+                SELECT COUNT(*) FROM ogrenci o
+                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF'
+                  AND EXISTS (SELECT 1 FROM ogrenci_odeme p
+                              WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.odenen_tutar > 0)
+                  AND NOT EXISTS (SELECT 1 FROM ogrenci_odeme p
+                                  WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)
+                """, params);
         long ardisik = sayi("""
                 SELECT COUNT(*) FROM ogrenci o
                 WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.kayit_tarih < :oncekiAyBasi
@@ -76,7 +84,7 @@ public class OgrenciRaporService {
                 WHERE isletme_id = :isletmeId AND kayit_tarih >= :ayBasi AND kayit_tarih < :aySonu
                 """, params);
 
-        return new OgrenciRaporu(donem.getYear(), donem.getMonthValue(), aktif, pasif, odeyen, aktif - odeyen,
+        return new OgrenciRaporu(donem.getYear(), donem.getMonthValue(), aktif, pasif, odeyen, aktif - odeyen, kismi,
                 oran(odeyen, aktif), ardisik, yeni, gruplar(params), trend(donem, params));
     }
 
@@ -152,6 +160,7 @@ public class OgrenciRaporService {
 
         // Ay -> o ay ödeme yapan öğrenciler ve ayın toplam tutarı
         Map<YearMonth, Set<Long>> odeyenler = new HashMap<>();
+        Map<YearMonth, Set<Long>> odemeAlanlar = new HashMap<>();   // tutarı olan ödemesi girilmiş (tamam olsun olmasın)
         Map<YearMonth, BigDecimal> tutarlar = new HashMap<>();
         Map<Long, BigDecimal> grupTutarlari = new HashMap<>();
         jdbc.query("""
@@ -163,6 +172,9 @@ public class OgrenciRaporService {
             YearMonth ay = YearMonth.of(rs.getInt("yil"), rs.getInt("ay"));
             long ogrenciId = rs.getLong("ogrenci_id");
             BigDecimal tutar = rs.getBigDecimal("odenen_tutar");
+            if (tutar.signum() > 0) {
+                odemeAlanlar.computeIfAbsent(ay, k -> new HashSet<>()).add(ogrenciId);
+            }
             if (rs.getBoolean("tamam")) {
                 odeyenler.computeIfAbsent(ay, k -> new HashSet<>()).add(ogrenciId);
             }
@@ -184,6 +196,8 @@ public class OgrenciRaporService {
         for (YearMonth ay = ilkAy; !ay.isAfter(sonAy); ay = ay.plusMonths(1)) {
             LocalDateTime aySonu = ay.plusMonths(1).atDay(1).atStartOfDay();
             Set<Long> odeyen = odeyenler.getOrDefault(ay, Set.of());
+            Set<Long> odemeAlan = odemeAlanlar.getOrDefault(ay, Set.of());
+            long kismiSayisi = 0;
             long uygun = 0;
             long odeyenSayisi = 0;
             Map<Long, long[]> grupSayilari = new HashMap<>();   // grup -> {uygun, ödeyen}
@@ -197,11 +211,13 @@ public class OgrenciRaporService {
                 if (odeyen.contains(o.id())) {
                     sayi[1]++;
                     odeyenSayisi++;
+                } else if (odemeAlan.contains(o.id())) {
+                    kismiSayisi++;
                 }
             }
             BigDecimal oran = oran(odeyenSayisi, uygun);
             BigDecimal tutar = tutarlar.getOrDefault(ay, BigDecimal.ZERO);
-            aylar.add(new OgrenciAylikRaporu.AySatiri(ay.getYear(), ay.getMonthValue(), uygun, odeyenSayisi, uygun - odeyenSayisi, oran, tutar));
+            aylar.add(new OgrenciAylikRaporu.AySatiri(ay.getYear(), ay.getMonthValue(), uygun, odeyenSayisi, uygun - odeyenSayisi, kismiSayisi, oran, tutar));
             toplamTutar = toplamTutar.add(tutar);
             ayAdedi++;
             if (uygun > 0) {

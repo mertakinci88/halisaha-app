@@ -10,6 +10,7 @@ import com.msc.halisaha.dto.AbonelikRequest;
 import com.msc.halisaha.dto.AbonelikIptalOnizlemeResponse;
 import com.msc.halisaha.dto.AbonelikIptalRequest;
 import com.msc.halisaha.dto.AbonelikResponse;
+import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.entity.AbonelikDurum;
 import com.msc.halisaha.service.AbonelikService;
 import jakarta.validation.Valid;
@@ -36,9 +37,16 @@ public class AbonelikController {
 
     private final AbonelikService abonelikService;
 
+    /** Sayfalı abone listesi; durum, saha, gün ve arama boşsa o filtre uygulanmaz. */
     @GetMapping
-    public List<AbonelikResponse> listele(@RequestParam(required = false) AbonelikDurum durum, @RequestParam(required = false) String q) {
-        return abonelikService.listele(durum, q);
+    public PageResponse<AbonelikResponse> listele(
+            @RequestParam(required = false) AbonelikDurum durum,
+            @RequestParam(required = false) Long sahaId,
+            @RequestParam(required = false) Integer haftaGunu,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int sayfa,
+            @RequestParam(defaultValue = "20") int boyut) {
+        return abonelikService.sayfa(durum, sahaId, haftaGunu, q, sayfa, boyut);
     }
 
     /** Standart abonelik ücreti: kayıt formunda ücret alanını doldurur. */

@@ -14,6 +14,7 @@ import com.msc.halisaha.dto.AbonelikOnizlemeRequest;
 import com.msc.halisaha.dto.AbonelikOnizlemeResponse;
 import com.msc.halisaha.dto.AbonelikRequest;
 import com.msc.halisaha.dto.AbonelikResponse;
+import com.msc.halisaha.dto.PageResponse;
 import com.msc.halisaha.dto.IadeRequest;
 import com.msc.halisaha.entity.Abonelik;
 import com.msc.halisaha.entity.AbonelikAyar;
@@ -99,6 +100,20 @@ public class AbonelikService {
         ayar.setStandartUcret(request.standartUcret().setScale(2, RoundingMode.HALF_UP));
         ayarRepository.save(ayar);
         return new AbonelikAyarResponse(ayar.getStandartUcret());
+    }
+
+    /** Sayfalı liste: durum, saha, haftanın günü (1 = Pazartesi ... 7 = Pazar) ve arama (ad soyad / telefon) filtreleriyle; toplamKayit filtrelenmiş abone sayısıdır. */
+    public PageResponse<AbonelikResponse> sayfa(AbonelikDurum durum, Long sahaId, Integer haftaGunu, String q, int sayfa, int boyut) {
+        sayfa = Math.max(sayfa, 0);
+        boyut = Math.min(Math.max(boyut, 1), 200);
+        List<AbonelikResponse> tumu = listele(durum, q).stream()
+                .filter(a -> sahaId == null || sahaId.equals(a.sahaId()))
+                .filter(a -> haftaGunu == null || haftaGunu == a.haftaGunu())
+                .toList();
+        int bas = Math.min(sayfa * boyut, tumu.size());
+        int son = Math.min(bas + boyut, tumu.size());
+        int toplamSayfa = (tumu.size() + boyut - 1) / boyut;
+        return new PageResponse<>(tumu.subList(bas, son), sayfa, boyut, tumu.size(), toplamSayfa);
     }
 
     public List<AbonelikResponse> listele(AbonelikDurum durum, String q) {

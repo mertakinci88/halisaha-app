@@ -15,28 +15,29 @@ function AyGorunumu({ yil, ay }) {
     <RaporDurumu rapor={rapor}>
       {(v) => {
         const veri = v.trend.map((m) => ({ ...m, etiket: AYLAR[m.ay - 1].slice(0, 3) + ' ' + String(m.yil).slice(2) }));
+        // Öğrenciler sayfasındaki ödeme filtreleri içinde bulunulan ayı kapsar; bağlantı yalnızca o ay için anlamlıdır
+        const buAy = v.yil === new Date().getFullYear() && v.ay === new Date().getMonth() + 1;
+        const listeBaglantisi = (odeme) =>
+          buAy ? (
+            <Link to={'/ogrenciler?odeme=' + odeme} className="text-accent-700 underline">
+              Listeyi aç
+            </Link>
+          ) : undefined;
         return (
           <>
             <Aciklama>
               {AYLAR[v.ay - 1]} {v.yil} ayı ödeme durumu (bitiş tarihinin ayı esas alınır).
             </Aciklama>
-            <OzetIzgara>
-              <Ozet vurgu etiket="Tahsilat oranı" bilgi="Aktif öğrencilerin yüzde kaçının bu ay ödeme yaptığı." deger={yuzde(v.tahsilatOrani)} alt={v.odeyen + ' / ' + v.aktifOgrenci + ' aktif öğrenci'} />
-              <Ozet etiket="Ödeyen" bilgi="Bu ay için ödeme girilmiş aktif öğrenci sayısı." deger={v.odeyen} />
-              <Ozet
-                etiket="Ödemeyen" bilgi="Bu ay için henüz ödeme girilmemiş aktif öğrenci sayısı. Kimler olduğunu Öğrenciler sayfasından görebilirsiniz."
-                deger={v.odemeyen}
-                alt={
-                  <Link to="/ogrenciler?odeme=bekleyen" className="text-accent-700 underline">
-                    Listeyi aç
-                  </Link>
-                }
-              />
-              <Ozet etiket="Ardışık 2 ay ödemeyen" bilgi="Hem geçen ay hem bu ay hiç ödeme yapmayan aktif öğrenciler. Takip edilmesi gereken öğrencileri gösterir." deger={v.ardisikOdemeyen} alt={v.yeniKayit + ' yeni kayıt · ' + v.pasifOgrenci + ' pasif öğrenci'} />
+            <OzetIzgara className="lg:grid-cols-5">
+              <Ozet vurgu etiket="Tahsilat oranı" bilgi="Aktif öğrencilerin yüzde kaçının bu ayki ödemesini tamamladığı. Kısmi ödeme yapıp ayı tamamlamayanlar dahil değildir." deger={yuzde(v.tahsilatOrani)} alt={v.odeyen + ' / ' + v.aktifOgrenci + ' aktif öğrenci'} />
+              <Ozet etiket="Ödeyen" bilgi="Bu ayki ödemesini tamamlamış (Tamamı ödendi işaretli ya da parasız kapatılmış) aktif öğrenci sayısı." deger={v.odeyen} alt={listeBaglantisi('odendi')} />
+              <Ozet etiket="Kısmi ödeyen" bilgi="Bu ay ödeme almış ama ayı henüz tamamlamamış aktif öğrenci sayısı. Kalan ödemeleri beklenir." deger={v.kismiOdeyen} alt={listeBaglantisi('kismi')} />
+              <Ozet etiket="Hiç ödemeyen" bilgi="Bu ay için hiç ödeme girilmemiş aktif öğrenci sayısı. Ödeyen + Kısmi ödeyen + Hiç ödemeyen, aktif öğrenci sayısını verir." deger={v.odemeyen - v.kismiOdeyen} alt={listeBaglantisi('hic')} />
+              <Ozet etiket="Ardışık 2 ay ödemeyen" bilgi="Hem geçen ay hem bu ay ödemesini tamamlamamış aktif öğrenciler. Takip edilmesi gereken öğrencileri gösterir." deger={v.ardisikOdemeyen} alt={v.yeniKayit + ' yeni kayıt · ' + v.pasifOgrenci + ' pasif öğrenci'} />
             </OzetIzgara>
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <Kutu baslik="Grup bazında ödeme oranı" bilgi="Her grupta kaç aktif öğrenciden kaçının bu ay ödeme yaptığı.">
+              <Kutu baslik="Grup bazında ödeme oranı" bilgi="Her grupta kaç aktif öğrenciden kaçının bu ayki ödemesini tamamladığı.">
                 <div className="flex flex-col gap-3">
                   {v.gruplar.length === 0 ? <Aciklama>Aktif öğrenci yok.</Aciklama> : null}
                   {v.gruplar.map((g) => (
@@ -51,7 +52,7 @@ function AyGorunumu({ yil, ay }) {
                 </div>
               </Kutu>
 
-              <Kutu baslik="Aylık tahsilat" bilgi="Son 12 ayda öğrencilerden alınan ödeme tutarı. Çubuğun üzerine gelince o ay ödeme yapan öğrenci sayısını da görebilirsiniz." aciklama="Son 12 ay, tahsil edilen ödemeler">
+              <Kutu baslik="Aylık tahsilat" bilgi="Son 12 ayda öğrencilerden alınan ödeme tutarı. Çubuğun üzerine gelince o ay ödemesini tamamlayan öğrenci sayısını da görebilirsiniz." aciklama="Son 12 ay, tahsil edilen ödemeler">
                 <GrafikAlani>
                   <BarChart data={veri} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={RENK.izgara} vertical={false} />
