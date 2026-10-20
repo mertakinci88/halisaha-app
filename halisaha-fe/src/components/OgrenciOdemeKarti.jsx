@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, CornerDownRight, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, CornerDownRight, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -20,6 +20,24 @@ const SATIR_RENK = {
   KISMI_GECIKMIS: 'bg-hata-100',
   ODEME_BEKLIYOR: 'bg-yellow-100',
   ODENMEDI: 'bg-hata-100',
+};
+
+const KISA_DURUM = {
+  ODENDI: 'Ödendi',
+  KISMI_ODENDI: 'Kısmi',
+  KISMI_GECIKMIS: 'Gecikmiş',
+  ODEME_BEKLIYOR: 'Bekliyor',
+  ODENMEDI: 'Ödenmedi',
+};
+
+const GECIKMIS = ['KISMI_GECIKMIS', 'ODENMEDI'];
+
+const KART_CERCEVE = {
+  ODENDI: 'border-basari-600',
+  KISMI_ODENDI: 'border-yellow-600',
+  KISMI_GECIKMIS: 'border-hata-600',
+  ODEME_BEKLIYOR: 'border-yellow-600',
+  ODENMEDI: 'border-hata-600',
 };
 
 const BOS_FORM = { id: null, tutar: '', sekil: '', hesapId: '', tarih: '', not: '', tamam: true };
@@ -53,6 +71,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
   const [acikAy, setAcikAy] = useState(null);
+  const [seciliAy, setSeciliAy] = useState(null);
   const [form, setForm] = useState(BOS_FORM);
   const [formHata, setFormHata] = useState('');
   const [silinecek, setSilinecek] = useState(null);
@@ -70,6 +89,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
 
   useEffect(() => {
     setAcikAy(null);
+    setSeciliAy(yil === new Date().getFullYear() ? new Date().getMonth() + 1 : null);
     yukle();
   }, [ogrenciId, yil]);
 
@@ -150,6 +170,12 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
     if (acikAy != null) return toast.hata('Önce açık ödeme formunu kaydedin ya da vazgeçin.');
     setYil(y);
   };
+  const ayGit = (ay) => {
+    if (acikAy != null && acikAy !== ay) return toast.hata('Önce açık ödeme formunu kaydedin ya da vazgeçin.');
+    setSeciliAy(seciliAy === ay ? null : ay);
+  };
+  const odenenAy = veri ? veri.aylar.filter((a) => a.durum === 'ODENDI').length : 0;
+  const gecikmisAy = veri ? veri.aylar.filter((a) => GECIKMIS.includes(a.durum)).length : 0;
   const buAyMi = (a) => veri != null && a.yil === Number(veri.bugun.slice(0, 4)) && a.ay === Number(veri.bugun.slice(5, 7));
 
   const formKutusu = (a) => (
@@ -286,33 +312,78 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
 
       {veri ? (
         <>
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-l-4 border-accent bg-accent-100 px-3 py-2">
-            <span className="text-[15.5px] font-semibold text-ink/80">{yil} toplam ödenen:</span>
-            <b className="font-heading text-[26px] font-semibold tabular-nums text-accent-700">{tl(veri.toplamOdenen)}</b>
+          <div className="grid gap-2 border-l-4 border-accent bg-accent-100 px-3 py-2">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-[15.5px] font-semibold text-ink/80">{yil} toplam ödenen:</span>
+              <b className="font-heading text-[26px] font-semibold tabular-nums text-accent-700">{tl(veri.toplamOdenen)}</b>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="text-[14.5px] font-semibold tabular-nums">{odenenAy}/12 ay ödendi</span>
+              {gecikmisAy > 0 ? (
+                <span className="inline-flex items-center gap-1 text-[14px] font-semibold text-hata-800">
+                  <AlertTriangle size={15} strokeWidth={1.5} aria-hidden="true" />
+                  {gecikmisAy} ay gecikmiş
+                </span>
+              ) : null}
+            </div>
+            <div className="h-1.5 w-full bg-white/70" role="progressbar" aria-valuemin={0} aria-valuemax={12} aria-valuenow={odenenAy} aria-label="Ödenen ay sayısı">
+              <div className="h-full bg-basari-600" style={{ width: (odenenAy / 12) * 100 + '%' }} />
+            </div>
           </div>
 
-          <div className="flex flex-col">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {veri.aylar.map((a) => (
-              <div key={a.ay} className="border-b border-hairline">
+              <button
+                key={a.ay}
+                type="button"
+                aria-pressed={seciliAy === a.ay}
+                onClick={() => ayGit(a.ay)}
+                className={cn(
+                  'flex min-w-0 cursor-pointer flex-col items-start gap-0.5 border px-2.5 py-2 text-left transition-[box-shadow,filter] hover:shadow-md hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700',
+                  SATIR_RENK[a.durum],
+                  seciliAy === a.ay ? cn('border-2 border-accent-700 px-[9px] py-[7px]') : KART_CERCEVE[a.durum],
+                )}
+              >
+                <span className="flex w-full items-center gap-1.5 font-semibold">
+                  <span className="truncate">{AYLAR[a.ay - 1]}</span>
+                  {buAyMi(a) ? <span className="text-[11.5px] font-normal text-ink/60">bu ay</span> : null}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-ink/75">
+                  {GECIKMIS.includes(a.durum) ? <AlertTriangle size={13} strokeWidth={1.5} className="shrink-0 text-hata-800" aria-hidden="true" /> : null}
+                  {KISA_DURUM[a.durum] || '—'}
+                </span>
+                <b className="text-[14.5px] font-semibold tabular-nums">{a.odemeler.length > 0 ? tl(a.odenenTutar) : '—'}</b>
+              </button>
+            ))}
+          </div>
+
+          {(() => {
+            const a = veri.aylar.find((x) => x.ay === seciliAy);
+            if (!a) return <p className="m-0 text-[14px] text-ink/60">Ödemeleri görmek ya da eklemek için bir aya dokunun.</p>;
+            return (
+              <div className="border border-hairline">
                 <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5', SATIR_RENK[a.durum])}>
-                  <span className="min-w-[78px] font-semibold">
-                    {AYLAR[a.ay - 1]}
-                    {buAyMi(a) ? <span className="ml-2 text-[12.5px] font-normal text-ink/60">bu ay</span> : null}
+                  <span className="font-semibold">
+                    {AYLAR[a.ay - 1]} {yil}
                   </span>
                   <OdemeDurumuEtiketi belirgin durum={a.durum} />
-                  {a.odemeler.length > 0 ? (
-                    <b className="font-semibold tabular-nums">{tl(a.odenenTutar)}</b>
-                  ) : null}
+                  {a.odemeler.length > 0 ? <b className="font-semibold tabular-nums">{tl(a.odenenTutar)}</b> : null}
                   <Button size="sm" variant="cerceve" className="ml-auto" disabled={acikAy != null} onClick={() => ekleAc(a.ay)}>
                     <Plus size={15} strokeWidth={1.5} />
                     <span>Ödeme ekle</span>
                   </Button>
                 </div>
-                {a.odemeler.length > 0 ? <ul className="m-0 list-none pb-1.5 pl-8 pr-2">{a.odemeler.map((o) => (acikAy === a.ay && form.id === o.id ? null : odemeSatiri(a, o)))}</ul> : null}
+                {a.odemeler.length > 0 ? (
+                  <ul className="m-0 list-none pb-1.5 pl-8 pr-2">
+                    {a.odemeler.map((o) => (acikAy === a.ay && form.id === o.id ? null : odemeSatiri(a, o)))}
+                  </ul>
+                ) : (
+                  <p className="m-0 px-3 py-2 text-[14px] text-ink/60">Bu ay için ödeme girilmemiş.</p>
+                )}
                 {acikAy === a.ay ? formKutusu(a) : null}
               </div>
-            ))}
-          </div>
+            );
+          })()}
 
           <IadeBolumu
             listeParams={{ ogrenciId, yil }}
