@@ -76,6 +76,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
   const [formHata, setFormHata] = useState('');
   const [silinecek, setSilinecek] = useState(null);
   const formRef = useRef(null);
+  const panelRef = useRef(null);
 
   const yukle = () => {
     setYukleniyor(true);
@@ -173,6 +174,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
   const ayGit = (ay) => {
     if (acikAy != null && acikAy !== ay) return toast.hata('Önce açık ödeme formunu kaydedin ya da vazgeçin.');
     setSeciliAy(seciliAy === ay ? null : ay);
+    if (seciliAy !== ay) setTimeout(() => panelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
   };
   const odenenAy = veri ? veri.aylar.filter((a) => a.durum === 'ODENDI').length : 0;
   const gecikmisAy = veri ? veri.aylar.filter((a) => GECIKMIS.includes(a.durum)).length : 0;
@@ -361,9 +363,9 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
             const a = veri.aylar.find((x) => x.ay === seciliAy);
             if (!a) return <p className="m-0 text-[14px] text-ink/60">Ödemeleri görmek ya da eklemek için bir aya dokunun.</p>;
             return (
-              <div className="border border-hairline">
-                <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5', SATIR_RENK[a.durum])}>
-                  <span className="font-semibold">
+              <div ref={panelRef} className="border border-ink/35 bg-white">
+                <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-3 py-2.5', SATIR_RENK[a.durum])}>
+                  <span className="text-[16.5px] font-semibold">
                     {AYLAR[a.ay - 1]} {yil}
                   </span>
                   <OdemeDurumuEtiketi belirgin durum={a.durum} />
@@ -378,7 +380,7 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                     {a.odemeler.map((o) => (acikAy === a.ay && form.id === o.id ? null : odemeSatiri(a, o)))}
                   </ul>
                 ) : (
-                  <p className="m-0 px-3 py-2 text-[14px] text-ink/60">Bu ay için ödeme girilmemiş.</p>
+                  <p className="m-0 px-3 py-3 text-[14.5px] text-ink/75">Bu ay için ödeme girilmemiş.</p>
                 )}
                 {acikAy === a.ay ? formKutusu(a) : null}
               </div>
