@@ -2,6 +2,7 @@ package com.msc.halisaha.service;
 
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.entity.OturumOlay;
+import com.msc.halisaha.common.security.GirisDenemeSinirlayici;
 import com.msc.halisaha.common.security.IstemciBilgisi;
 import com.msc.halisaha.common.security.JwtService;
 import com.msc.halisaha.common.security.UserPrincipal;
@@ -37,6 +38,7 @@ public class AuthService {
     private final KullaniciRepository kullaniciRepository;
     private final PasswordEncoder passwordEncoder;
     private final OturumLogService oturumLogService;
+    private final GirisDenemeSinirlayici girisDenemeSinirlayici;
 
     public TokenResponse login(LoginRequest request) {
         return login(request, IstemciBilgisi.BILINMIYOR);
@@ -45,17 +47,20 @@ public class AuthService {
     /** Başarılı ve başarısız girişler, istemci adresiyle birlikte giriş geçmişine yazılır. */
     @Transactional
     public TokenResponse login(LoginRequest request, IstemciBilgisi bilgi) {
+        girisDenemeSinirlayici.kontrolEt(bilgi, request.kullaniciAdi());
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.kullaniciAdi(), request.sifre()));
         } catch (AuthenticationException e) {
+            girisDenemeSinirlayici.basarisiz(bilgi, request.kullaniciAdi());
             // Kullanıcı biliniyorsa (yanlış şifre / pasif hesap) kendisine bağlanır; bilinmiyorsa yalnızca girilen ad tutulur
             oturumLogService.kaydet(OturumOlay.BASARISIZ_GIRIS,
                     kullaniciRepository.findByKullaniciAdi(request.kullaniciAdi()).orElse(null), request.kullaniciAdi(), bilgi);
             throw e;
         }
 
+        girisDenemeSinirlayici.basarili(bilgi, request.kullaniciAdi());
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         oturumLogService.kaydet(OturumOlay.GIRIS, principal.getKullanici(), request.kullaniciAdi(), bilgi);
         return issueTokenPair(principal.getKullanici());
