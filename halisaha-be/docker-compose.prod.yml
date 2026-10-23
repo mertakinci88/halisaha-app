@@ -36,6 +36,16 @@ services:
       - traefik.http.middlewares.halisaha-api-retry.retry.initialinterval=100ms
       - traefik.http.routers.halisaha-api.middlewares=halisaha-api-retry
       - traefik.http.services.halisaha-api.loadbalancer.server.port=8080
+      # Giriş ucu için ayrı rota: IP başına dakikada ~10 istek (parola deneme saldırılarını yavaşlatır)
+      - traefik.http.routers.halisaha-api-login.rule=Host(`api.halisahapro.tech`) && Path(`/api/auth/login`)
+      - traefik.http.routers.halisaha-api-login.priority=100
+      - traefik.http.routers.halisaha-api-login.entrypoints=websecure
+      - traefik.http.routers.halisaha-api-login.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.halisaha-api-login-limit.ratelimit.average=10
+      - traefik.http.middlewares.halisaha-api-login-limit.ratelimit.period=1m
+      - traefik.http.middlewares.halisaha-api-login-limit.ratelimit.burst=5
+      - traefik.http.routers.halisaha-api-login.middlewares=halisaha-api-login-limit,halisaha-api-retry
+      - traefik.http.routers.halisaha-api-login.service=halisaha-api
 
 volumes:
   halisaha-postgres-data:
