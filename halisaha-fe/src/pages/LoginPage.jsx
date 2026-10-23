@@ -11,7 +11,7 @@ import { apiHata } from '@/lib/api';
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [kullaniciAdi, setKullaniciAdi] = useState('admin');
+  const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [sifre, setSifre] = useState('');
   const [hata, setHata] = useState('');
   const [bekliyor, setBekliyor] = useState(false);
