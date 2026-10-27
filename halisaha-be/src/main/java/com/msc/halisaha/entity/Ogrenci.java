@@ -61,6 +61,11 @@ public class Ogrenci {
     @Column(name = "antrenman_gun_sayisi")
     private Integer antrenmanGunSayisi;
 
+    /** Kapalıysa öğrenciden ödeme alınmaz: ödeme durumu, borçlu listesi ve ödeme raporlarında yer almaz. */
+    @Column(name = "odeme_alinir", nullable = false)
+    @Builder.Default
+    private boolean odemeAlinir = true;
+
     @Column(name = "kayit_tarih", nullable = false, updatable = false)
     private LocalDateTime kayitTarih;
 

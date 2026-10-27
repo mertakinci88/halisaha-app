@@ -36,12 +36,12 @@ export default function OgrenciAylikGorunum({ baslangic, bitis }) {
               <Ozet
                 etiket="Ortalama tahsilat oranı"
                 deger={yuzde(v.ortalamaOran)}
-                bilgi="Her ay için aktif öğrencilerin yüzde kaçının o ayki ödemesini tamamladığına bakılır; bu oranların ortalamasıdır. Kayıtlı öğrencisi olmayan aylar hesaba katılmaz."
+                bilgi="Her ay için ödeme alınan aktif öğrencilerin yüzde kaçının o ayki ödemesini tamamladığına bakılır; bu oranların ortalamasıdır. Kayıtlı öğrencisi olmayan aylar hesaba katılmaz."
               />
               <Ozet
                 etiket="Aktif öğrenci"
                 deger={v.aktifOgrenci}
-                bilgi="Şu an aktif olan öğrenci sayısı."
+                bilgi="Şu an aktif olan ve ödeme alınan öğrenci sayısı (ödemesiz öğrenciler hariç)."
               />
               <Ozet
                 etiket="Yeni kayıt"
@@ -77,7 +77,7 @@ export default function OgrenciAylikGorunum({ baslangic, bitis }) {
                 </GrafikAlani>
               </Kutu>
 
-              <Kutu baslik="Aylık tahsilat oranı" bilgi="Her ay aktif öğrencilerin yüzde kaçının ödemesini tamamladığı. O aya ait kayıtlı öğrenci yoksa çubuk gösterilmez.">
+              <Kutu baslik="Aylık tahsilat oranı" bilgi="Her ay ödeme alınan aktif öğrencilerin yüzde kaçının ödemesini tamamladığı. O aya ait kayıtlı öğrenci yoksa çubuk gösterilmez.">
                 <GrafikAlani>
                   <BarChart data={aylar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={RENK.izgara} vertical={false} />
@@ -103,7 +103,7 @@ export default function OgrenciAylikGorunum({ baslangic, bitis }) {
               </Kutu>
             </div>
 
-            <Kutu baslik="Aylık detay" bilgi="Her ay için kayıtlı aktif öğrenci sayısı, ödemesini tamamlayan (Ödeyen), kısmi ödeme yapıp tamamlamayan (Kısmi) ve hiç ödeme yapmayan öğrenciler ile alınan toplam tutar (kısmi ödemeler dahil).">
+            <Kutu baslik="Aylık detay" bilgi="Her ay için kayıtlı, ödeme alınan aktif öğrenci sayısı, ödemesini tamamlayan (Ödeyen), kısmi ödeme yapıp tamamlamayan (Kısmi) ve hiç ödeme yapmayan öğrenciler ile alınan toplam tutar (kısmi ödemeler dahil).">
               <Table kart>
                 <thead>
                   <tr>

@@ -5,7 +5,7 @@ import { AYLAR, tl } from '@/lib/format';
 import { RENK, tlKisa, yuzde } from '@/lib/rapor';
 import OgrenciAylikGorunum from './OgrenciAylikGorunum';
 import {
-  Aciklama, GrafikAlani, Kutu, OranSatiri, Ozet, OzetIzgara, RaporDurumu, TooltipKutusu, useRapor,
+  Aciklama, GrafikAlani, Kutu, Ozet, OzetIzgara, RaporDurumu, TooltipKutusu, useRapor,
 } from './RaporBilesenleri';
 
 function AyGorunumu({ yil, ay }) {
@@ -29,26 +29,34 @@ function AyGorunumu({ yil, ay }) {
               {AYLAR[v.ay - 1]} {v.yil} ayı ödeme durumu (bitiş tarihinin ayı esas alınır).
             </Aciklama>
             <OzetIzgara className="lg:grid-cols-5">
-              <Ozet vurgu etiket="Tahsilat oranı" bilgi="Aktif öğrencilerin yüzde kaçının bu ayki ödemesini tamamladığı. Kısmi ödeme yapıp ayı tamamlamayanlar dahil değildir." deger={yuzde(v.tahsilatOrani)} alt={v.odeyen + ' / ' + v.aktifOgrenci + ' aktif öğrenci'} />
+              <Ozet vurgu etiket="Tahsilat oranı" bilgi="Ödeme alınan aktif öğrencilerin yüzde kaçının bu ayki ödemesini tamamladığı. Kısmi ödeme yapıp ayı tamamlamayanlar ve ödeme alınmayan (ödemesiz) öğrenciler dahil değildir." deger={yuzde(v.tahsilatOrani)} alt={v.odeyen + ' / ' + v.aktifOgrenci + ' aktif öğrenci' + (v.odemesizOgrenci > 0 ? ' · ' + v.odemesizOgrenci + ' ödemesiz hariç' : '')} />
               <Ozet etiket="Ödeyen" bilgi="Bu ayki ödemesini tamamlamış (Tamamı ödendi işaretli ya da parasız kapatılmış) aktif öğrenci sayısı." deger={v.odeyen} alt={listeBaglantisi('odendi')} />
               <Ozet etiket="Kısmi ödeyen" bilgi="Bu ay ödeme almış ama ayı henüz tamamlamamış aktif öğrenci sayısı. Kalan ödemeleri beklenir." deger={v.kismiOdeyen} alt={listeBaglantisi('kismi')} />
-              <Ozet etiket="Hiç ödemeyen" bilgi="Bu ay için hiç ödeme girilmemiş aktif öğrenci sayısı. Ödeyen + Kısmi ödeyen + Hiç ödemeyen, aktif öğrenci sayısını verir." deger={v.odemeyen - v.kismiOdeyen} alt={listeBaglantisi('hic')} />
-              <Ozet etiket="Ardışık 2 ay ödemeyen" bilgi="Hem geçen ay hem bu ay ödemesini tamamlamamış aktif öğrenciler. Takip edilmesi gereken öğrencileri gösterir." deger={v.ardisikOdemeyen} alt={v.yeniKayit + ' yeni kayıt · ' + v.pasifOgrenci + ' pasif öğrenci'} />
+              <Ozet etiket="Hiç ödemeyen" bilgi="Bu ay için hiç ödeme girilmemiş aktif öğrenci sayısı. Ödeyen + Kısmi ödeyen + Hiç ödemeyen, ödeme alınan aktif öğrenci sayısını verir (ödemesiz öğrenciler hariç)." deger={v.odemeyen - v.kismiOdeyen} alt={listeBaglantisi('hic')} />
+              <Ozet etiket="Ardışık 2 ay ödemeyen" bilgi="Hem geçen ay hem bu ay ödemesini tamamlamamış, ödeme alınan aktif öğrenciler. Takip edilmesi gereken öğrencileri gösterir." deger={v.ardisikOdemeyen} alt={v.yeniKayit + ' yeni kayıt · ' + v.pasifOgrenci + ' pasif öğrenci'} />
             </OzetIzgara>
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <Kutu baslik="Grup bazında ödeme oranı" bilgi="Her grupta kaç aktif öğrenciden kaçının bu ayki ödemesini tamamladığı.">
-                <div className="flex flex-col gap-3">
+              <Kutu baslik="Grup bazında ödemeler" bilgi="Her grubun bu ay aldığı toplam tutar (kısmi ödemeler dahil); çubuk tutara göre en yüksek grubu esas alır. Altında ödemesini tamamlayan öğrenci sayısı ve ödeme oranı görünür. Ödemesiz öğrenciler oran hesabına dahil değildir.">
+                <div className="flex flex-col gap-3.5">
                   {v.gruplar.length === 0 ? <Aciklama>Aktif öğrenci yok.</Aciklama> : null}
-                  {v.gruplar.map((g) => (
-                    <OranSatiri
-                      key={g.grupId ?? 'grupsuz'}
-                      etiket={g.grupAd}
-                      deger={g.odeyen + ' / ' + g.aktif + ' · ' + yuzde(g.oran)}
-                      oran={Number(g.oran)}
-                      renk={RENK.ogrenci}
-                    />
-                  ))}
+                  {(() => {
+                    const enYuksek = Math.max(0, ...v.gruplar.map((g) => Number(g.tutar)));
+                    return v.gruplar.map((g) => (
+                      <div key={g.grupId ?? 'grupsuz'} className="flex flex-col gap-1">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="min-w-0 truncate text-[14.5px]">{g.grupAd}</span>
+                          <span className="shrink-0 text-[16px] tabular-nums">{tl(g.tutar)}</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden bg-ink/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={enYuksek > 0 ? Math.round((Number(g.tutar) / enYuksek) * 100) : 0}>
+                          <div className="h-full transition-[width] duration-500" style={{ width: (enYuksek > 0 ? (Number(g.tutar) / enYuksek) * 100 : 0) + '%', background: RENK.ogrenci }} />
+                        </div>
+                        <span className="text-[13px] text-ink/60">
+                          {g.odeyen + ' / ' + g.aktif + ' öğrenci ödedi · ' + yuzde(g.oran) + ' ödeme oranı'}
+                        </span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </Kutu>
 

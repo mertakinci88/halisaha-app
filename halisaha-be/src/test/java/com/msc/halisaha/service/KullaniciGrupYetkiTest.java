@@ -127,10 +127,10 @@ class KullaniciGrupYetkiTest {
     void kisitliPersonelOgrenciyiSadeceIzinliGrubaEkleyebilir() {
         personelOlarakGir(true, a.getId());
         assertEquals(404, assertThrows(ApiException.class,
-                () -> ogrenciService.create(new OgrenciRequest(b.getId(), "Deniz", null, null, null, null, null, null))).getStatus().value());
+                () -> ogrenciService.create(new OgrenciRequest(b.getId(), "Deniz", null, null, null, null, null, null, null))).getStatus().value());
         assertEquals(400, assertThrows(ApiException.class,
-                () -> ogrenciService.create(new OgrenciRequest(null, "Deniz", null, null, null, null, null, null))).getStatus().value());
-        assertEquals("Deniz", ogrenciService.create(new OgrenciRequest(a.getId(), "Deniz", null, null, null, null, null, null)).adSoyad());
+                () -> ogrenciService.create(new OgrenciRequest(null, "Deniz", null, null, null, null, null, null, null))).getStatus().value());
+        assertEquals("Deniz", ogrenciService.create(new OgrenciRequest(a.getId(), "Deniz", null, null, null, null, null, null, null)).adSoyad());
     }
 
     @Test

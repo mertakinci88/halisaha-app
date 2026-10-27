@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select, Textarea, TelInput } from '@/components/ui/input';
 import { Seg, SegOpt } from '@/components/ui/seg';
+import BilgiIkonu from '@/components/BilgiIkonu';
 import { Hata } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
@@ -20,6 +21,7 @@ const BOS = {
   durum: 'AKTIF',
   antrenmanGunSayisi: 2,
   not: '',
+  odemeAlinir: true,
 };
 
 export default function OgrenciKayitPage() {
@@ -53,6 +55,7 @@ export default function OgrenciKayitPage() {
         durum: form.durum,
         antrenmanGunSayisi: Number(form.antrenmanGunSayisi) || null,
         not: form.not.trim() || null,
+        odemeAlinir: form.odemeAlinir,
       });
       toast.basari('Öğrenci kaydedildi.');
       navigate('/ogrenciler', { replace: true });
@@ -103,7 +106,7 @@ export default function OgrenciKayitPage() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 min-[430px]:grid-cols-2">
                 <Field label="Haftalık antrenman günü">
                   <Select
                     value={form.antrenmanGunSayisi}
@@ -129,6 +132,17 @@ export default function OgrenciKayitPage() {
                   </Seg>
                 </Field>
               </div>
+
+              <Field label={<>Aylık ödeme<BilgiIkonu metin="Ödeme alınmaz seçilirse öğrenci ödeme durumunda, borçlu listesinde ve ödeme raporlarında yer almaz; hiçbir ay için borç oluşmaz. Sonradan öğrenci detayındaki Aylık ödemeler bölümünden değiştirilebilir." /></>}>
+                <Seg className="w-full">
+                  <SegOpt active={form.odemeAlinir} tone="basari" onClick={() => set('odemeAlinir', true)} className="flex-1">
+                    <span>Ödeme alınır</span>
+                  </SegOpt>
+                  <SegOpt active={!form.odemeAlinir} tone="notr" onClick={() => set('odemeAlinir', false)} className="flex-1">
+                    <span>Ödeme alınmaz</span>
+                  </SegOpt>
+                </Seg>
+              </Field>
             </div>
             <div className="grid content-start gap-3.5 border-t border-divider pt-5 md:border-t-0 md:pt-0">
               <h4 className="text-[22px]">Veli bilgileri</h4>

@@ -13,7 +13,9 @@ public enum OgrenciOdemeDurumu {
     /** Ödeme girilmemiş ama ayın ödeme gününe (15'i) kadar süre var. */
     ODEME_BEKLIYOR,
     /** Ödeme girilmemiş ve ödeme günü geçmiş. */
-    ODENMEDI;
+    ODENMEDI,
+    /** Öğrenciden ödeme alınmaz; hiçbir ay için borç oluşmaz. */
+    ODEMESIZ;
 
     /** Her ayın bu günü ödeme günüdür; bu günün sonuna kadar tamamlanmamış ay gecikmiş sayılmaz. */
     public static final int ODEME_GUNU = 15;

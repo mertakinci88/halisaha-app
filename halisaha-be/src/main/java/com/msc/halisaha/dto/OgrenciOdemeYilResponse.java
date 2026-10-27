@@ -12,6 +12,10 @@ public record OgrenciOdemeYilResponse(
         List<OgrenciOdemeAyResponse> aylar,
         BigDecimal toplamOdenen,
         /** Kayıtlı yıllar (yıl seçicisi için); seçili yıl ve bu yıl dahil. */
-        List<Integer> yillar
+        List<Integer> yillar,
+        /** Kapalıysa öğrenciden ödeme alınmaz (yeni ödeme eklenemez, aylar için borç hesaplanmaz). */
+        boolean odemeAlinir,
+        /** Öğrencinin herhangi bir yılda ödeme kaydı var mı. */
+        boolean odemeKaydiVar
 ) {
 }

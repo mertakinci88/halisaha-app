@@ -55,17 +55,19 @@ public class OgrenciRaporService {
                 .addValue("aySonu", donem.plusMonths(1).atDay(1).atStartOfDay())
                 .addValue("oncekiAyBasi", onceki.atDay(1).atStartOfDay());
 
-        long aktif = sayi("SELECT COUNT(*) FROM ogrenci WHERE isletme_id = :isletmeId AND durum = 'AKTIF'", params);
+        // Ödemesiz (ödeme alınmayan) öğrenciler tahsilat hesabının dışındadır; ayrıca sayılır
+        long aktif = sayi("SELECT COUNT(*) FROM ogrenci WHERE isletme_id = :isletmeId AND durum = 'AKTIF' AND odeme_alinir", params);
+        long odemesiz = sayi("SELECT COUNT(*) FROM ogrenci WHERE isletme_id = :isletmeId AND durum = 'AKTIF' AND NOT odeme_alinir", params);
         long pasif = sayi("SELECT COUNT(*) FROM ogrenci WHERE isletme_id = :isletmeId AND durum = 'PASIF'", params);
         long odeyen = sayi("""
                 SELECT COUNT(*) FROM ogrenci o
-                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND EXISTS (
+                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.odeme_alinir AND EXISTS (
                     SELECT 1 FROM ogrenci_odeme p
                     WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)
                 """, params);
         long kismi = sayi("""
                 SELECT COUNT(*) FROM ogrenci o
-                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF'
+                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.odeme_alinir
                   AND EXISTS (SELECT 1 FROM ogrenci_odeme p
                               WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.odenen_tutar > 0)
                   AND NOT EXISTS (SELECT 1 FROM ogrenci_odeme p
@@ -73,7 +75,7 @@ public class OgrenciRaporService {
                 """, params);
         long ardisik = sayi("""
                 SELECT COUNT(*) FROM ogrenci o
-                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.kayit_tarih < :oncekiAyBasi
+                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF' AND o.odeme_alinir AND o.kayit_tarih < :oncekiAyBasi
                   AND NOT EXISTS (
                     SELECT 1 FROM ogrenci_odeme p
                     WHERE p.ogrenci_id = o.id AND p.tamam
@@ -85,25 +87,33 @@ public class OgrenciRaporService {
                 """, params);
 
         return new OgrenciRaporu(donem.getYear(), donem.getMonthValue(), aktif, pasif, odeyen, aktif - odeyen, kismi,
-                oran(odeyen, aktif), ardisik, yeni, gruplar(params), trend(donem, params));
+                oran(odeyen, aktif), ardisik, yeni, odemesiz, gruplar(params), trend(donem, params));
     }
 
     private List<OgrenciRaporu.GrupSatiri> gruplar(MapSqlParameterSource params) {
+        // Tutar, o ay grubun öğrencilerinden alınan tüm ödemelerdir (ödemesiz ya da pasif olanların kayıtları dahil)
         return jdbc.query("""
-                SELECT gr.id AS grup_id, COALESCE(gr.ad, 'Grupsuz') AS grup_ad, COUNT(*) AS aktif,
-                       COUNT(*) FILTER (WHERE EXISTS (
-                           SELECT 1 FROM ogrenci_odeme p
-                           WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam)) AS odeyen
-                FROM ogrenci o LEFT JOIN grup gr ON gr.id = o.grup_id
-                WHERE o.isletme_id = :isletmeId AND o.durum = 'AKTIF'
-                GROUP BY gr.id, gr.ad
-                ORDER BY COALESCE(gr.ad, 'Grupsuz')
+                SELECT grup_id, grup_ad, COUNT(*) FILTER (WHERE sayilir) AS aktif,
+                       COUNT(*) FILTER (WHERE sayilir AND odedi) AS odeyen, COALESCE(SUM(tutar), 0) AS tutar
+                FROM (
+                    SELECT gr.id AS grup_id, COALESCE(gr.ad, 'Grupsuz') AS grup_ad,
+                           (o.durum = 'AKTIF' AND o.odeme_alinir) AS sayilir,
+                           EXISTS (SELECT 1 FROM ogrenci_odeme p
+                                   WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay AND p.tamam) AS odedi,
+                           (SELECT SUM(p.odenen_tutar) FROM ogrenci_odeme p
+                            WHERE p.ogrenci_id = o.id AND p.yil = :yil AND p.ay = :ay) AS tutar
+                    FROM ogrenci o LEFT JOIN grup gr ON gr.id = o.grup_id
+                    WHERE o.isletme_id = :isletmeId
+                ) t
+                GROUP BY grup_id, grup_ad
+                HAVING COUNT(*) FILTER (WHERE sayilir) > 0 OR COALESCE(SUM(tutar), 0) > 0
+                ORDER BY grup_ad
                 """, params, (rs, i) -> {
             long grupAktif = rs.getLong("aktif");
             long grupOdeyen = rs.getLong("odeyen");
             long id = rs.getLong("grup_id");
             return new OgrenciRaporu.GrupSatiri(rs.wasNull() ? null : id, rs.getString("grup_ad"), grupAktif, grupOdeyen,
-                    oran(grupOdeyen, grupAktif));
+                    oran(grupOdeyen, grupAktif), rs.getBigDecimal("tutar"));
         });
     }
 
@@ -131,6 +141,7 @@ public class OgrenciRaporService {
         return sonuc;
     }
 
+    /** aktif: aktif ve ödemesi alınan öğrenci (ödemesizler ödeme oranlarına girmez); yeniKayit için tüm öğrenciler kullanılır. */
     private record OgrenciKaydi(long id, Long grupId, String grupAd, boolean aktif, LocalDateTime kayit) {
     }
 
@@ -147,14 +158,14 @@ public class OgrenciRaporService {
 
         Map<Long, OgrenciKaydi> ogrenciler = new HashMap<>();
         jdbc.query("""
-                SELECT o.id, o.grup_id, gr.ad AS grup_ad, o.durum, o.kayit_tarih
+                SELECT o.id, o.grup_id, gr.ad AS grup_ad, o.durum, o.odeme_alinir, o.kayit_tarih
                 FROM ogrenci o LEFT JOIN grup gr ON gr.id = o.grup_id
                 WHERE o.isletme_id = :isletmeId
                 """, params, rs -> {
             long grupId = rs.getLong("grup_id");
             Long grup = rs.wasNull() ? null : grupId;
             ogrenciler.put(rs.getLong("id"), new OgrenciKaydi(rs.getLong("id"), grup,
-                    grup == null ? "Grupsuz" : rs.getString("grup_ad"), "AKTIF".equals(rs.getString("durum")),
+                    grup == null ? "Grupsuz" : rs.getString("grup_ad"), "AKTIF".equals(rs.getString("durum")) && rs.getBoolean("odeme_alinir"),
                     rs.getTimestamp("kayit_tarih").toLocalDateTime()));
         });
 

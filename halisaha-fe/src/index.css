@@ -223,6 +223,26 @@
   }
 }
 
+/* iOS Safari tarih/saat alanı kendi iç genişliğine göre uzar ve yandaki alanın üstüne biner; kapsayıcı genişliğine sabitlenir */
+@media (max-width: 639px) {
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+    inline-size: 100%;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+}
+
 /* Açılır liste (combobox): sağda aşağı ok, tıklanabilir olduğu anlaşılsın */
 select.select-combo {
   cursor: pointer;

@@ -101,7 +101,8 @@ public class OgrenciService {
                 devamsizlik, bugun.minusDays(DEVAMSIZLIK_GUN),
                 bugun.getYear(), bugun.getMonthValue(), arananGruplar, izinli != null, izinliListe, pageRequest);
         Map<Long, OgrenciOdemeDurumu> durumlar = buAyDurumlari(sonuc.getContent());
-        return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId())));
+        Set<Long> kayitlilar = odemeKaydiOlanlar(sonuc.getContent());
+        return PageResponse.from(sonuc, o -> OgrenciResponse.from(o, durumlar.get(o.getId()), kayitlilar.contains(o.getId())));
     }
 
     public OgrenciResponse getById(Long id) {
@@ -118,6 +119,7 @@ public class OgrenciService {
                 .durum(request.durum() != null ? request.durum() : OgrenciDurum.AKTIF)
                 .build();
         applyRequest(ogrenci, request);
+        ogrenci.setOdemeAlinir(request.odemeAlinir() == null || request.odemeAlinir());
         return yanit(ogrenciRepository.save(ogrenci));
     }
 
@@ -152,7 +154,14 @@ public class OgrenciService {
     }
 
     private OgrenciResponse yanit(Ogrenci ogrenci) {
-        return OgrenciResponse.from(ogrenci, buAyDurumlari(List.of(ogrenci)).get(ogrenci.getId()));
+        return OgrenciResponse.from(ogrenci, buAyDurumlari(List.of(ogrenci)).get(ogrenci.getId()),
+                odemeKaydiOlanlar(List.of(ogrenci)).contains(ogrenci.getId()));
+    }
+
+    private Set<Long> odemeKaydiOlanlar(Collection<Ogrenci> ogrenciler) {
+        // Henüz kaydedilmemiş (id'siz) öğrencilerin kaydı olamaz
+        List<Long> idler = ogrenciler.stream().map(Ogrenci::getId).filter(java.util.Objects::nonNull).toList();
+        return idler.isEmpty() ? Set.of() : new java.util.HashSet<>(ogrenciOdemeRepository.kayitliOgrenciler(idler));
     }
 
     /** İçinde bulunulan ayın durumu: tamamı ödendi işaretli ödeme varsa ODENDI; ödeme var ama tamam değilse KISMI_*; yoksa ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */

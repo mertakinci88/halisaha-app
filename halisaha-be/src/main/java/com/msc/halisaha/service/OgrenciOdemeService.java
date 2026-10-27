@@ -3,6 +3,7 @@ package com.msc.halisaha.service;
 import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
+import com.msc.halisaha.dto.OgrenciOdemeAlinirRequest;
 import com.msc.halisaha.dto.OgrenciOdemeAyResponse;
 import com.msc.halisaha.dto.OgrenciOdemeRequest;
 import com.msc.halisaha.dto.OgrenciOdemeResponse;
@@ -56,11 +57,29 @@ public class OgrenciOdemeService {
         return yanit(ogrenciId, yil);
     }
 
+    /**
+     * Öğrenciden ödeme alınıp alınmayacağı. Kapatılırken öğrencinin ödeme kaydı varsa kullanıcı uyarıyı onaylamadan işlem yapılmaz;
+     * geçmiş kayıtlara dokunulmaz, yalnızca öğrenci ödeme takibinin dışına alınır.
+     */
+    @Transactional
+    public void alinirDegistir(Long ogrenciId, OgrenciOdemeAlinirRequest istek) {
+        Ogrenci ogrenci = ogrenciGetir(ogrenciId);
+        if (!istek.alinir() && ogrenci.isOdemeAlinir() && !Boolean.TRUE.equals(istek.onay())
+                && odemeRepository.existsByOgrenciId(ogrenciId)) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Bu öğrencinin geçmiş ödeme kayıtları var; ödeme alımı kapatılırsa raporlarda ve borçlu listesinde yer almaz. Onay gerekir");
+        }
+        ogrenci.setOdemeAlinir(istek.alinir());
+    }
+
     @Transactional
     public OgrenciOdemeYilResponse ekle(Long ogrenciId, int yil, int ay, OgrenciOdemeRequest istek) {
         yilKontrol(yil);
         ayKontrol(ay);
         Ogrenci ogrenci = ogrenciGetir(ogrenciId);
+        if (!ogrenci.isOdemeAlinir()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bu öğrenciden ödeme alınmıyor; ödeme eklemek için önce öğrenci bilgilerinden ödeme alımını açın");
+        }
         OgrenciOdeme kayit = OgrenciOdeme.builder().ogrenci(ogrenci).yil(yil).ay(ay).build();
         doldur(kayit, istek);
         odemeRepository.saveAndFlush(kayit);
@@ -151,7 +170,9 @@ public class OgrenciOdemeService {
         Set<Integer> yillar = new TreeSet<>(odemeRepository.yillar(ogrenciId));
         yillar.add(AppZaman.bugun().getYear());
         yillar.add(yil);
-        return new OgrenciOdemeYilResponse(yil, bugun, aylar, toplam, List.copyOf(yillar));
+        Ogrenci ogrenci = ogrenciRepository.getReferenceById(ogrenciId);
+        return new OgrenciOdemeYilResponse(yil, bugun, aylar, toplam, List.copyOf(yillar), ogrenci.isOdemeAlinir(),
+                odemeRepository.existsByOgrenciId(ogrenciId));
     }
 
     private static OgrenciOdemeResponse odemeYaniti(OgrenciOdeme k) {

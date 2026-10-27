@@ -141,12 +141,14 @@ export const ogrenciYoklamaService = {
 export const ogrenciOdemeService = {
   /**
    * { yil, bugun (sunucu tarihi), aylar (12 ay): [{ yil, ay, durum (ODENDI | KISMI_ODENDI | KISMI_GECIKMIS | ODEME_BEKLIYOR | ODENMEDI), odenenTutar (ayın ödeme toplamı),
-   *   odemeler: [{ id, odenenTutar, tamam, odemeSekli, hesapId, hesapAd, odemeTarihi, not }] }], toplamOdenen, yillar }
+   *   odemeler: [{ id, odenenTutar, tamam, odemeSekli, hesapId, hesapAd, odemeTarihi, not }] }], toplamOdenen, yillar, odemeAlinir, odemeKaydiVar }
    */
   getir: (ogrenciId, yil) => api.get('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil).then((r) => r.data),
   /** Ayın yeni ödemesi. body: { odenenTutar, odemeSekli, hesapId, odemeTarihi, not, tamam } — tutar boşsa not zorunlu (tamam: true ile ay parasız kapanır). Yıl yanıtı döner. */
   ekle: (ogrenciId, yil, ay, body) =>
     api.post('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil + '/' + ay, body).then((r) => r.data),
+  /** Öğrenciden ödeme alınıp alınmayacağı. body: { alinir, onay } — ödeme kaydı olan öğrencide kapatmak için onay: true gerekir (yoksa 409). */
+  alinirDegistir: (ogrenciId, body) => api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/alinir', body),
   guncelle: (ogrenciId, yil, ay, odemeId, body) =>
     api.put('/api/ogrenciler/' + ogrenciId + '/odemeler/' + yil + '/' + ay + '/' + odemeId, body).then((r) => r.data),
   sil: (ogrenciId, yil, ay, odemeId) =>

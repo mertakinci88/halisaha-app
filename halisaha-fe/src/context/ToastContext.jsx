@@ -16,30 +16,8 @@ const STIL = {
  * butonlarının solundaki boşlukta, o satırın hizasında görünür; başlığı olmayan sayfalarda sağ üst köşede.
  */
 export function ToastProvider({ children }) {
-  const [liste, setListe] = useState([]);
   const [alan, setAlan] = useState(null);
-  const sayac = useRef(0);
-
-  const kapat = useCallback((id) => setListe((l) => l.filter((t) => t.id !== id)), []);
-
-  const goster = useCallback(
-    (tip, mesaj) => {
-      if (!mesaj) return;
-      const id = ++sayac.current;
-      setListe((l) => [...l.slice(-3), { id, tip, mesaj }]);
-      setTimeout(() => kapat(id), SURE[tip]);
-    },
-    [kapat],
-  );
-
-  const toast = useMemo(
-    () => ({
-      basari: (mesaj) => goster('basari', mesaj),
-      hata: (mesaj) => goster('hata', mesaj),
-      alanKaydet: setAlan,
-    }),
-    [goster],
-  );
+  const { liste, kapat, toast } = useBildirimListesi({ alanKaydet: setAlan });
 
   const kutu = (
     <div
@@ -61,6 +39,63 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={toast}>
       {children}
       {alan ? createPortal(kutu, alan) : kutu}
+    </ToastContext.Provider>
+  );
+}
+
+/** Bildirim listesi ve toast fonksiyonları (genel ve kart içi sağlayıcı ortak kullanır). */
+function useBildirimListesi(ekstra) {
+  const [liste, setListe] = useState([]);
+  const sayac = useRef(0);
+
+  const kapat = useCallback((id) => setListe((l) => l.filter((t) => t.id !== id)), []);
+
+  const goster = useCallback(
+    (tip, mesaj) => {
+      if (!mesaj) return;
+      const id = ++sayac.current;
+      setListe((l) => [...l.slice(-3), { id, tip, mesaj }]);
+      setTimeout(() => kapat(id), SURE[tip]);
+    },
+    [kapat],
+  );
+
+  const toast = useMemo(
+    () => ({
+      basari: (mesaj) => goster('basari', mesaj),
+      hata: (mesaj) => goster('hata', mesaj),
+      ...ekstra,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [goster, ekstra.alanKaydet],
+  );
+  return { liste, kapat, toast };
+}
+
+function BildirimYigini({ liste, kapat }) {
+  return (
+    <div className="pointer-events-none sticky top-3 z-30 h-0" aria-live="polite">
+      <div className="absolute inset-x-3 top-8 flex flex-col gap-2 sm:left-auto sm:w-96 sm:max-w-full">
+        {liste.map((t) => (
+          <Bildirim key={t.id} tip={t.tip} mesaj={t.mesaj} onKapat={() => kapat(t.id)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Öğrenci detayı gibi çok kartlı sayfalarda, içindeki kartın bildirimlerini (useToast / useHata) sayfa başlığı yerine
+ * kartın kendi üstünde gösterir; kart kaydırılsa da bildirim görünür kalır.
+ */
+export function KartBildirimi({ children }) {
+  const { liste, kapat, toast } = useBildirimListesi({ alanKaydet: () => {} });
+  return (
+    <ToastContext.Provider value={toast}>
+      <div className="relative">
+        <BildirimYigini liste={liste} kapat={kapat} />
+        {children}
+      </div>
     </ToastContext.Provider>
   );
 }

@@ -7,6 +7,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import OdemeDurumuEtiketi from '@/components/OdemeDurumuEtiketi';
 import IadeBolumu from '@/components/IadeBolumu';
+import BilgiIkonu from '@/components/BilgiIkonu';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { hesapService, ogrenciOdemeService } from '@/services';
 import { apiHata } from '@/lib/api';
@@ -20,6 +21,7 @@ const SATIR_RENK = {
   KISMI_GECIKMIS: 'bg-hata-100',
   ODEME_BEKLIYOR: 'bg-yellow-100',
   ODENMEDI: 'bg-hata-100',
+  ODEMESIZ: 'bg-neutral-100',
 };
 
 const KISA_DURUM = {
@@ -28,6 +30,7 @@ const KISA_DURUM = {
   KISMI_GECIKMIS: 'Gecikmiş',
   ODEME_BEKLIYOR: 'Bekliyor',
   ODENMEDI: 'Ödenmedi',
+  ODEMESIZ: '—',
 };
 
 const GECIKMIS = ['KISMI_GECIKMIS', 'ODENMEDI'];
@@ -38,6 +41,7 @@ const KART_CERCEVE = {
   KISMI_GECIKMIS: 'border-hata-600',
   ODEME_BEKLIYOR: 'border-yellow-600',
   ODENMEDI: 'border-hata-600',
+  ODEMESIZ: 'border-neutral-400',
 };
 
 const BOS_FORM = { id: null, tutar: '', sekil: '', hesapId: '', tarih: '', not: '', tamam: true };
@@ -75,6 +79,8 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
   const [form, setForm] = useState(BOS_FORM);
   const [formHata, setFormHata] = useState('');
   const [silinecek, setSilinecek] = useState(null);
+  const [kapatOnayi, setKapatOnayi] = useState(false);
+  const [degisiyor, setDegisiyor] = useState(false);
   const formRef = useRef(null);
   const panelRef = useRef(null);
 
@@ -176,8 +182,28 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
     setSeciliAy(seciliAy === ay ? null : ay);
     if (seciliAy !== ay) setTimeout(() => panelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
   };
-  const odenenAy = veri ? veri.aylar.filter((a) => a.durum === 'ODENDI').length : 0;
-  const gecikmisAy = veri ? veri.aylar.filter((a) => GECIKMIS.includes(a.durum)).length : 0;
+  const odemeAlinir = veri ? veri.odemeAlinir : true;
+  // Ödeme alınmayan öğrencide ödemesi girilmemiş aylar borç gibi görünmez
+  const durumOf = (a) => (!odemeAlinir && a.odemeler.length === 0 ? 'ODEMESIZ' : a.durum);
+
+  const alinirDegistir = async (alinir, onay = false) => {
+    setKapatOnayi(false);
+    if (acikAy != null) return toast.hata('Önce açık ödeme formunu kaydedin ya da vazgeçin.');
+    setDegisiyor(true);
+    try {
+      await ogrenciOdemeService.alinirDegistir(ogrenciId, { alinir, onay });
+      toast.basari(alinir ? 'Bu öğrenciden artık ödeme alınacak.' : 'Bu öğrenciden artık ödeme alınmayacak.');
+      yukle();
+    } catch (err) {
+      setHata(apiHata(err));
+    } finally {
+      setDegisiyor(false);
+    }
+  };
+  const alinmazSec = () => (veri?.odemeKaydiVar ? setKapatOnayi(true) : alinirDegistir(false));
+
+  const odenenAy = veri ? veri.aylar.filter((a) => durumOf(a) === 'ODENDI').length : 0;
+  const gecikmisAy = veri ? veri.aylar.filter((a) => GECIKMIS.includes(durumOf(a))).length : 0;
   const buAyMi = (a) => veri != null && a.yil === Number(veri.bugun.slice(0, 4)) && a.ay === Number(veri.bugun.slice(5, 7));
 
   const formKutusu = (a) => (
@@ -309,10 +335,35 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
         </div>
       </div>
 
+      {veri ? (
+        <div className="grid gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[14.5px] font-semibold">
+              Ödeme
+              <BilgiIkonu metin="Ödeme alınmaz seçilirse öğrenci ödeme durumunda, borçlu listesinde ve ödeme raporlarında yer almaz; hiçbir ay için borç oluşmaz ve yeni ödeme eklenemez. Geçmiş ödeme kayıtları silinmez." />
+            </span>
+            <Seg>
+              <SegOpt active={odemeAlinir} tone="basari" disabled={degisiyor} onClick={() => (odemeAlinir ? null : alinirDegistir(true))}>
+                Ödeme alınır
+              </SegOpt>
+              <SegOpt active={!odemeAlinir} tone="notr" disabled={degisiyor} onClick={() => (odemeAlinir ? alinmazSec() : null)}>
+                Ödeme alınmaz
+              </SegOpt>
+            </Seg>
+          </div>
+          {!odemeAlinir ? (
+            <p className="m-0 text-[13.5px] text-ink/65">
+              Bu öğrenciden ödeme alınmıyor; ödeme durumu, borçlu listesi ve raporlarda yer almaz.
+              {veri.odemeKaydiVar ? ' Geçmiş ödeme kayıtları aşağıda görüntülenir.' : ''}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <Hata mesaj={hata} onTekrar={yukle} />
       {yukleniyor && !veri ? <Yukleniyor /> : null}
 
-      {veri ? (
+      {veri && (odemeAlinir || veri.odemeKaydiVar) ? (
         <>
           <div className="grid gap-2 border-l-4 border-accent bg-accent-100 px-3 py-2">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -342,8 +393,8 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                 onClick={() => ayGit(a.ay)}
                 className={cn(
                   'flex min-w-0 cursor-pointer flex-col items-start gap-0.5 border px-2.5 py-2 text-left transition-[box-shadow,filter] hover:shadow-md hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700',
-                  SATIR_RENK[a.durum],
-                  seciliAy === a.ay ? cn('border-2 border-accent-700 px-[9px] py-[7px]') : KART_CERCEVE[a.durum],
+                  SATIR_RENK[durumOf(a)],
+                  seciliAy === a.ay ? cn('border-2 border-accent-700 px-[9px] py-[7px]') : KART_CERCEVE[durumOf(a)],
                 )}
               >
                 <span className="flex w-full items-center gap-1.5 font-semibold">
@@ -351,8 +402,8 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
                   {buAyMi(a) ? <span className="text-[11.5px] font-normal text-ink/60">bu ay</span> : null}
                 </span>
                 <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-ink/75">
-                  {GECIKMIS.includes(a.durum) ? <AlertTriangle size={13} strokeWidth={1.5} className="shrink-0 text-hata-800" aria-hidden="true" /> : null}
-                  {KISA_DURUM[a.durum] || '—'}
+                  {GECIKMIS.includes(durumOf(a)) ? <AlertTriangle size={13} strokeWidth={1.5} className="shrink-0 text-hata-800" aria-hidden="true" /> : null}
+                  {KISA_DURUM[durumOf(a)] || '—'}
                 </span>
                 <b className="text-[14.5px] font-semibold tabular-nums">{a.odemeler.length > 0 ? tl(a.odenenTutar) : '—'}</b>
               </button>
@@ -364,23 +415,25 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
             if (!a) return <p className="m-0 text-[14px] text-ink/60">Ödemeleri görmek ya da eklemek için bir aya dokunun.</p>;
             return (
               <div ref={panelRef} className="border border-ink/35 bg-white">
-                <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-3 py-2.5', SATIR_RENK[a.durum])}>
+                <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-3 py-2.5', SATIR_RENK[durumOf(a)])}>
                   <span className="text-[16.5px] font-semibold">
                     {AYLAR[a.ay - 1]} {yil}
                   </span>
-                  <OdemeDurumuEtiketi belirgin durum={a.durum} />
+                  <OdemeDurumuEtiketi belirgin durum={durumOf(a)} />
                   {a.odemeler.length > 0 ? <b className="font-semibold tabular-nums">{tl(a.odenenTutar)}</b> : null}
-                  <Button size="sm" variant="cerceve" className="ml-auto" disabled={acikAy != null} onClick={() => ekleAc(a.ay)}>
-                    <Plus size={15} strokeWidth={1.5} />
-                    <span>Ödeme ekle</span>
-                  </Button>
+                  {odemeAlinir ? (
+                    <Button size="sm" variant="cerceve" className="ml-auto" disabled={acikAy != null} onClick={() => ekleAc(a.ay)}>
+                      <Plus size={15} strokeWidth={1.5} />
+                      <span>Ödeme ekle</span>
+                    </Button>
+                  ) : null}
                 </div>
                 {a.odemeler.length > 0 ? (
                   <ul className="m-0 list-none pb-1.5 pl-8 pr-2">
                     {a.odemeler.map((o) => (acikAy === a.ay && form.id === o.id ? null : odemeSatiri(a, o)))}
                   </ul>
                 ) : (
-                  <p className="m-0 px-3 py-3 text-[14.5px] text-ink/75">Bu ay için ödeme girilmemiş.</p>
+                  <p className="m-0 px-3 py-3 text-[14.5px] text-ink/75">{odemeAlinir ? 'Bu ay için ödeme girilmemiş.' : 'Bu öğrenciden ödeme alınmıyor.'}</p>
                 )}
                 {acikAy === a.ay ? formKutusu(a) : null}
               </div>
@@ -402,6 +455,15 @@ export default function OgrenciOdemeKarti({ ogrenciId }) {
           />
         </>
       ) : null}
+
+      <ConfirmDialog
+        open={kapatOnayi}
+        title="Ödeme alımı kapatılsın mı?"
+        description="Bu öğrencinin geçmiş ödeme kayıtları var. Kayıtlar silinmez, ancak öğrenci bundan sonra ödeme durumunda, borçlu listesinde ve ödeme raporlarında yer almaz; yeni ödeme de eklenemez."
+        confirmLabel="Kapat"
+        onConfirm={() => alinirDegistir(false, true)}
+        onCancel={() => setKapatOnayi(false)}
+      />
 
       <ConfirmDialog
         open={!!silinecek}
