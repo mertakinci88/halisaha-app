@@ -97,6 +97,7 @@ export const ODEME_DURUMU_LABEL = {
   KISMI_ODENDI: 'Kısmi ödendi',
   KISMI_GECIKMIS: 'Kısmi ödendi · Gecikmiş',
   ODEME_BEKLIYOR: 'Ödeme bekliyor',
+  ODEMESIZ: 'Ödemesiz',
 };
 
 /**

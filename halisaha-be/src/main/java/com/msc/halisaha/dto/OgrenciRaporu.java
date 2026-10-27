@@ -7,6 +7,7 @@ import java.util.List;
 public record OgrenciRaporu(
         int yil,
         int ay,
+        /** Ödemesi alınan aktif öğrenci sayısı (ödemesizler hariç). */
         long aktifOgrenci,
         long pasifOgrenci,
         long odeyen,
@@ -19,10 +20,13 @@ public record OgrenciRaporu(
         /** Seçilen ay ve bir önceki ay hiç ödeme yapmamış aktif öğrenci sayısı. */
         long ardisikOdemeyen,
         long yeniKayit,
+        /** Ödeme alınmayan aktif öğrenci sayısı; aktifOgrenci ve tahsilat hesaplarına dahil değildir. */
+        long odemesizOgrenci,
         List<GrupSatiri> gruplar,
         List<AySatiri> trend
 ) {
-    public record GrupSatiri(Long grupId, String grupAd, long aktif, long odeyen, BigDecimal oran) {
+    /** tutar: o ay grubun öğrencilerinden alınan toplam ödeme. */
+    public record GrupSatiri(Long grupId, String grupAd, long aktif, long odeyen, BigDecimal oran, BigDecimal tutar) {
     }
 
     /** Son 12 ayın tahsilatı: ödeme yapan öğrenci sayısı ve tahsil edilen tutar. */

@@ -1,10 +1,12 @@
 package com.msc.halisaha.controller;
 
+import com.msc.halisaha.dto.OgrenciOdemeAlinirRequest;
 import com.msc.halisaha.dto.OgrenciOdemeRequest;
 import com.msc.halisaha.dto.OgrenciOdemeYilResponse;
 import com.msc.halisaha.service.OgrenciOdemeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class OgrenciOdemeController {
 
     private final OgrenciOdemeService odemeService;
+
+    /** Öğrenciden ödeme alınıp alınmayacağı; ödeme kaydı olan öğrencide kapatmak için onay (onay: true) gerekir. */
+    @PutMapping("/alinir")
+    public ResponseEntity<Void> alinirDegistir(@PathVariable Long ogrenciId, @Valid @RequestBody OgrenciOdemeAlinirRequest request) {
+        odemeService.alinirDegistir(ogrenciId, request);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/{yil}")
     public OgrenciOdemeYilResponse getir(@PathVariable Long ogrenciId, @PathVariable int yil) {

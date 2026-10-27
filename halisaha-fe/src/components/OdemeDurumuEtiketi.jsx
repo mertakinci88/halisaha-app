@@ -8,6 +8,7 @@ const RENK = {
   KISMI_ODENDI: 'bg-yellow-100 text-yellow-800',
   KISMI_GECIKMIS: 'bg-red-100 text-red-800',
   ODENMEDI: 'bg-red-100 text-red-800',
+  ODEMESIZ: 'bg-neutral-200 text-ink/70',
 };
 
 // belirgin: etiketin etrafına aynı renkte çerçeve çizer (yazı kalınlığı değişmez)
@@ -17,6 +18,7 @@ const CERCEVE = {
   KISMI_ODENDI: 'border border-yellow-600',
   KISMI_GECIKMIS: 'border border-hata-600',
   ODENMEDI: 'border border-hata-600',
+  ODEMESIZ: 'border border-neutral-600',
 };
 
 export default function OdemeDurumuEtiketi({ durum, belirgin = false }) {

@@ -26,4 +26,10 @@ public interface OgrenciOdemeRepository extends JpaRepository<OgrenciOdeme, Long
     List<Integer> yillar(@Param("ogrenciId") Long ogrenciId);
 
     boolean existsByHesapId(Long hesapId);
+
+    boolean existsByOgrenciId(Long ogrenciId);
+
+    /** Verilen öğrencilerden en az bir ödeme kaydı olanların id'leri. */
+    @Query("SELECT DISTINCT o.ogrenci.id FROM OgrenciOdeme o WHERE o.ogrenci.id IN :ogrenciIdleri")
+    List<Long> kayitliOgrenciler(@Param("ogrenciIdleri") Collection<Long> ogrenciIdleri);
 }

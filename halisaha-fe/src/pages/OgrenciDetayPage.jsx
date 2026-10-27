@@ -10,7 +10,7 @@ import { Seg, SegOpt } from '@/components/ui/seg';
 import { Hata, Yukleniyor } from '@/components/ui/durum';
 import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
-import { useHata, useToast } from '@/context/ToastContext';
+import { KartBildirimi, useHata, useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import EnvanterSatisKarti from '@/components/EnvanterSatisKarti';
 import OgrenciTransferKarti from '@/components/OgrenciTransferKarti';
@@ -143,7 +143,7 @@ export default function OgrenciDetayPage() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 min-[430px]:grid-cols-2">
                 <Field label="Haftalık antrenman günü">
                   <Select
                     value={form.antrenmanGunSayisi}
@@ -211,13 +211,13 @@ export default function OgrenciDetayPage() {
       </form>
 
       {/* Kartlar personelin öğrenci işlem yetkisine göre görünür (admin hepsini görür) */}
-      {yetkiVar('OGRENCI_TRANSFER') ? <OgrenciTransferKarti ogrenciId={id} grupId={grupId} /> : null}
+      {yetkiVar('OGRENCI_TRANSFER') ? <KartBildirimi><OgrenciTransferKarti ogrenciId={id} grupId={grupId} /></KartBildirimi> : null}
 
-      {yetkiVar('OGRENCI_YOKLAMA') ? <OgrenciYoklamaKarti ogrenciId={id} /> : null}
+      {yetkiVar('OGRENCI_YOKLAMA') ? <KartBildirimi><OgrenciYoklamaKarti ogrenciId={id} /></KartBildirimi> : null}
 
-      {yetkiVar('OGRENCI_ODEME') ? <OgrenciOdemeKarti ogrenciId={id} /> : null}
+      {yetkiVar('OGRENCI_ODEME') ? <KartBildirimi><OgrenciOdemeKarti ogrenciId={id} /></KartBildirimi> : null}
 
-      {yetkiVar('OGRENCI_ENVANTER') ? <EnvanterSatisKarti ogrenciId={id} /> : null}
+      {yetkiVar('OGRENCI_ENVANTER') ? <KartBildirimi><EnvanterSatisKarti ogrenciId={id} /></KartBildirimi> : null}
     </div>
   );
 }

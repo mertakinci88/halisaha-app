@@ -34,6 +34,9 @@ function DolulukCubugu({ oran, etiket, ince = false }) {
   );
 }
 
+// Ödemesiz (ödeme alınmayan) öğrenciler bekleyen sayılmaz
+const odemeBekliyor = (o) => o.odemeAlinir && o.odemeDurumu !== 'ODENDI';
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { yetkiVar } = useAuth();
@@ -87,7 +90,7 @@ export default function DashboardPage() {
       return { id: sh.id, ad: sh.ad, saat, kapasite: sahaKapasitesi, oran: Math.min(100, Math.round((saat / sahaKapasitesi) * 100)) };
     });
     const ciro = aktifRez.reduce((t, r) => t + Number(r.odenecekTutar || 0), 0);
-    const bekleyen = veri.ogrenciler.filter((o) => o.odemeDurumu !== 'ODENDI');
+    const bekleyen = veri.ogrenciler.filter(odemeBekliyor);
     const liste = [
       { etiket: 'Bugünkü rezervasyon', deger: String(aktifRez.length), alt: aktifSaha.length + ' aktif saha' },
       {
@@ -103,7 +106,7 @@ export default function DashboardPage() {
       liste.push({
         etiket: 'Ödeme bekleyen',
         deger: String(bekleyen.length),
-        alt: veri.ogrenciler.length + ' aktif öğrenci',
+        alt: veri.ogrenciler.filter((o) => o.odemeAlinir).length + ' ödeme alınan aktif öğrenci',
       });
     }
     return liste;
@@ -196,7 +199,7 @@ export default function DashboardPage() {
                 <h4 className="text-[22px]">Ödeme bekleyen öğrenciler</h4>
                 <Table>
                   <tbody>
-                    {veri.ogrenciler.filter((o) => o.odemeDurumu !== 'ODENDI').length === 0 ? (
+                    {veri.ogrenciler.filter(odemeBekliyor).length === 0 ? (
                       <Bos colSpan={2}>Bekleyen ödeme yok.</Bos>
                     ) : (
                       veri.ogrenciler

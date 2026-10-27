@@ -223,6 +223,7 @@ export default function OgrenciListePage() {
                         ['Hiç ödeme yapmamış', 'Bu ay için hiç ödeme girilmemiş.'],
                         ['Kısmi ödeme yapmış', 'Ödeme almış ama ayı tamamlamamış.'],
                         ['Gecikmiş', 'Ayın 15\'i geçtiği halde ayı tamamlamamış.'],
+                        ['Ödemesiz öğrenciler', 'Ödeme alınmayan öğrenciler (Ödemesiz etiketli) bu filtrelerin hiçbirinde yer almaz.'],
                       ]}
                     />
                   }

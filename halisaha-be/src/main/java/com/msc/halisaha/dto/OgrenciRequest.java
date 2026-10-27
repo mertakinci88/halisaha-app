@@ -13,6 +13,8 @@ public record OgrenciRequest(
         String veliTelNo,
         OgrenciDurum durum,
         Integer antrenmanGunSayisi,
-        String not
+        String not,
+        /** Yalnızca yeni kayıtta kullanılır (boşsa açık); sonradan Aylık ödemeler bölümünden değiştirilir. */
+        Boolean odemeAlinir
 ) {
 }

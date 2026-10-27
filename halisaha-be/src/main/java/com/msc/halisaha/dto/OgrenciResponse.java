@@ -20,9 +20,13 @@ public record OgrenciResponse(
         /** İçinde bulunulan ayın durumu: ödeme girilmişse ODENDI; girilmemişse ayın 15'ine kadar ODEME_BEKLIYOR, sonrasında ODENMEDI. */
         OgrenciOdemeDurumu odemeDurumu,
         LocalDateTime kayitTarih,
-        String not
+        String not,
+        /** Kapalıysa öğrenciden ödeme alınmaz (odemeDurumu ODEMESIZ olur). */
+        boolean odemeAlinir,
+        /** Öğrencinin herhangi bir ödeme kaydı var mı (ödeme alımı kapatılırken uyarı için). */
+        boolean odemeKaydiVar
 ) {
-    public static OgrenciResponse from(Ogrenci ogrenci, OgrenciOdemeDurumu odemeDurumu) {
+    public static OgrenciResponse from(Ogrenci ogrenci, OgrenciOdemeDurumu odemeDurumu, boolean odemeKaydiVar) {
         return new OgrenciResponse(
                 ogrenci.getId(),
                 ogrenci.getGrup() != null ? ogrenci.getGrup().getId() : null,
@@ -33,9 +37,11 @@ public record OgrenciResponse(
                 ogrenci.getVeliTelNo(),
                 ogrenci.getDurum(),
                 ogrenci.getAntrenmanGunSayisi(),
-                odemeDurumu,
+                ogrenci.isOdemeAlinir() ? odemeDurumu : OgrenciOdemeDurumu.ODEMESIZ,
                 ogrenci.getKayitTarih(),
-                ogrenci.getNot()
+                ogrenci.getNot(),
+                ogrenci.isOdemeAlinir(),
+                odemeKaydiVar
         );
     }
 }
