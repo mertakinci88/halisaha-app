@@ -45,6 +45,7 @@ class IadeServiceTest {
     @Autowired OgrenciOdemeService ogrenciOdemeService;
     @Autowired EnvanterSatisService envanterSatisService;
     @Autowired EnvanterService envanterService;
+    @Autowired EnvanterTurService turService;
     @Autowired AbonelikService abonelikService;
     @Autowired FinansRaporService finansRaporService;
     @Autowired IsletmeRepository isletmeRepository;
@@ -58,7 +59,7 @@ class IadeServiceTest {
 
     @BeforeEach
     void hazirla() {
-        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService);
+        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService, turService);
         saha = sahaRepository.save(Saha.builder().isletme(k.a.getIsletme()).ad("Saha 1").durum(SahaDurum.AKTIF)
                 .saatlikUcret(new BigDecimal("1000")).build());
     }
@@ -131,7 +132,7 @@ class IadeServiceTest {
 
     @Test
     void envanterSatisiIadesiOdemeAzaltmayiVeSatisSilmeyiEngeller() {
-        var istek = set("140", "164", List.of(), List.of(com.msc.halisaha.entity.EnvanterTur.TOZLUK), "450");
+        var istek = set("140", "164", List.of(), List.of(TestTur.TOZLUK), "450");
         EnvanterSatisResponse satis = envanterSatisService.olustur(k.ogrenciA.getId(), istek);
         iadeService.yap(new IadeRequest(null, null, satis.id(), null, new BigDecimal("100"), OdemeYontemi.NAKIT, null, null, null));
 

@@ -3,7 +3,6 @@ package com.msc.halisaha.controller;
 import com.msc.halisaha.dto.OgrenciRequest;
 import com.msc.halisaha.dto.OgrenciFiltre;
 import com.msc.halisaha.entity.EnvanterDurumFiltre;
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OgrenciDurum;
 import com.msc.halisaha.entity.OgrenciKayitFiltre;
 import com.msc.halisaha.entity.OgrenciOdemeFiltre;
@@ -39,7 +38,7 @@ public class OgrenciController {
             @RequestParam(required = false) OgrenciDurum durum,
             @RequestParam(required = false) OgrenciOdemeFiltre odeme,
             @RequestParam(required = false) EnvanterDurumFiltre envanter,
-            @RequestParam(required = false) EnvanterTur envanterTur,
+            @RequestParam(required = false) Long envanterTur,
             @RequestParam(required = false) OgrenciKayitFiltre kayit,
             @RequestParam(required = false) Integer antrenmanGun,
             @RequestParam(defaultValue = "false") boolean transferBekleyen,

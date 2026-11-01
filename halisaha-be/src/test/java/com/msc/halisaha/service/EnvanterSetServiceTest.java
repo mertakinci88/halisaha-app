@@ -7,7 +7,6 @@ import com.msc.halisaha.dto.EnvanterSatisResponse;
 import com.msc.halisaha.dto.EnvanterSetRequest;
 import com.msc.halisaha.dto.EnvanterSetResponse;
 import com.msc.halisaha.dto.EnvanterResponse;
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.IsletmeRepository;
 import com.msc.halisaha.repository.KullaniciRepository;
@@ -36,6 +35,7 @@ class EnvanterSetServiceTest {
     @Autowired EnvanterSetService setService;
     @Autowired EnvanterSatisService satisService;
     @Autowired EnvanterService envanterService;
+    @Autowired EnvanterTurService turService;
     @Autowired IsletmeRepository isletmeRepository;
     @Autowired KullaniciRepository kullaniciRepository;
     @Autowired OgrenciRepository ogrenciRepository;
@@ -51,11 +51,11 @@ class EnvanterSetServiceTest {
 
     @BeforeEach
     void hazirla() {
-        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService);
-        kaleci152 = envanterService.create(EnvanterTestKurulum.istek(EnvanterTur.KALECI_FORMA, "152", 6, "700"));
-        esofman152 = envanterService.create(EnvanterTestKurulum.istek(EnvanterTur.KISLIK_ESOFMAN, "152", 6, "600"));
-        yagmurluk152 = envanterService.create(EnvanterTestKurulum.istek(EnvanterTur.YAGMURLUK, "152", 6, "500"));
-        forma152 = envanterService.create(EnvanterTestKurulum.istek(EnvanterTur.YAZLIK_FORMA, "152", 6, "450"));
+        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService, turService);
+        kaleci152 = envanterService.create(EnvanterTestKurulum.istek(TestTur.KALECI_FORMA, "152", 6, "700"));
+        esofman152 = envanterService.create(EnvanterTestKurulum.istek(TestTur.KISLIK_ESOFMAN, "152", 6, "600"));
+        yagmurluk152 = envanterService.create(EnvanterTestKurulum.istek(TestTur.YAGMURLUK, "152", 6, "500"));
+        forma152 = envanterService.create(EnvanterTestKurulum.istek(TestTur.YAZLIK_FORMA, "152", 6, "450"));
     }
 
     @AfterEach
@@ -138,7 +138,7 @@ class EnvanterSetServiceTest {
         set152("Set A", k.tozluk.id());
         assertEquals(409, assertThrows(ApiException.class, () -> envanterService.delete(k.tozluk.id())).getStatus().value());
         assertEquals(409, assertThrows(ApiException.class, () -> envanterService.update(forma152.id(),
-                EnvanterTestKurulum.istek(EnvanterTur.YAZLIK_FORMA, "Small", 25, "450"))).getStatus().value());
+                EnvanterTestKurulum.istek(TestTur.YAZLIK_FORMA, "Small", 25, "450"))).getStatus().value());
     }
 
     @Test
@@ -151,10 +151,10 @@ class EnvanterSetServiceTest {
 
     private List<EnvanterSatisRequest.Kalem> setKalemleri(boolean odendi, boolean teslim) {
         return List.of(
-                new EnvanterSatisRequest.Kalem(EnvanterTur.KALECI_FORMA, "152", odendi, teslim),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.KISLIK_ESOFMAN, "152", odendi, teslim),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.YAGMURLUK, "152", odendi, teslim),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.YAZLIK_FORMA, "152", odendi, teslim));
+                new EnvanterSatisRequest.Kalem(TestTur.KALECI_FORMA.id(), "152", odendi, teslim),
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "152", odendi, teslim),
+                new EnvanterSatisRequest.Kalem(TestTur.YAGMURLUK.id(), "152", odendi, teslim),
+                new EnvanterSatisRequest.Kalem(TestTur.YAZLIK_FORMA.id(), "152", odendi, teslim));
     }
 
     @Test
@@ -189,10 +189,10 @@ class EnvanterSetServiceTest {
                 new EnvanterSatisRequest(setKalemleri(false, false), new BigDecimal("500"), set.id()));
 
         List<EnvanterSatisRequest.Kalem> kalemler = List.of(
-                new EnvanterSatisRequest.Kalem(EnvanterTur.KALECI_FORMA, "152", true, true),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.KISLIK_ESOFMAN, "152", false, false),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.YAGMURLUK, "152", false, false),
-                new EnvanterSatisRequest.Kalem(EnvanterTur.YAZLIK_FORMA, "152", false, false));
+                new EnvanterSatisRequest.Kalem(TestTur.KALECI_FORMA.id(), "152", true, true),
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAGMURLUK.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAZLIK_FORMA.id(), "152", false, false));
         EnvanterSatisResponse guncel = satisService.guncelle(k.ogrenciA.getId(), satis.id(),
                 new EnvanterSatisRequest(kalemler, new BigDecimal("900")));
         assertEquals(0, new BigDecimal("1500").compareTo(guncel.setTutari()));
@@ -209,7 +209,7 @@ class EnvanterSetServiceTest {
     @Test
     void setTurleriyleUyusmayanSatisVeBilinmeyenSetReddedilir() {
         EnvanterSetResponse set = set152("Set A");
-        List<EnvanterSatisRequest.Kalem> eksik = List.of(new EnvanterSatisRequest.Kalem(EnvanterTur.TOZLUK, null, true, false));
+        List<EnvanterSatisRequest.Kalem> eksik = List.of(new EnvanterSatisRequest.Kalem(TestTur.TOZLUK.id(), null, true, false));
         assertEquals(400, assertThrows(ApiException.class, () -> satisService.olustur(
                 k.ogrenciA.getId(), new EnvanterSatisRequest(eksik, null, set.id()))).getStatus().value());
         assertEquals(404, assertThrows(ApiException.class, () -> satisService.olustur(
@@ -220,7 +220,7 @@ class EnvanterSetServiceTest {
     @Test
     void setsizOzelSatisAdsizKalir() {
         EnvanterSatisResponse satis = satisService.olustur(k.ogrenciA.getId(), new EnvanterSatisRequest(
-                List.of(new EnvanterSatisRequest.Kalem(EnvanterTur.TOZLUK, null, true, false)), null));
+                List.of(new EnvanterSatisRequest.Kalem(TestTur.TOZLUK.id(), null, true, false)), null));
         assertNull(satis.setId());
         assertNull(satis.setAd());
     }

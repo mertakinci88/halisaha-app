@@ -1,6 +1,5 @@
 package com.msc.halisaha.dto;
 
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OdemeYontemi;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -36,7 +35,7 @@ public record EnvanterSatisRequest(
     }
 
     public record Kalem(
-            @NotNull(message = "Envanter türü zorunludur") EnvanterTur tur,
+            @NotNull(message = "Envanter türü zorunludur") Long turId,
             /** Bedenli türlerde zorunlu. */
             String beden,
             boolean odendi,
@@ -45,8 +44,8 @@ public record EnvanterSatisRequest(
             @PositiveOrZero(message = "Satış fiyatı negatif olamaz") BigDecimal birimFiyat
     ) {
 
-        public Kalem(EnvanterTur tur, String beden, boolean odendi, boolean teslim) {
-            this(tur, beden, odendi, teslim, null);
+        public Kalem(Long turId, String beden, boolean odendi, boolean teslim) {
+            this(turId, beden, odendi, teslim, null);
         }
     }
 }

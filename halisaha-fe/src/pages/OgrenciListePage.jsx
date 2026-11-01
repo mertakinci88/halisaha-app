@@ -14,7 +14,7 @@ import { grupService, ogrenciService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
 import { AYLAR, tl } from '@/lib/format';
-import { ENVANTER_TURLERI } from '@/lib/envanter';
+import { useEnvanterTurleri } from '@/lib/envanter';
 import BilgiIkonu, { BilgiMaddeleri } from '@/components/BilgiIkonu';
 
 const BOYUT = 10;
@@ -57,7 +57,8 @@ export default function OgrenciListePage() {
   const envanterParam = params.get('envanter');
   const envanter = envanterParam === 'eksik' ? 'teslim' : ENVANTER_PARAMLARI[envanterParam] ? envanterParam : '';
   // ?tur=<envanter türü>: yalnızca teslim bekleyen filtresiyle anlamlıdır (hangi ürün bekleniyor)
-  const tur = envanter === 'teslim' && ENVANTER_TURLERI.some((t) => t.kod === params.get('tur')) ? params.get('tur') : '';
+  const tur = envanter === 'teslim' && Number(params.get('tur')) > 0 ? params.get('tur') : '';
+  const { turler: envanterTurleri } = useEnvanterTurleri();
   // ?grup=<id>: Gruplar sayfasından seçilen grubun öğrencileri
   const grupId = Number(params.get('grup')) || null;
   const kayit = KAYIT_SECENEKLERI.some((k) => k.deger === params.get('kayit')) ? params.get('kayit') : '';
@@ -263,7 +264,7 @@ export default function OgrenciListePage() {
               <Field label={<>Teslim bekleyen ürün<BilgiIkonu metin="Hangi ürünü teslim bekleyen öğrencileri görmek için ürünü seçin." /></>}>
                 <Select value={tur} onChange={(e) => filtreYaz({ tur: e.target.value })}>
                   <option value="">Tüm ürünler</option>
-                  {ENVANTER_TURLERI.map((t) => (
+                  {(envanterTurleri || []).map((t) => (
                     <option key={t.kod} value={t.kod}>
                       {t.ad}
                     </option>

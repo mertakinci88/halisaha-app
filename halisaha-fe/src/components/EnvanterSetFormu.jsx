@@ -10,7 +10,7 @@ import { envanterService } from '@/services';
 import { apiHata } from '@/lib/api';
 import { useHata } from '@/context/ToastContext';
 import { tl } from '@/lib/format';
-import { BEDENLER, ENVANTER_TURLERI, birimAd } from '@/lib/envanter';
+import { tumBedenler, useEnvanterTurleri } from '@/lib/envanter';
 import { cn } from '@/lib/utils';
 
 /**
@@ -22,6 +22,7 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
   const navigate = useNavigate();
   const [, setHata] = useHata();
   const [envanterler, setEnvanterler] = useState(null);
+  const { turler } = useEnvanterTurleri();
   const [ad, setAd] = useState(baslangic?.ad || '');
   const [beden, setBeden] = useState(baslangic?.beden || '');
   const [tutar, setTutar] = useState(baslangic?.tutar != null ? String(Number(baslangic.tutar)) : '');
@@ -34,13 +35,13 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
       .catch((e) => setHata(apiHata(e), { sessiz: true }));
   }, []);
 
-  if (!envanterler) return <Yukleniyor />;
+  if (!envanterler || !turler) return <Yukleniyor />;
 
   // Seçilen bedenin satırları: bedenli türler (set bedeninde) ve bedensiz türler (varsa)
   const satirlar = beden
-    ? ENVANTER_TURLERI.map((tur) => ({
+    ? turler.map((tur) => ({
         tur,
-        env: envanterler.find((e) => e.tur === tur.kod && e.beden === (tur.bedenli ? beden : 'STANDART')),
+        env: envanterler.find((e) => e.turId === tur.kod && e.beden === (tur.bedenli ? beden : 'STANDART')),
       })).filter((r) => r.env || r.tur.bedenli)
     : [];
   const durumu = (r) => (!r.env ? 'YOK' : r.env.adet <= 0 ? 'STOKSUZ' : 'TAMAM');
@@ -95,7 +96,7 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
           <Field label="Beden">
             <Select value={beden} onChange={(e) => bedenDegisti(e.target.value)} required className="text-[16px]">
               <option value="">Seçiniz</option>
-              {BEDENLER.map((b) => (
+              {tumBedenler(turler).map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </Select>
@@ -161,7 +162,7 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
                       ) : durum === 'STOKSUZ' ? (
                         <Tag tone="danger">Stok yok</Tag>
                       ) : (
-                        <span className="text-[14px] tabular-nums text-ink/70">{r.env.adet} {birimAd(r.tur.kod)}</span>
+                        <span className="text-[14px] tabular-nums text-ink/70">{r.env.adet} {r.tur.birim}</span>
                       )}
                     </span>
                   </label>

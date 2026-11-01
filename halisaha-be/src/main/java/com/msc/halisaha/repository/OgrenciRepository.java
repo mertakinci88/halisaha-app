@@ -1,6 +1,5 @@
 package com.msc.halisaha.repository;
 
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.Ogrenci;
 import com.msc.halisaha.entity.OgrenciDurum;
 import org.springframework.data.domain.Page;
@@ -46,17 +45,17 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
                        AND y.tarih >= :devamsizlikBas) >= :devamsizlik)
               AND (:envanterFiltre = ''
                    OR (:envanterFiltre = 'SAHIP' AND EXISTS (
-                         SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur = :envanterTur)))
+                         SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur.id = :envanterTur)))
                    OR (:envanterFiltre = 'TESLIM_BEKLEYEN' AND EXISTS (
                          SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND k.odendi = TRUE AND k.teslimEdildi = FALSE
-                           AND (:envanterTur IS NULL OR k.envanter.tur = :envanterTur)))
+                           AND (:envanterTur IS NULL OR k.envanter.tur.id = :envanterTur)))
                    OR (:envanterFiltre = 'BORCLU' AND EXISTS (
                          SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND k.satis.odenenTutar < k.satis.setTutari
-                           AND (:envanterTur IS NULL OR k.envanter.tur = :envanterTur)))
+                           AND (:envanterTur IS NULL OR k.envanter.tur.id = :envanterTur)))
                    OR (:envanterFiltre = 'ALMAMIS' AND NOT EXISTS (
-                         SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur = :envanterTur)))
+                         SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur.id = :envanterTur)))
                    OR (:envanterFiltre = 'TAMAM'
-                         AND EXISTS (SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur = :envanterTur))
+                         AND EXISTS (SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND (:envanterTur IS NULL OR k.envanter.tur.id = :envanterTur))
                          AND NOT EXISTS (SELECT 1 FROM EnvanterSatis s WHERE s.ogrenci = o AND s.odenenTutar < s.setTutari)
                          AND NOT EXISTS (SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND k.odendi = TRUE AND k.teslimEdildi = FALSE)))
               AND (:q IS NULL OR :q = ''
@@ -67,7 +66,7 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
     Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q,
                       @Param("durum") OgrenciDurum durum,
                       @Param("tamamlanmis") boolean tamamlanmis, @Param("tamamlanmamis") boolean tamamlanmamis, @Param("tutarDurumu") int tutarDurumu,
-                      @Param("envanterFiltre") String envanterFiltre, @Param("envanterTur") EnvanterTur envanterTur,
+                      @Param("envanterFiltre") String envanterFiltre, @Param("envanterTur") Long envanterTur,
                       @Param("kayitBas") LocalDateTime kayitBas, @Param("antrenmanGun") Integer antrenmanGun,
                       @Param("transferBekleyen") boolean transferBekleyen,
                       @Param("devamsizlik") int devamsizlik, @Param("devamsizlikBas") LocalDate devamsizlikBas,

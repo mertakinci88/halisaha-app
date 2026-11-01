@@ -47,7 +47,7 @@ export default function EnvanterDetayPage() {
       <Hata mesaj={hata} />
       <EnvanterFormu
         baslangic={{
-          tur: envanter.tur,
+          turId: envanter.turId,
           beden: envanter.bedenli ? envanter.beden : '',
           satisFiyati: String(envanter.satisFiyati),
           adet: String(envanter.adet),

@@ -2,10 +2,10 @@ import { raporService } from '@/services';
 import { Table, Th, Td, Tr, Bos } from '@/components/ui/table';
 import { Tag } from '@/components/ui/tag';
 import { tl } from '@/lib/format';
-import { miktar, turBul } from '@/lib/envanter';
+import { miktar } from '@/lib/envanter';
 import { Aciklama, Kutu, Ozet, OzetIzgara, RaporDurumu, useRapor } from './RaporBilesenleri';
 
-const urunAdi = (tur, beden) => (turBul(tur)?.ad || tur) + (beden === 'STANDART' ? '' : ' · ' + beden);
+const urunAdi = (tur, beden) => tur + (beden === 'STANDART' ? '' : ' · ' + beden);
 
 export default function EnvanterSekmesi({ baslangic, bitis }) {
   const rapor = useRapor(() => raporService.envanter({ baslangic, bitis }), [baslangic, bitis]);
@@ -36,7 +36,7 @@ export default function EnvanterSekmesi({ baslangic, bitis }) {
                   {v.urunler.map((u) => (
                     <Tr key={u.tur + u.beden}>
                       <Td etiket="Ürün">{urunAdi(u.tur, u.beden)}</Td>
-                      <Td etiket="Adet" className="text-right">{miktar(u.tur, u.adet)}</Td>
+                      <Td etiket="Adet" className="text-right">{miktar(u.birim, u.adet)}</Td>
                       <Td etiket="Tutar" className="text-right">{tl(u.tutar)}</Td>
                     </Tr>
                   ))}
@@ -82,7 +82,7 @@ export default function EnvanterSekmesi({ baslangic, bitis }) {
                 {v.kritikStok.map((s) => (
                   <Tr key={s.tur + s.beden}>
                     <Td etiket="Ürün">{urunAdi(s.tur, s.beden)}</Td>
-                    <Td etiket="Stok" className="text-right">{miktar(s.tur, s.adet)}</Td>
+                    <Td etiket="Stok" className="text-right">{miktar(s.birim, s.adet)}</Td>
                     <Td etiket="Uyarı eşiği" className="text-right">{s.uyariAdedi}</Td>
                     <Td etiket="Durum">
                       <Tag tone={s.adet === 0 ? 'danger' : 'warning'}>{s.adet === 0 ? 'Tükendi' : 'Azaldı'}</Tag>
