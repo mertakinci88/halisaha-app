@@ -7,7 +7,6 @@ import com.msc.halisaha.dto.EnvanterSatisRequest;
 import com.msc.halisaha.dto.EnvanterSatisResponse;
 import com.msc.halisaha.entity.EnvanterStokHareket;
 import com.msc.halisaha.entity.EnvanterStokHareketTip;
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.OdemeYontemi;
 import com.msc.halisaha.repository.EnvanterRepository;
@@ -27,11 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.msc.halisaha.dto.EnvanterSatisResponse.KalemResponse;
-import static com.msc.halisaha.entity.EnvanterTur.KISLIK_ESOFMAN;
-import static com.msc.halisaha.entity.EnvanterTur.KRAMPON_CANTASI;
-import static com.msc.halisaha.entity.EnvanterTur.TOZLUK;
-import static com.msc.halisaha.entity.EnvanterTur.YAGMURLUK;
-import static com.msc.halisaha.entity.EnvanterTur.YAZLIK_FORMA;
+import static com.msc.halisaha.service.TestTur.KISLIK_ESOFMAN;
+import static com.msc.halisaha.service.TestTur.KRAMPON_CANTASI;
+import static com.msc.halisaha.service.TestTur.TOZLUK;
+import static com.msc.halisaha.service.TestTur.YAGMURLUK;
+import static com.msc.halisaha.service.TestTur.YAZLIK_FORMA;
 import static com.msc.halisaha.service.EnvanterTestKurulum.set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,6 +44,7 @@ class EnvanterSatisServiceTest {
 
     @Autowired EnvanterSatisService satisService;
     @Autowired EnvanterService envanterService;
+    @Autowired EnvanterTurService turService;
     @Autowired OgrenciService ogrenciService;
     @Autowired EnvanterRepository envanterRepository;
     @Autowired EnvanterStokHareketRepository hareketRepository;
@@ -57,7 +57,7 @@ class EnvanterSatisServiceTest {
 
     @BeforeEach
     void hazirla() {
-        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService);
+        k = new EnvanterTestKurulum(isletmeRepository, kullaniciRepository, ogrenciRepository, envanterService, turService);
         ogrenci = k.ogrenciA.getId();
     }
 
@@ -74,8 +74,8 @@ class EnvanterSatisServiceTest {
         return assertThrows(ApiException.class, is::run);
     }
 
-    private KalemResponse kalem(EnvanterSatisResponse s, EnvanterTur tur) {
-        return s.kalemler().stream().filter(x -> x.tur() == tur).findFirst().orElseThrow();
+    private KalemResponse kalem(EnvanterSatisResponse s, TestTur tur) {
+        return s.kalemler().stream().filter(x -> x.turId().equals(tur.id())).findFirst().orElseThrow();
     }
 
     private long hareketSayisi(EnvanterStokHareketTip tip) {
@@ -116,14 +116,14 @@ class EnvanterSatisServiceTest {
     @Test
     void elleGirilenSatisFiyatiGecerliOlurEnvanterFiyatiDegismez() {
         var istek = new EnvanterSatisRequest(
-                List.of(new EnvanterSatisRequest.Kalem(TOZLUK, null, true, false, new BigDecimal("100"))), null);
+                List.of(new EnvanterSatisRequest.Kalem(TOZLUK.id(), null, true, false, new BigDecimal("100"))), null);
         var satis = satisService.olustur(ogrenci, istek);
         assertEquals(0, new BigDecimal("100").compareTo(kalem(satis, TOZLUK).birimFiyat()));
         assertEquals(0, new BigDecimal("100").compareTo(satis.setTutari()));
         assertEquals(0, new BigDecimal("100").compareTo(satis.odenenTutar()));
 
         var guncel = satisService.guncelle(ogrenci, satis.id(), new EnvanterSatisRequest(
-                List.of(new EnvanterSatisRequest.Kalem(TOZLUK, null, true, false, new BigDecimal("120"))), null));
+                List.of(new EnvanterSatisRequest.Kalem(TOZLUK.id(), null, true, false, new BigDecimal("120"))), null));
         assertEquals(0, new BigDecimal("120").compareTo(kalem(guncel, TOZLUK).birimFiyat()));
         assertEquals(0, new BigDecimal("120").compareTo(guncel.setTutari()));
     }
@@ -166,7 +166,7 @@ class EnvanterSatisServiceTest {
         assertEquals(0, stok(k.esofmanMedium.id()));
 
         // Stok girişi yapılınca teslim edilebilir
-        envanterService.update(k.esofmanMedium.id(), new EnvanterRequest(KISLIK_ESOFMAN, "Medium", 5, new BigDecimal("600"), 5));
+        envanterService.update(k.esofmanMedium.id(), new EnvanterRequest(KISLIK_ESOFMAN.id(), "Medium", 5, new BigDecimal("600"), 5));
         var teslim = satisService.guncelle(ogrenci, satis.id(), set("Medium", "164", List.of(KISLIK_ESOFMAN), List.of(TOZLUK), null));
         assertTrue(kalem(teslim, KISLIK_ESOFMAN).teslimEdildi());
         assertEquals(4, stok(k.esofmanMedium.id()));
@@ -221,7 +221,7 @@ class EnvanterSatisServiceTest {
     @Test
     void satisFiyatiSatisAnindakiKopyadirSonradanDegisenFiyatGecmisiEtkilemez() {
         var satis = satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), null));
-        envanterService.update(k.forma128.id(), new EnvanterRequest(YAZLIK_FORMA, "128", 25, new BigDecimal("999"), 5));
+        envanterService.update(k.forma128.id(), new EnvanterRequest(YAZLIK_FORMA.id(), "128", 25, new BigDecimal("999"), 5));
 
         var ayni = satisService.guncelle(ogrenci, satis.id(), set("140", "164", List.of(), List.of(TOZLUK), null));
         assertEquals(0, new BigDecimal("450").compareTo(kalem(ayni, YAZLIK_FORMA).birimFiyat()));
@@ -265,8 +265,8 @@ class EnvanterSatisServiceTest {
     void setYalnizcaSecilenKayitliEnvanterlerdenOlusabilir() {
         // Yalnızca Tozluk + Krampon satılır; diğer türler sette yer almaz
         var satis = satisService.olustur(ogrenci, new EnvanterSatisRequest(List.of(
-                new EnvanterSatisRequest.Kalem(TOZLUK, null, true, true),
-                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI, null, false, false)), null));
+                new EnvanterSatisRequest.Kalem(TOZLUK.id(), null, true, true),
+                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI.id(), null, false, false)), null));
         assertEquals(2, satis.kalemler().size());
         assertEquals(0, new BigDecimal("500").compareTo(satis.setTutari()));       // 150 + 350
         assertEquals(0, new BigDecimal("150").compareTo(satis.odenenTutar()));      // yalnızca Ödendi işaretli
@@ -274,14 +274,14 @@ class EnvanterSatisServiceTest {
         assertEquals(22, stok(k.krampon.id()));
 
         var g = satisService.guncelle(ogrenci, satis.id(), new EnvanterSatisRequest(List.of(
-                new EnvanterSatisRequest.Kalem(TOZLUK, null, true, true),
-                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI, null, true, true)), null));
+                new EnvanterSatisRequest.Kalem(TOZLUK.id(), null, true, true),
+                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI.id(), null, true, true)), null));
         assertEquals(OdemeDurumu.ODENDI, g.odemeDurumu());
         assertEquals(21, stok(k.krampon.id()));
 
         // Güncellemede envanter çıkarılabilir: teslim edilmiş kalemin stoğu geri döner
         var cikarilmis = satisService.guncelle(ogrenci, satis.id(), new EnvanterSatisRequest(List.of(
-                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI, null, true, true)), null));
+                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI.id(), null, true, true)), null));
         assertEquals(1, cikarilmis.kalemler().size());
         assertEquals(0, new BigDecimal("350").compareTo(cikarilmis.setTutari()));
         assertEquals(40, stok(k.tozluk.id()));
@@ -308,9 +308,9 @@ class EnvanterSatisServiceTest {
         assertEquals(0, satisService.teslimBekleyenler().kalemSayisi());
         // Tozluk ödendi + teslim, Krampon ödendi (teslim yok), Forma ödenmedi
         satisService.olustur(ogrenci, new EnvanterSatisRequest(List.of(
-                new EnvanterSatisRequest.Kalem(TOZLUK, null, true, true),
-                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI, null, true, false),
-                new EnvanterSatisRequest.Kalem(YAZLIK_FORMA, "128", false, false)), null));
+                new EnvanterSatisRequest.Kalem(TOZLUK.id(), null, true, true),
+                new EnvanterSatisRequest.Kalem(KRAMPON_CANTASI.id(), null, true, false),
+                new EnvanterSatisRequest.Kalem(YAZLIK_FORMA.id(), "128", false, false)), null));
         var bekleyen = satisService.teslimBekleyenler();
         assertEquals(1, bekleyen.kalemSayisi());
         assertEquals(1, bekleyen.ogrenciler().size());
@@ -387,8 +387,8 @@ class EnvanterSatisServiceTest {
         satisService.olustur(ogrenci, set("140", "164", List.of(), List.of(TOZLUK), null));                  // ödendi, teslim yok
         satisService.olustur(teslimEdilmis, set("140", "164", List.of(TOZLUK), List.of(TOZLUK), null));      // ödendi + teslim
 
-        java.util.function.BiFunction<com.msc.halisaha.entity.EnvanterDurumFiltre, EnvanterTur, List<String>> liste = (d, t) ->
-                ogrenciService.list(new com.msc.halisaha.dto.OgrenciFiltre(null, null, null, null, d, t), 0, 50).icerik().stream()
+        java.util.function.BiFunction<com.msc.halisaha.entity.EnvanterDurumFiltre, TestTur, List<String>> liste = (d, t) ->
+                ogrenciService.list(new com.msc.halisaha.dto.OgrenciFiltre(null, null, null, null, d, t != null ? t.id() : null), 0, 50).icerik().stream()
                         .map(com.msc.halisaha.dto.OgrenciResponse::adSoyad).toList();
         var teslim = com.msc.halisaha.entity.EnvanterDurumFiltre.TESLIM_BEKLEYEN;
 

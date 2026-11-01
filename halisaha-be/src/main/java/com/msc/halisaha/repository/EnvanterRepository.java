@@ -1,7 +1,6 @@
 package com.msc.halisaha.repository;
 
 import com.msc.halisaha.entity.Envanter;
-import com.msc.halisaha.entity.EnvanterTur;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,11 +15,15 @@ public interface EnvanterRepository extends JpaRepository<Envanter, Long> {
 
     Optional<Envanter> findByIdAndIsletmeId(Long id, Long isletmeId);
 
-    Optional<Envanter> findByIsletmeIdAndTurAndBeden(Long isletmeId, EnvanterTur tur, String beden);
+    Optional<Envanter> findByIsletmeIdAndTurIdAndBeden(Long isletmeId, Long turId, String beden);
 
-    boolean existsByIsletmeIdAndTurAndBedenAndIdNot(Long isletmeId, EnvanterTur tur, String beden, Long id);
+    boolean existsByIsletmeIdAndTurIdAndBedenAndIdNot(Long isletmeId, Long turId, String beden, Long id);
 
-    boolean existsByIsletmeIdAndTurAndBeden(Long isletmeId, EnvanterTur tur, String beden);
+    boolean existsByIsletmeIdAndTurIdAndBeden(Long isletmeId, Long turId, String beden);
+
+    boolean existsByTurId(Long turId);
+
+    boolean existsByTurIdAndBeden(Long turId, String beden);
 
     /** Stoğu tek SQL ile atomik düşer; stok yetersizse 0 satır etkilenir (stok eksiye düşmez). */
     @Modifying(flushAutomatically = true)

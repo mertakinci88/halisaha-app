@@ -3,14 +3,15 @@ package com.msc.halisaha.dto;
 import com.msc.halisaha.entity.EnvanterSatis;
 import com.msc.halisaha.entity.EnvanterSatisKalem;
 import com.msc.halisaha.entity.EnvanterSatisOdeme;
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OdemeDurumu;
 import com.msc.halisaha.entity.OdemeYontemi;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public record EnvanterSatisResponse(
         Long id,
@@ -27,6 +28,8 @@ public record EnvanterSatisResponse(
         List<OdemeResponse> odemeler
 ) {
 
+    private static final Collator TR = Collator.getInstance(Locale.forLanguageTag("tr"));
+
     public record OdemeResponse(Long id, BigDecimal tutar, OdemeYontemi odemeSekli, Long hesapId, String hesapAd, LocalDateTime odemeTarihi) {
 
         static OdemeResponse from(EnvanterSatisOdeme o) {
@@ -39,8 +42,9 @@ public record EnvanterSatisResponse(
 
 
     public record KalemResponse(
-            EnvanterTur tur,
+            Long turId,
             String turAd,
+            String birim,
             Long envanterId,
             String beden,
             BigDecimal birimFiyat,
@@ -49,7 +53,8 @@ public record EnvanterSatisResponse(
     ) {
 
         static KalemResponse from(EnvanterSatisKalem k) {
-            return new KalemResponse(k.getEnvanter().getTur(), k.getEnvanter().getTur().getAd(), k.getEnvanter().getId(),
+            return new KalemResponse(k.getEnvanter().getTur().getId(), k.getEnvanter().getTur().getAd(), k.getEnvanter().getTur().getBirim(),
+                    k.getEnvanter().getId(),
                     k.getEnvanter().getBeden(), k.getBirimFiyat(), k.isOdendi(), k.isTeslimEdildi());
         }
     }
@@ -67,7 +72,7 @@ public record EnvanterSatisResponse(
                 OdemeDurumu.hesapla(s.getOdenenTutar(), s.getSetTutari()),
                 s.getKayitTarihi(),
                 s.getKalemler().stream()
-                        .sorted(Comparator.comparing((EnvanterSatisKalem k) -> k.getEnvanter().getTur().ordinal()))
+                        .sorted(Comparator.comparing((EnvanterSatisKalem k) -> k.getEnvanter().getTur().getAd(), TR))
                         .map(KalemResponse::from)
                         .toList(),
                 s.getOdemeler().stream().map(OdemeResponse::from).toList());

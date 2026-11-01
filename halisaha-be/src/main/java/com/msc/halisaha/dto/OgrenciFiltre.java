@@ -1,7 +1,6 @@
 package com.msc.halisaha.dto;
 
 import com.msc.halisaha.entity.EnvanterDurumFiltre;
-import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.entity.OgrenciDurum;
 import com.msc.halisaha.entity.OgrenciKayitFiltre;
 import com.msc.halisaha.entity.OgrenciOdemeFiltre;
@@ -19,7 +18,7 @@ public record OgrenciFiltre(
         OgrenciDurum durum,
         OgrenciOdemeFiltre odeme,
         EnvanterDurumFiltre envanter,
-        EnvanterTur envanterTur,
+        Long envanterTur,
         OgrenciKayitFiltre kayit,
         Integer antrenmanGun,
         boolean transferBekleyen,
@@ -33,7 +32,7 @@ public record OgrenciFiltre(
 
     /** Yalnızca grup, arama, durum, ödeme ve envanter filtreleriyle. */
     public OgrenciFiltre(Long grupId, String q, OgrenciDurum durum, OgrenciOdemeFiltre odeme,
-                         EnvanterDurumFiltre envanter, EnvanterTur envanterTur) {
+                         EnvanterDurumFiltre envanter, Long envanterTur) {
         this(grupId, q, durum, odeme, envanter, envanterTur, null, null, false, null);
     }
 }

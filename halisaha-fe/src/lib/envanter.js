@@ -1,21 +1,37 @@
-/** Envanter türleri (Türkçe alfabetik sıra) ve beden listesi; backend'deki EnvanterTur / EnvanterBeden ile aynıdır. */
-export const ENVANTER_TURLERI = [
-  { kod: 'KALECI_FORMA', ad: 'Kaleci Forma', bedenli: true },
-  { kod: 'KISLIK_ESOFMAN', ad: 'Kışlık Eşofman', bedenli: true },
-  { kod: 'KRAMPON_CANTASI', ad: 'Krampon Çantası', bedenli: false },
-  { kod: 'TOZLUK', ad: 'Tozluk', bedenli: false },
-  { kod: 'YAGMURLUK', ad: 'Yağmurluk', bedenli: true },
-  { kod: 'YAZLIK_FORMA', ad: 'Yazlık Forma', bedenli: true },
-];
-
-export const BEDENLER = ['128', '140', '152', '164', '176', 'Small', 'Medium'];
+import { useCallback, useEffect, useState } from 'react';
+import { envanterTurService } from '@/services';
 
 export const STANDART = 'STANDART';
 
-/** Tozluk çift olarak sayılır (1 stok = 1 çift); diğer ürünler adet. */
-export const birimAd = (turKod) => (turKod === 'TOZLUK' ? 'çift' : 'adet');
+/** Listelerde miktar: çift olarak sayılan türlerde (ör. tozluk) "40 çift", diğerlerinde yalnızca sayı (sütun başlığı Adet). */
+export const miktar = (birim, n) => (birim === 'çift' ? n + ' çift' : n);
 
-/** Listelerde miktar: tozlukta "40 çift", diğerlerinde yalnızca sayı (sütun başlığı Adet). */
-export const miktar = (turKod, n) => (turKod === 'TOZLUK' ? n + ' çift' : n);
+/**
+ * İşletmenin envanter türleri (Türkçe alfabetik): [{ kod, id, ad, bedenli, birim, bedenler, kullanimda }].
+ * kod = id; ilk yüklemede null. yenile() türler eklendikten / değiştikten sonra listeyi tazeler.
+ */
+export function useEnvanterTurleri() {
+  const [turler, setTurler] = useState(null);
+  const yenile = useCallback(
+    () =>
+      envanterTurService
+        .list()
+        .then((l) => {
+          const liste = l.map((t) => ({ ...t, kod: t.id }));
+          setTurler(liste);
+          return liste;
+        })
+        .catch(() => {
+          setTurler((onceki) => onceki || []);
+          return [];
+        }),
+    [],
+  );
+  useEffect(() => {
+    yenile();
+  }, [yenile]);
+  return { turler, yenile };
+}
 
-export const turBul = (kod) => ENVANTER_TURLERI.find((t) => t.kod === kod);
+/** Bedenli türlerin tüm bedenleri, ilk görüldükleri sırayla (set bedeni seçimi için). */
+export const tumBedenler = (turler) => [...new Set((turler || []).filter((t) => t.bedenli).flatMap((t) => t.bedenler))];

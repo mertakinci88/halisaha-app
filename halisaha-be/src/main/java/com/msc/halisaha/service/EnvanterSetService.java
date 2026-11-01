@@ -6,7 +6,6 @@ import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.EnvanterSetRequest;
 import com.msc.halisaha.dto.EnvanterSetResponse;
 import com.msc.halisaha.entity.Envanter;
-import com.msc.halisaha.entity.EnvanterBeden;
 import com.msc.halisaha.entity.EnvanterSet;
 import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.repository.EnvanterRepository;
@@ -19,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,7 +99,7 @@ public class EnvanterSetService {
      */
     private List<Envanter> envanterleriBul(Long isletmeId, EnvanterSetRequest request) {
         String beden = request.beden();
-        if (!EnvanterBeden.gecerli(beden)) {
+        if (EnvanterTur.STANDART.equalsIgnoreCase(beden.trim())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Geçersiz beden: " + beden);
         }
         List<Long> idler = request.envanterIdleri();
@@ -113,7 +112,7 @@ public class EnvanterSetService {
         }
         List<Envanter> sonuc = new ArrayList<>();
         List<String> stokYok = new ArrayList<>();
-        Set<EnvanterTur> turler = EnumSet.noneOf(EnvanterTur.class);
+        Set<Long> turler = new HashSet<>();
         for (Long envanterId : tekil) {
             Envanter envanter = envanterRepository.findByIdAndIsletmeId(envanterId, isletmeId)
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Envanter bulunamadı: " + envanterId));
@@ -121,7 +120,7 @@ public class EnvanterSetService {
                 throw new ApiException(HttpStatus.BAD_REQUEST,
                         envanter.getTur().getAd() + " (" + envanter.getBeden() + ") set bedeniyle (" + beden + ") uyuşmuyor");
             }
-            if (!turler.add(envanter.getTur())) {
+            if (!turler.add(envanter.getTur().getId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST,
                         "Sette her envanter türünden yalnızca bir kayıt olabilir: " + envanter.getTur().getAd());
             }

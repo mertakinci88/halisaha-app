@@ -40,16 +40,17 @@ public class EnvanterRaporService {
                 BigDecimal.valueOf(rs.getLong("adet")), rs.getBigDecimal("tutar"), rs.getBigDecimal("odenen")});
 
         List<EnvanterRaporu.UrunSatiri> urunler = jdbc.query("""
-                SELECT e.tur, e.beden, COUNT(*) AS adet, SUM(k.birim_fiyat) AS tutar
+                SELECT t.ad AS tur, t.birim, e.beden, COUNT(*) AS adet, SUM(k.birim_fiyat) AS tutar
                 FROM envanter_satis_kalem k
                 JOIN envanter_satis s ON s.id = k.satis_id
                 JOIN envanter e ON e.id = k.envanter_id
+                JOIN envanter_tur t ON t.id = e.tur_id
                 WHERE s.isletme_id = :isletmeId AND s.kayit_tarihi >= (CAST(:bas AS timestamp) + %1$s) AND s.kayit_tarihi < (CAST(:bit AS timestamp) + %1$s)
-                GROUP BY e.tur, e.beden
+                GROUP BY t.ad, t.birim, e.beden
                 ORDER BY adet DESC, tutar DESC
                 LIMIT :limit
                 """.formatted(ISLETME_GUNU), params, (rs, i) -> new EnvanterRaporu.UrunSatiri(
-                rs.getString("tur"), rs.getString("beden"), rs.getLong("adet"), rs.getBigDecimal("tutar")));
+                rs.getString("tur"), rs.getString("birim"), rs.getString("beden"), rs.getLong("adet"), rs.getBigDecimal("tutar")));
 
         List<EnvanterRaporu.SetSatiri> setler = jdbc.query("""
                 SELECT set_ad, COUNT(*) AS adet, SUM(set_tutari) AS tutar
@@ -63,12 +64,13 @@ public class EnvanterRaporService {
 
         // Stok uyarı eşiğinin altına düşen kalemler (dönemden bağımsız, güncel durum)
         List<EnvanterRaporu.StokSatiri> kritik = jdbc.query("""
-                SELECT tur, beden, adet, stok_uyari_adedi
-                FROM envanter
-                WHERE isletme_id = :isletmeId AND adet <= stok_uyari_adedi
-                ORDER BY adet, tur, beden
+                SELECT t.ad AS tur, t.birim, e.beden, e.adet, e.stok_uyari_adedi
+                FROM envanter e
+                JOIN envanter_tur t ON t.id = e.tur_id
+                WHERE e.isletme_id = :isletmeId AND e.adet <= e.stok_uyari_adedi
+                ORDER BY e.adet, t.ad, e.beden
                 """, params, (rs, i) -> new EnvanterRaporu.StokSatiri(
-                rs.getString("tur"), rs.getString("beden"), rs.getInt("adet"), rs.getInt("stok_uyari_adedi")));
+                rs.getString("tur"), rs.getString("birim"), rs.getString("beden"), rs.getInt("adet"), rs.getInt("stok_uyari_adedi")));
 
         return new EnvanterRaporu(aralik.ilk(), aralik.son(), ozet[0].longValue(), ozet[1], ozet[2],
                 ozet[1].subtract(ozet[2]), urunler, setler, kritik);

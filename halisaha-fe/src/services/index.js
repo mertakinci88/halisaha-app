@@ -181,14 +181,24 @@ export const yoklamaService = {
     api.put('/api/yoklamalar', { kayitlar }, { params: { tarih, grupId } }).then((r) => r.data),
 };
 
+/* ── /api/envanter-turleri (ADMIN ya da ENVANTER yetkisi) ───────── */
+export const envanterTurService = {
+  /** [{ id, ad, bedenli, birim: 'adet'|'çift', bedenler: [..], kullanimda }] — ada göre; kullanimda=true silinemez */
+  list: () => api.get('/api/envanter-turleri').then((r) => r.data),
+  /** body: { ad, bedenli, birim, bedenler (bedenli türde en az bir) } */
+  create: (body) => api.post('/api/envanter-turleri', body).then((r) => r.data),
+  update: (id, body) => api.put('/api/envanter-turleri/' + id, body).then((r) => r.data),
+  remove: (id) => api.delete('/api/envanter-turleri/' + id),
+};
+
 /* ── /api/envanterler (ADMIN ya da ENVANTER yetkisi) ───────────── */
 export const envanterService = {
-  /** [{ id, tur, turAd, bedenli, beden, adet, stokUyariAdedi, satisFiyati }] — tür (alfabetik) ve beden sırasıyla */
+  /** [{ id, turId, turAd, bedenli, birim, beden, adet, stokUyariAdedi, satisFiyati }] — tür (alfabetik) ve türün beden sırasıyla */
   list: () => api.get('/api/envanterler').then((r) => r.data),
   get: (id) => api.get('/api/envanterler/' + id).then((r) => r.data),
   /** Panel kartı: { kalemSayisi, ogrenciler: [{ ogrenciId, adSoyad, kalemler: [{ turAd, beden, bedenli, stokYok }] }] } — ödemesi alınmış, teslim edilmemiş */
   teslimBekleyenler: () => api.get('/api/envanterler/teslim-bekleyenler').then((r) => r.data),
-  /** body: { tur, beden (yalnızca bedenli türlerde), adet, satisFiyati, stokUyariAdedi } */
+  /** body: { turId, beden (yalnızca bedenli türlerde), adet, satisFiyati, stokUyariAdedi } */
   create: (body) => api.post('/api/envanterler', body).then((r) => r.data),
   update: (id, body) => api.put('/api/envanterler/' + id, body).then((r) => r.data),
   remove: (id) => api.delete('/api/envanterler/' + id),
@@ -196,7 +206,7 @@ export const envanterService = {
 
 /* ── /api/envanter-setleri (ADMIN ya da ENVANTER yetkisi) ───────── */
 export const envanterSetService = {
-  /** [{ id, ad, beden, tutar, kayitTarihi, guncellemeTarihi, kaydeden, kalemler: [{ envanterId, tur, turAd, beden, adet }] }] — ada göre */
+  /** [{ id, ad, beden, tutar, kayitTarihi, guncellemeTarihi, kaydeden, kalemler: [{ envanterId, turId, turAd, beden, adet }] }] — ada göre */
   list: () => api.get('/api/envanter-setleri').then((r) => r.data),
   get: (id) => api.get('/api/envanter-setleri/' + id).then((r) => r.data),
   /** body: { ad, beden, tutar, envanterIdleri: [id] } — seçilen envanterler; bedenliler set bedeninde olmalı, her türden en fazla bir tane, stoksuz ürün 400 */
@@ -209,7 +219,7 @@ export const envanterSetService = {
 export const envanterSatisService = {
   list: (ogrenciId) => api.get('/api/ogrenciler/' + ogrenciId + '/envanter-satislari').then((r) => r.data),
   /**
-   * body: { kalemler: [{ tur, beden, odendi, teslim }] (her türden bir tane), odenenTutar (kaydedildikten sonraki TOPLAM ödenen),
+   * body: { kalemler: [{ turId, beden, odendi, teslim }] (her türden bir tane), odenenTutar (kaydedildikten sonraki TOPLAM ödenen),
    * odemeSekli: NAKIT | KART | HAVALE_EFT ve hesapId (yalnızca HAVALE_EFT) — toplam artıyorsa aradaki fark bu yöntemle yeni ödeme olur,
    * setId (isteğe bağlı; yalnızca oluştururken) }. Yanıttaki odemeler: [{ id, tutar, odemeSekli, hesapId, hesapAd, odemeTarihi }]
    */

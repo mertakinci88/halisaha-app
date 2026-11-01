@@ -7,7 +7,6 @@ import com.msc.halisaha.dto.EnvanterSatisRequest;
 import com.msc.halisaha.dto.EnvanterSatisResponse;
 import com.msc.halisaha.dto.EnvanterTeslimBekleyenResponse;
 import com.msc.halisaha.entity.Envanter;
-import com.msc.halisaha.entity.EnvanterBeden;
 import com.msc.halisaha.entity.EnvanterSatis;
 import com.msc.halisaha.entity.EnvanterSatisKalem;
 import com.msc.halisaha.entity.EnvanterSatisOdeme;
@@ -18,6 +17,7 @@ import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.EnvanterSatisKalemRepository;
 import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.EnvanterSetRepository;
+import com.msc.halisaha.repository.EnvanterTurRepository;
 import com.msc.halisaha.repository.IadeRepository;
 import com.msc.halisaha.repository.OgrenciRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.EnumMap;
-import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +49,7 @@ public class EnvanterSatisService {
     private final EnvanterSatisKalemRepository kalemRepository;
     private final EnvanterRepository envanterRepository;
     private final EnvanterSetRepository setRepository;
+    private final EnvanterTurRepository turRepository;
     private final OgrenciRepository ogrenciRepository;
     private final GrupKapsami grupKapsami;
     private final EnvanterStokService stokService;
@@ -76,10 +76,10 @@ public class EnvanterSatisService {
     public EnvanterSatisResponse olustur(Long ogrenciId, EnvanterSatisRequest request) {
         Long isletmeId = isletmeContext.id();
         Ogrenci ogrenci = ogrenciGetir(ogrenciId, isletmeId);
-        Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler = kalemleriTopla(request);
+        Map<Long, EnvanterSatisRequest.Kalem> istekler = kalemleriTopla(request);
         EnvanterSet set = setBul(isletmeId, request.setId(), istekler);
         // Set satışında envanterler (beden dahil) setten gelir, kalemlerin fiyatı yoktur; tutar setin tutarıdır
-        Map<EnvanterTur, Envanter> envanterler = set != null ? setEnvanterleri(set) : envanterleriBul(isletmeId, istekler);
+        Map<Long, Envanter> envanterler = set != null ? setEnvanterleri(set) : envanterleriBul(isletmeId, istekler);
 
         EnvanterSatis satis = EnvanterSatis.builder()
                 .isletme(isletmeContext.getir())
@@ -91,8 +91,8 @@ public class EnvanterSatisService {
                 .odenenTutar(BigDecimal.ZERO)
                 .kullanici(mevcutKullanici.getir())
                 .build();
-        Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
-        for (EnvanterTur tur : istekler.keySet()) {
+        Map<Long, BigDecimal> fiyatlar = new LinkedHashMap<>();
+        for (Long tur : istekler.keySet()) {
             Envanter envanter = envanterler.get(tur);
             BigDecimal fiyat = set != null ? BigDecimal.ZERO.setScale(2) : fiyatBelirle(istekler.get(tur), envanter.getSatisFiyati());
             fiyatlar.put(tur, fiyat);
@@ -111,7 +111,7 @@ public class EnvanterSatisService {
         satisRepository.save(satis);
 
         for (EnvanterSatisKalem kalem : satis.getKalemler()) {
-            if (istekler.get(kalem.getEnvanter().getTur()).teslim()) {
+            if (istekler.get(kalem.getEnvanter().getTur().getId()).teslim()) {
                 stokService.teslimEt(kalem.getEnvanter(), satis, "teslim edildi");
                 kalem.setTeslimEdildi(true);
             }
@@ -123,16 +123,16 @@ public class EnvanterSatisService {
     public EnvanterSatisResponse guncelle(Long ogrenciId, Long satisId, EnvanterSatisRequest request) {
         Long isletmeId = isletmeContext.id();
         EnvanterSatis satis = satisGetir(ogrenciId, satisId, isletmeId);
-        Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler = kalemleriTopla(request);
+        Map<Long, EnvanterSatisRequest.Kalem> istekler = kalemleriTopla(request);
         if (satis.isSabitTutar()) {
             return sabitTutarluGuncelle(satis, istekler, request);
         }
-        Map<EnvanterTur, Envanter> hedefler = envanterleriBul(isletmeId, istekler);
-        Map<EnvanterTur, EnvanterSatisKalem> mevcut = satis.getKalemler().stream()
-                .collect(Collectors.toMap(k -> k.getEnvanter().getTur(), Function.identity()));
+        Map<Long, Envanter> hedefler = envanterleriBul(isletmeId, istekler);
+        Map<Long, EnvanterSatisKalem> mevcut = satis.getKalemler().stream()
+                .collect(Collectors.toMap(k -> k.getEnvanter().getTur().getId(), Function.identity()));
 
         // Önce tüm istek doğrulanır; hatalıysa hiçbir stok/kalem değişmez
-        for (EnvanterTur tur : mevcut.keySet()) {
+        for (Long tur : mevcut.keySet()) {
             EnvanterSatisKalem kalem = mevcut.get(tur);
             if (istekler.containsKey(tur) && kalem.isTeslimEdildi()
                     && !kalem.getEnvanter().getId().equals(hedefler.get(tur).getId())) {
@@ -143,7 +143,7 @@ public class EnvanterSatisService {
         }
 
         // Satıştan çıkarılan envanter: teslim edilmişse stoğu geri döner
-        for (EnvanterTur tur : mevcut.keySet()) {
+        for (Long tur : mevcut.keySet()) {
             if (!istekler.containsKey(tur)) {
                 EnvanterSatisKalem kalem = mevcut.get(tur);
                 if (kalem.isTeslimEdildi()) {
@@ -153,7 +153,7 @@ public class EnvanterSatisService {
             }
         }
 
-        for (EnvanterTur tur : istekler.keySet()) {
+        for (Long tur : istekler.keySet()) {
             EnvanterSatisRequest.Kalem istek = istekler.get(tur);
             Envanter hedef = hedefler.get(tur);
             EnvanterSatisKalem kalem = mevcut.get(tur);
@@ -193,8 +193,8 @@ public class EnvanterSatisService {
             }
         }
 
-        Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
-        satis.getKalemler().forEach(kalem -> fiyatlar.put(kalem.getEnvanter().getTur(), kalem.getBirimFiyat()));
+        Map<Long, BigDecimal> fiyatlar = new LinkedHashMap<>();
+        satis.getKalemler().forEach(kalem -> fiyatlar.put(kalem.getEnvanter().getTur().getId(), kalem.getBirimFiyat()));
         BigDecimal set = toplam(fiyatlar);
         satis.setSetTutari(set);
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, set));
@@ -208,14 +208,14 @@ public class EnvanterSatisService {
      * Set satışında envanterler ve tutar sabittir; yalnızca kalem bazında Ödendi / Teslim ve ödenen tutar güncellenir.
      * Ödenen tutar set tutarına ulaşınca tüm kalemler ödendi sayılır.
      */
-    private EnvanterSatisResponse sabitTutarluGuncelle(EnvanterSatis satis, Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler,
+    private EnvanterSatisResponse sabitTutarluGuncelle(EnvanterSatis satis, Map<Long, EnvanterSatisRequest.Kalem> istekler,
                                                        EnvanterSatisRequest request) {
-        Map<EnvanterTur, EnvanterSatisKalem> mevcut = satis.getKalemler().stream()
-                .collect(Collectors.toMap(k -> k.getEnvanter().getTur(), Function.identity()));
+        Map<Long, EnvanterSatisKalem> mevcut = satis.getKalemler().stream()
+                .collect(Collectors.toMap(k -> k.getEnvanter().getTur().getId(), Function.identity()));
         if (!mevcut.keySet().equals(istekler.keySet())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Set satışında envanterler değiştirilemez");
         }
-        for (EnvanterTur tur : mevcut.keySet()) {
+        for (Long tur : mevcut.keySet()) {
             EnvanterSatisKalem kalem = mevcut.get(tur);
             EnvanterSatisRequest.Kalem istek = istekler.get(tur);
             if (kalem.isTeslimEdildi() && !istek.teslim()) {
@@ -227,7 +227,7 @@ public class EnvanterSatisService {
             }
             kalem.setOdendi(istek.odendi());
         }
-        Map<EnvanterTur, BigDecimal> fiyatlar = new EnumMap<>(EnvanterTur.class);
+        Map<Long, BigDecimal> fiyatlar = new LinkedHashMap<>();
         mevcut.keySet().forEach(tur -> fiyatlar.put(tur, BigDecimal.ZERO));
         satis.setOdenenTutar(odenenTutarBelirle(request, istekler, fiyatlar, satis.getSetTutari()));
         tamOdemeyseKalemleriOdendiYap(satis);
@@ -244,9 +244,9 @@ public class EnvanterSatisService {
         }
     }
 
-    private Map<EnvanterTur, Envanter> setEnvanterleri(EnvanterSet set) {
-        Map<EnvanterTur, Envanter> sonuc = new EnumMap<>(EnvanterTur.class);
-        set.getEnvanterler().forEach(e -> sonuc.put(e.getTur(), e));
+    private Map<Long, Envanter> setEnvanterleri(EnvanterSet set) {
+        Map<Long, Envanter> sonuc = new LinkedHashMap<>();
+        set.getEnvanterler().forEach(e -> sonuc.put(e.getTur().getId(), e));
         return sonuc;
     }
 
@@ -323,14 +323,13 @@ public class EnvanterSatisService {
     }
 
     /** Set seçildiyse işletmeye ait olmalı ve satıştaki türler setin türleriyle aynı olmalı (beden değiştirilebilir). */
-    private EnvanterSet setBul(Long isletmeId, Long setId, Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler) {
+    private EnvanterSet setBul(Long isletmeId, Long setId, Map<Long, EnvanterSatisRequest.Kalem> istekler) {
         if (setId == null) {
             return null;
         }
         EnvanterSet set = setRepository.bul(setId, isletmeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Set bulunamadı: " + setId));
-        Set<EnvanterTur> setTurleri = set.getEnvanterler().stream().map(Envanter::getTur)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(EnvanterTur.class)));
+        Set<Long> setTurleri = set.getEnvanterler().stream().map(e -> e.getTur().getId()).collect(Collectors.toSet());
         if (!setTurleri.equals(istekler.keySet())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Satıştaki envanterler \"" + set.getAd() + "\" setiyle uyuşmuyor");
         }
@@ -338,31 +337,33 @@ public class EnvanterSatisService {
     }
 
     /** En az bir kalem gelmeli; her envanter türünden en fazla bir tane. */
-    private Map<EnvanterTur, EnvanterSatisRequest.Kalem> kalemleriTopla(EnvanterSatisRequest request) {
+    private Map<Long, EnvanterSatisRequest.Kalem> kalemleriTopla(EnvanterSatisRequest request) {
         if (request.kalemler().isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Satış için en az bir envanter seçilmelidir");
         }
-        Map<EnvanterTur, EnvanterSatisRequest.Kalem> sonuc = new EnumMap<>(EnvanterTur.class);
+        Map<Long, EnvanterSatisRequest.Kalem> sonuc = new LinkedHashMap<>();
         for (EnvanterSatisRequest.Kalem kalem : request.kalemler()) {
-            if (sonuc.put(kalem.tur(), kalem) != null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Aynı envanter birden fazla kez gönderildi: " + kalem.tur().getAd());
+            if (sonuc.put(kalem.turId(), kalem) != null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Aynı envanter türü birden fazla kez gönderildi");
             }
         }
         return sonuc;
     }
 
-    private Map<EnvanterTur, Envanter> envanterleriBul(Long isletmeId, Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler) {
-        Map<EnvanterTur, Envanter> sonuc = new EnumMap<>(EnvanterTur.class);
-        for (EnvanterTur tur : istekler.keySet()) {
-            String beden = EnvanterBeden.STANDART;
+    private Map<Long, Envanter> envanterleriBul(Long isletmeId, Map<Long, EnvanterSatisRequest.Kalem> istekler) {
+        Map<Long, Envanter> sonuc = new LinkedHashMap<>();
+        for (Long turId : istekler.keySet()) {
+            EnvanterTur tur = turRepository.findByIdAndIsletmeId(turId, isletmeId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Envanter türü bulunamadı: " + turId));
+            String beden = EnvanterTur.STANDART;
             if (tur.isBedenli()) {
-                beden = istekler.get(tur).beden();
-                if (!EnvanterBeden.gecerli(beden)) {
+                beden = istekler.get(turId).beden();
+                if (!tur.bedenGecerli(beden)) {
                     throw new ApiException(HttpStatus.BAD_REQUEST, tur.getAd() + " için beden seçilmelidir");
                 }
             }
             String aranan = beden;
-            sonuc.put(tur, envanterRepository.findByIsletmeIdAndTurAndBeden(isletmeId, tur, aranan)
+            sonuc.put(turId, envanterRepository.findByIsletmeIdAndTurIdAndBeden(isletmeId, turId, aranan)
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
                             tur.getAd() + " · " + aranan + " için envanter kaydı yok; önce Envanter menüsünden ekleyin")));
         }
@@ -374,13 +375,13 @@ public class EnvanterSatisService {
         return istek.birimFiyat() != null ? istek.birimFiyat().setScale(2, RoundingMode.HALF_UP) : varsayilan;
     }
 
-    private BigDecimal toplam(Map<EnvanterTur, BigDecimal> fiyatlar) {
+    private BigDecimal toplam(Map<Long, BigDecimal> fiyatlar) {
         return fiyatlar.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
     }
 
     /** Tutar gönderilmediyse Ödendi işaretli kalemlerin toplamı; hiç ödeme alınmamışsa 0 olabilir, set tutarını aşamaz. */
-    private BigDecimal odenenTutarBelirle(EnvanterSatisRequest request, Map<EnvanterTur, EnvanterSatisRequest.Kalem> istekler,
-                                          Map<EnvanterTur, BigDecimal> fiyatlar, BigDecimal set) {
+    private BigDecimal odenenTutarBelirle(EnvanterSatisRequest request, Map<Long, EnvanterSatisRequest.Kalem> istekler,
+                                          Map<Long, BigDecimal> fiyatlar, BigDecimal set) {
         BigDecimal odenen;
         if (request.odenenTutar() != null) {
             odenen = request.odenenTutar().setScale(2, RoundingMode.HALF_UP);

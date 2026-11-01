@@ -25,6 +25,8 @@ import UrunDetayPage from '@/pages/UrunDetayPage';
 import EnvanterListePage from '@/pages/EnvanterListePage';
 import EnvanterKayitPage from '@/pages/EnvanterKayitPage';
 import EnvanterDetayPage from '@/pages/EnvanterDetayPage';
+import EnvanterTurKayitPage from '@/pages/EnvanterTurKayitPage';
+import EnvanterTurDetayPage from '@/pages/EnvanterTurDetayPage';
 import EnvanterSetKayitPage from '@/pages/EnvanterSetKayitPage';
 import EnvanterSetDetayPage from '@/pages/EnvanterSetDetayPage';
 import HesapListePage from '@/pages/HesapListePage';
@@ -144,6 +146,14 @@ export default function App() {
         <Route
           path="/envanter/yeni"
           element={<YetkiliRota modul="ENVANTER"><EnvanterKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/tur/yeni"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterTurKayitPage /></YetkiliRota>}
+        />
+        <Route
+          path="/envanter/tur/:id"
+          element={<YetkiliRota modul="ENVANTER"><EnvanterTurDetayPage /></YetkiliRota>}
         />
         <Route
           path="/envanter/set/yeni"

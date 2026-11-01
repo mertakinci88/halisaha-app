@@ -14,11 +14,10 @@ import { envanterService, envanterSetService, envanterSatisService } from '@/ser
 import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { ODEME_YONTEMI_LABEL, stokDurumu, tarihSaat, tl } from '@/lib/format';
-import { ENVANTER_TURLERI, STANDART, miktar } from '@/lib/envanter';
+import { STANDART, miktar, useEnvanterTurleri } from '@/lib/envanter';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
 
-const TURLER = ENVANTER_TURLERI;
 
 /** Satışın ödeme şekilleri ("Nakit, Kart"); hesapli: Havale / EFT'de hesap adı da yazılır. */
 const yontemler = (satis, hesapli = false) => {
@@ -76,6 +75,8 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const mobil = useMedia('(max-width: 767px)');
 
   const [envanterler, setEnvanterler] = useState([]);
+  const { turler } = useEnvanterTurleri();
+  const TURLER = turler || [];
   const [setler, setSetler] = useState([]);
   const [setId, setSetId] = useState(''); // '' = özel (kayıtlı envanterlerden)
   const [satislar, setSatislar] = useState([]);
@@ -117,9 +118,9 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const bedenOf = (tur) => (tur.bedenli ? secim[tur.kod] : STANDART);
   const envOf = (tur) => {
     const b = bedenOf(tur);
-    return b ? envanterler.find((e) => e.tur === tur.kod && e.beden === b) : undefined;
+    return b ? envanterler.find((e) => e.turId === tur.kod && e.beden === b) : undefined;
   };
-  const orijinal = (tur) => duzenlenen?.kalemler.find((k) => k.tur === tur.kod);
+  const orijinal = (tur) => duzenlenen?.kalemler.find((k) => k.turId === tur.kod);
   const kilitli = (tur) => Boolean(orijinal(tur)?.teslimEdildi);
   const zatenTeslim = (tur, env) => {
     const o = orijinal(tur);
@@ -142,7 +143,10 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   // Stok yenilenince stoğu biten envanterin (artık işaretlenemeyen) Teslim işareti kaldırılır
   useEffect(() => {
     setTeslim((p) => {
-      const kalan = [...p].filter((kod) => !teslimPasif(TURLER.find((t) => t.kod === kod)));
+      const kalan = [...p].filter((kod) => {
+        const t = TURLER.find((x) => x.kod === kod);
+        return !t || !teslimPasif(t);
+      });
       return kalan.length === p.size ? p : new Set(kalan);
     });
   }, [envanterler]);
@@ -152,12 +156,12 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   // Set seçiliyse (ya da setli bir satış güncelleniyorsa) yalnızca o sete ait envanterler listelenir ve hepsi satışa girer.
   const seciliSet = setler.find((x) => String(x.id) === setId);
   const setliMod = duzenlenen ? Boolean(duzenlenen.setId) && setId !== 'silindi' : Boolean(seciliSet);
-  const kayitliTurler = TURLER.filter((t) => envanterler.some((e) => e.tur === t.kod));
+  const kayitliTurler = TURLER.filter((t) => envanterler.some((e) => e.turId === t.kod));
   const gosterilen = !setliMod
     ? kayitliTurler
     : duzenlenen
-      ? kayitliTurler.filter((t) => duzenlenen.kalemler.some((k) => k.tur === t.kod))
-      : kayitliTurler.filter((t) => seciliSet.kalemler.some((k) => k.tur === t.kod));
+      ? kayitliTurler.filter((t) => duzenlenen.kalemler.some((k) => k.turId === t.kod))
+      : kayitliTurler.filter((t) => seciliSet.kalemler.some((k) => k.turId === t.kod));
   const dahil = setliMod ? gosterilen : gosterilen.filter((t) => ekle.has(t.kod));
   const sabit = duzenlenen ? duzenlenen.sabitTutar : Boolean(seciliSet); // set satışı: tutar setten, kalem fiyatı yok
   const tutarEtiketi = setliMod ? 'Set tutarı' : 'Toplam tutar';
@@ -204,8 +208,8 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setSetId(id);
     setKayitHatasi('');
     const st = setler.find((x) => String(x.id) === id);
-    setEkle(new Set(st ? st.kalemler.map((k) => k.tur) : []));
-    setSecim(st ? Object.fromEntries(st.kalemler.filter((k) => k.beden !== STANDART).map((k) => [k.tur, k.beden])) : {});
+    setEkle(new Set(st ? st.kalemler.map((k) => k.turId) : []));
+    setSecim(st ? Object.fromEntries(st.kalemler.filter((k) => k.beden !== STANDART).map((k) => [k.turId, k.beden])) : {});
     setOdendi(new Set());
     setTeslim(new Set());
     setOdenen('');
@@ -217,10 +221,10 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setSetId(satis.setId ? String(satis.setId) : satis.setAd ? 'silindi' : '');
     setDuzenlenen(satis);
     setKayitHatasi('');
-    setEkle(new Set(satis.kalemler.map((k) => k.tur)));
-    setSecim(Object.fromEntries(satis.kalemler.filter((k) => TURLER.find((t) => t.kod === k.tur)?.bedenli).map((k) => [k.tur, k.beden])));
-    setOdendi(new Set(satis.kalemler.filter((k) => k.odendi).map((k) => k.tur)));
-    setTeslim(new Set(satis.kalemler.filter((k) => k.teslimEdildi).map((k) => k.tur)));
+    setEkle(new Set(satis.kalemler.map((k) => k.turId)));
+    setSecim(Object.fromEntries(satis.kalemler.filter((k) => TURLER.find((t) => t.kod === k.turId)?.bedenli).map((k) => [k.turId, k.beden])));
+    setOdendi(new Set(satis.kalemler.filter((k) => k.odendi).map((k) => k.turId)));
+    setTeslim(new Set(satis.kalemler.filter((k) => k.teslimEdildi).map((k) => k.turId)));
     setOdenen(''); // güncellemede bu alan ek ödemedir; mevcut ödemeler listede görünür
     setOdemeSekli('');
     setHesapId('');
@@ -255,7 +259,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
   const bedenSec = (tur, beden) => {
     setSecim((p) => ({ ...p, [tur.kod]: beden }));
     setFiyatDuz(({ [tur.kod]: _, ...kalan }) => kalan); // beden değişince fiyat yeni bedenin fiyatına döner
-    const yeni = envanterler.find((e) => e.tur === tur.kod && e.beden === beden);
+    const yeni = envanterler.find((e) => e.turId === tur.kod && e.beden === beden);
     // Stoğu olmayan bedenin teslimi işaretlenemez
     if (!yeni || (yeni.adet <= 0 && !zatenTeslim(tur, yeni))) {
       setTeslim((p) => {
@@ -272,7 +276,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
     setKaydediyor(true);
     const govde = {
       kalemler: dahil.map((t) => ({
-        tur: t.kod,
+        turId: t.kod,
         beden: t.bedenli ? secim[t.kod] : null,
         odendi: odendi.has(t.kod),
         teslim: teslim.has(t.kod),
@@ -343,7 +347,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
 
   const satirlar = gosterilen.map((tur) => {
     const env = envOf(tur);
-    const secenekler = envanterler.filter((e) => e.tur === tur.kod);
+    const secenekler = envanterler.filter((e) => e.turId === tur.kod);
     const durumu = env ? stokDurumu(env) : null;
     const stokEtiketi =
       durumu === 'TUKENDI' ? (
@@ -402,7 +406,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       />
     );
 
-  if (yukleniyor) return <Yukleniyor />;
+  if (yukleniyor || !turler) return <Yukleniyor />;
 
   return (
     <div ref={kartRef} className="mt-5 scroll-mt-4">
@@ -487,7 +491,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                   )}
                   <div className="mt-2">{r.bedenAlani}</div>
                   <div className="mt-1.5 text-[14px] text-ink/70">
-                    Stok: {r.env ? <>{miktar(r.tur.kod, r.env.adet)}{r.stokEtiketi}</> : <span>—</span>}
+                    Stok: {r.env ? <>{miktar(r.tur.birim, r.env.adet)}{r.stokEtiketi}</> : <span>—</span>}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-5">
                     <Kutu
@@ -544,7 +548,7 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
                     <Td className="whitespace-nowrap">{r.tur.ad}</Td>
                     <Td>{r.bedenAlani}</Td>
                     <Td className="whitespace-nowrap text-right tabular-nums">
-                      {r.env ? <>{miktar(r.tur.kod, r.env.adet)}{r.stokEtiketi}</> : <span className="text-ink/55">—</span>}
+                      {r.env ? <>{miktar(r.tur.birim, r.env.adet)}{r.stokEtiketi}</> : <span className="text-ink/55">—</span>}
                     </Td>
                     {sabit ? null : (
                       <Td className="whitespace-nowrap text-right tabular-nums">
@@ -751,14 +755,14 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
             ) : (
               <Tag tone="warning">Kısmi ödendi</Tag>
             );
-          const ad = (k) => adBeden(TURLER.find((t) => t.kod === k.tur), k.beden);
+          const ad = (k) => (k.beden === STANDART ? k.turAd : k.turAd + ' (' + k.beden + ')');
           const chipler = (liste, tone, cls) =>
             liste.length === 0 ? (
               <span className="text-ink/55">—</span>
             ) : (
               <div className="flex flex-wrap gap-1">
                 {liste.map((k) => (
-                  <Tag key={k.tur} tone={tone} className={cls}>{ad(k)}</Tag>
+                  <Tag key={k.turId} tone={tone} className={cls}>{ad(k)}</Tag>
                 ))}
               </div>
             );
