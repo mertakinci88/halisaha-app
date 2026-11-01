@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Envanter listesi, türe göre gruplu: her tür bir başlık (beden sayısı, toplam stok, stok uyarıları), bedenler altında.
- * Stoğu az / biten bedeni olan türler açık gelir, diğerleri kapalıdır; başlığa tıklayınca açılır / kapanır.
+ * Tüm türler kapalı gelir; başlığa tıklayınca açılır / kapanır.
  * Liste tür ve beden sırasıyla gelmelidir.
  */
 export default function EnvanterGrupluListe({ liste, onGuncelle, onSil }) {
@@ -39,7 +39,7 @@ export default function EnvanterGrupluListe({ liste, onGuncelle, onSil }) {
     .map((g) => (sadeceSorunlu ? { ...g, kayitlar: g.kayitlar.filter((e) => stokDurumu(e)) } : g))
     .filter((g) => g.kayitlar.length > 0);
 
-  const acikMi = (g) => acik[g.turId] ?? (sadeceSorunlu || !!turId || g.tukenen + g.az > 0);
+  const acikMi = (g) => acik[g.turId] ?? false;
   const hepsiniAc = (deger) => setAcik(Object.fromEntries(gorunen.map((g) => [g.turId, deger])));
   const hepsiAcik = gorunen.length > 0 && gorunen.every(acikMi);
 
