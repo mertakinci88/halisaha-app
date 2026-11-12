@@ -14,7 +14,7 @@ import { apiHata } from '@/lib/api';
 import { useHata, useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { YOKLAMA_KARTI_HASH } from '@/components/OgrenciYoklamaKarti';
-import { kisaTarih, toIsoDate, uzunTarih } from '@/lib/format';
+import { kisaTarih, tarihSaat, toIsoDate, uzunTarih } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const DURUMLAR = [
@@ -30,6 +30,18 @@ const KUTU = {
 };
 const YAZI = { GELDI: 'text-basari-800', GELMEDI: 'text-hata-800', IZINLI: 'text-accent-800' };
 const SATIR = { GELDI: 'bg-basari-100/60', GELMEDI: 'bg-hata-100/70', IZINLI: 'bg-accent-100' };
+
+/** Sunucu satırından ekran satırı; kim aldı/güncelledi bilgisi yalnızca gösterim içindir (kaydedilmez). */
+const satirHazirla = (s) => ({
+  ogrenciId: s.ogrenciId,
+  adSoyad: s.adSoyad,
+  durum: s.durum,
+  not: s.not || '',
+  olusturan: s.olusturan,
+  olusturmaTarihi: s.olusturmaTarihi,
+  guncelleyen: s.guncelleyen,
+  guncellemeTarihi: s.guncellemeTarihi,
+});
 
 const bugunMu = (d) => toIsoDate(d) === toIsoDate(new Date());
 
@@ -85,7 +97,10 @@ export default function YoklamaPage() {
   const [bekleyen, setBekleyen] = useState(null); // kaydedilmemiş değişiklik varken tarih/grup değişimi onayı
 
   const gunIso = toIsoDate(gun);
-  const degisti = useMemo(() => JSON.stringify(satirlar) !== JSON.stringify(kayitli), [satirlar, kayitli]);
+  const degisti = useMemo(() => {
+    const ozet = (l) => JSON.stringify(l.map((s) => [s.ogrenciId, s.durum, s.not]));
+    return ozet(satirlar) !== ozet(kayitli);
+  }, [satirlar, kayitli]);
 
   useEffect(() => {
     grupService
@@ -105,7 +120,7 @@ export default function YoklamaPage() {
     yoklamaService
       .list(gunIso, grupId)
       .then((liste) => {
-        const hazir = liste.map((s) => ({ ogrenciId: s.ogrenciId, adSoyad: s.adSoyad, durum: s.durum, not: s.not || '' }));
+        const hazir = liste.map(satirHazirla);
         setSatirlar(hazir);
         setKayitli(hazir);
       })
@@ -158,7 +173,7 @@ export default function YoklamaPage() {
         grupId,
         satirlar.map((s) => ({ ogrenciId: s.ogrenciId, durum: s.durum, not: s.not.trim() || null })),
       );
-      const hazir = liste.map((s) => ({ ogrenciId: s.ogrenciId, adSoyad: s.adSoyad, durum: s.durum, not: s.not || '' }));
+      const hazir = liste.map(satirHazirla);
       setSatirlar(hazir);
       setKayitli(hazir);
       const grupAd = gruplar.find((g) => String(g.id) === String(grupId))?.ad;
@@ -300,7 +315,21 @@ export default function YoklamaPage() {
                       s.durum && SATIR[s.durum],
                     )}
                   >
-                    <div className="text-[15.5px]">{s.adSoyad}</div>
+                    <div className="min-w-0">
+                      <div className="text-[15.5px]">{s.adSoyad}</div>
+                      {s.olusturan ? (
+                        <div className="text-[12.5px] leading-snug text-ink/55">
+                          <div>
+                            {s.olusturan} aldı · {tarihSaat(s.olusturmaTarihi)}
+                          </div>
+                          {s.guncelleyen ? (
+                            <div>
+                              {s.guncelleyen} güncelledi · {tarihSaat(s.guncellemeTarihi)}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
                     <div className="flex flex-wrap items-center">
                       {DURUMLAR.map((d) => (
                         <DurumKutusu

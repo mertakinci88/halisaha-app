@@ -14,6 +14,6 @@ public record OgrenciYoklamaSatir(
 ) {
     public static OgrenciYoklamaSatir from(Yoklama y) {
         return new OgrenciYoklamaSatir(y.getTarih(), y.getDurum(), y.getAciklama(),
-                y.getKullanici() != null ? y.getKullanici().getAdSoyad() : null);
+                y.getOlusturanKullanici() != null ? y.getOlusturanKullanici().getAdSoyad() : null);
     }
 }

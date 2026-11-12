@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -52,8 +53,7 @@ public class YoklamaService {
         return ogrenciler.stream()
                 .map(o -> {
                     Yoklama y = mevcut.get(o.getId());
-                    return new YoklamaSatir(o.getId(), o.getAdSoyad(),
-                            y != null ? y.getDurum() : null, y != null ? y.getAciklama() : null);
+                    return YoklamaSatir.of(o, y);
                 })
                 .toList();
     }
@@ -118,11 +118,18 @@ public class YoklamaService {
                         .isletme(isletmeContext.getir())
                         .ogrenci(ogrenci)
                         .tarih(tarih)
+                        .durum(kayit.durum())
+                        .aciklama(not)
+                        .olusturanKullanici(mevcutKullanici.getir())
                         .build();
+            } else if (y.getDurum() != kayit.durum() || !Objects.equals(y.getAciklama(), not)) {
+                // Yalnızca gerçek değişiklik "güncelleyen" sayılır; aynı değerle kaydetmek kaydı değiştirmez
+                y.setDurum(kayit.durum());
+                y.setAciklama(not);
+                y.setGuncelleyenKullanici(mevcutKullanici.getir());
+            } else {
+                continue;
             }
-            y.setDurum(kayit.durum());
-            y.setAciklama(not);
-            y.setKullanici(mevcutKullanici.getir());
             yoklamaRepository.save(y);
         }
         yoklamaRepository.flush();
