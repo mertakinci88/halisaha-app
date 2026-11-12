@@ -133,6 +133,27 @@ class YoklamaServiceTest {
     }
 
     @Test
+    void ilkAlanVeGuncelleyenAyriTutulur_ayniDegerleKaydetmekGuncellemeSayilmaz() {
+        yoklamaService.kaydet(GUN, grupA.getId(), istek(new Kayit(ali.getId(), YoklamaDurum.GELDI, null)));
+        YoklamaSatir ilk = yoklamaService.listele(GUN, grupA.getId()).get(0);
+        assertEquals(a.getAdSoyad(), ilk.olusturan());
+        assertNull(ilk.guncelleyen());
+        assertNull(ilk.guncellemeTarihi());
+
+        // Başka kullanıcı aynı değerlerle kaydeder: güncelleme sayılmaz
+        Kullanici diger = TestOturum.kullanici(kullaniciRepository, a.getIsletme(), Rol.ADMIN);
+        TestOturum.girisYap(diger);
+        yoklamaService.kaydet(GUN, grupA.getId(), istek(new Kayit(ali.getId(), YoklamaDurum.GELDI, null)));
+        assertNull(yoklamaService.listele(GUN, grupA.getId()).get(0).guncelleyen());
+
+        // Durum değişince güncelleyen yazılır, ilk alan değişmez
+        yoklamaService.kaydet(GUN, grupA.getId(), istek(new Kayit(ali.getId(), YoklamaDurum.IZINLI, null)));
+        YoklamaSatir son = yoklamaService.listele(GUN, grupA.getId()).get(0);
+        assertEquals(a.getAdSoyad(), son.olusturan());
+        assertEquals(diger.getAdSoyad(), son.guncelleyen());
+    }
+
+    @Test
     void durumsuzNotReddedilir() {
         ApiException e = hata(() -> yoklamaService.kaydet(GUN, grupA.getId(),
                 istek(new Kayit(ali.getId(), null, "not var ama durum yok"))));

@@ -55,10 +55,15 @@ public class Yoklama {
     @Column(name = "aciklama")
     private String aciklama;
 
-    /** Yoklamayı son kaydeden kullanıcı. */
+    /** Yoklamayı ilk alan kullanıcı; sonradan değişmez. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kullanici_id")
-    private Kullanici kullanici;
+    private Kullanici olusturanKullanici;
+
+    /** Durum veya notu sonradan gerçekten değiştiren son kullanıcı; hiç güncellenmediyse null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guncelleyen_kullanici_id")
+    private Kullanici guncelleyenKullanici;
 
     @Column(name = "olusturma_tarihi", nullable = false, updatable = false)
     private LocalDateTime olusturmaTarihi;
