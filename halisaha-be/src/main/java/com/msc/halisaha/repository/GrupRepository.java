@@ -15,6 +15,6 @@ public interface GrupRepository extends JpaRepository<Grup, Long> {
     Optional<Grup> findByIdAndIsletmeId(Long id, Long isletmeId);
 
     /** Adında aranan metin geçen grupların id'leri (öğrenci aramasında grup adıyla eşleşme için). */
-    @Query("SELECT g.id FROM Grup g WHERE g.isletme.id = :isletmeId AND LOWER(g.ad) LIKE LOWER(CONCAT('%', :q, '%'))")
+    @Query("SELECT g.id FROM Grup g WHERE g.isletme.id = :isletmeId AND cast(function('tr_sade', g.ad) as string) LIKE CONCAT('%', :q, '%')")
     List<Long> adaGoreIdler(@Param("isletmeId") Long isletmeId, @Param("q") String q);
 }

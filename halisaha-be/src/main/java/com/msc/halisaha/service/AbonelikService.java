@@ -1,5 +1,6 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.AramaMetni;
 import com.msc.halisaha.common.AppZaman;
 import com.msc.halisaha.common.TurkceSirala;
 import com.msc.halisaha.common.exception.ApiException;
@@ -127,12 +128,12 @@ public class AbonelikService {
 
     public List<AbonelikResponse> listele(AbonelikDurum durum, String q) {
         LocalDate bugun = AppZaman.bugun();
-        String aranan = q == null ? "" : q.trim().toLowerCase(TR);
+        String aranan = AramaMetni.sadelestir(q);
         Map<Long, BigDecimal> iadeler = new HashMap<>();
         iadeRepository.abonelikToplamlari(isletmeContext.id()).forEach(r -> iadeler.put((Long) r[0], (BigDecimal) r[1]));
         return abonelikRepository.listele(isletmeContext.id(), durum).stream()
                 .filter(a -> aranan.isEmpty()
-                        || a.getAdSoyad().toLowerCase(TR).contains(aranan)
+                        || AramaMetni.sadelestir(a.getAdSoyad()).contains(aranan)
                         || a.getTelNo().contains(aranan))
                 .sorted(TurkceSirala.<Abonelik>alfabetik(Abonelik::getAdSoyad).thenComparing(Abonelik::getId))
                 .map(a -> AbonelikResponse.from(a, bugun, List.of(), iadeler.getOrDefault(a.getId(), BigDecimal.ZERO)))

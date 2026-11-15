@@ -15,7 +15,7 @@ import { useHata, useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { YOKLAMA_KARTI_HASH } from '@/components/OgrenciYoklamaKarti';
 import { kisaTarih, tarihSaat, toIsoDate, uzunTarih } from '@/lib/format';
-import { cn } from '@/lib/utils';
+import { cn, aramaSade } from '@/lib/utils';
 
 const DURUMLAR = [
   { kod: 'GELDI', etiket: 'Geldi' },
@@ -187,8 +187,8 @@ export default function YoklamaPage() {
 
   const sayi = (kod) => satirlar.filter((s) => s.durum === kod).length;
   const isaretsiz = satirlar.filter((s) => !s.durum).length;
-  const aranan = arama.trim().toLocaleLowerCase('tr');
-  const gorunen = aranan ? satirlar.filter((s) => s.adSoyad.toLocaleLowerCase('tr').includes(aranan)) : satirlar;
+  const aranan = aramaSade(arama);
+  const gorunen = aranan ? satirlar.filter((s) => aramaSade(s.adSoyad).includes(aranan)) : satirlar;
   const grupAd = gruplar.find((g) => String(g.id) === String(grupId))?.ad;
 
   return (
