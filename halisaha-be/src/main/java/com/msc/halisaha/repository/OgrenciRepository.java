@@ -59,8 +59,8 @@ public interface OgrenciRepository extends JpaRepository<Ogrenci, Long> {
                          AND NOT EXISTS (SELECT 1 FROM EnvanterSatis s WHERE s.ogrenci = o AND s.odenenTutar < s.setTutari)
                          AND NOT EXISTS (SELECT 1 FROM EnvanterSatisKalem k WHERE k.satis.ogrenci = o AND k.odendi = TRUE AND k.teslimEdildi = FALSE)))
               AND (:q IS NULL OR :q = ''
-                   OR LOWER(o.adSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
-                   OR LOWER(o.veliAdSoyad) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR cast(function('tr_sade', o.adSoyad) as string) LIKE CONCAT('%', :q, '%')
+                   OR cast(function('tr_sade', o.veliAdSoyad) as string) LIKE CONCAT('%', :q, '%')
                    OR o.grup.id IN :arananGruplar)
             """)
     Page<Ogrenci> ara(@Param("isletmeId") Long isletmeId, @Param("grupId") Long grupId, @Param("q") String q,

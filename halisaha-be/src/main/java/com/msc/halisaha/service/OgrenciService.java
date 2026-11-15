@@ -1,5 +1,6 @@
 package com.msc.halisaha.service;
 
+import com.msc.halisaha.common.AramaMetni;
 import com.msc.halisaha.common.exception.ApiException;
 import com.msc.halisaha.common.security.IsletmeContext;
 import com.msc.halisaha.dto.OgrenciRequest;
@@ -69,7 +70,7 @@ public class OgrenciService {
      */
     public PageResponse<OgrenciResponse> list(OgrenciFiltre filtre, int sayfa, int boyut) {
         Long grupId = filtre.grupId();
-        String q = filtre.q();
+        String q = AramaMetni.sadelestir(filtre.q());
         PageRequest pageRequest = PageRequest.of(sayfa, boyut, Sort.by(Sort.Direction.ASC, "adSoyad"));
         LocalDate bugun = AppZaman.bugun();
         Long isletmeId = isletmeContext.id();
