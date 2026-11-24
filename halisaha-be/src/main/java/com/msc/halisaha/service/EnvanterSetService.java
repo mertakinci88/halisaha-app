@@ -11,6 +11,7 @@ import com.msc.halisaha.entity.EnvanterTur;
 import com.msc.halisaha.repository.EnvanterRepository;
 import com.msc.halisaha.repository.EnvanterSatisRepository;
 import com.msc.halisaha.repository.EnvanterSetRepository;
+import com.msc.halisaha.repository.EnvanterTurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class EnvanterSetService {
 
     private final EnvanterSetRepository setRepository;
     private final EnvanterRepository envanterRepository;
+    private final EnvanterTurRepository turRepository;
     private final EnvanterSatisRepository satisRepository;
     private final IsletmeContext isletmeContext;
     private final MevcutKullanici mevcutKullanici;
@@ -95,11 +97,14 @@ public class EnvanterSetService {
 
     /**
      * Seçilen envanterler: en az bir kayıt, bu işletmeye ait, tekrarsız, her türden en fazla bir tane; bedenli olanlar
-     * set bedeninde olmalı ve stoğu bulunmalı. Stoğu biten ürünler tek mesajda bildirilir ve set oluşturulmaz.
+     * herhangi bir bedenden seçilebilir (set bedeni yalnızca varsayılandır) ve stoğu bulunmalı. Stoğu biten ürünler tek mesajda bildirilir ve set oluşturulmaz.
      */
     private List<Envanter> envanterleriBul(Long isletmeId, EnvanterSetRequest request) {
         String beden = request.beden();
         if (EnvanterTur.STANDART.equalsIgnoreCase(beden.trim())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Geçersiz beden: " + beden);
+        }
+        if (turRepository.findByIsletmeId(isletmeId).stream().noneMatch(t -> t.isBedenli() && t.bedenGecerli(beden))) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Geçersiz beden: " + beden);
         }
         List<Long> idler = request.envanterIdleri();
@@ -116,10 +121,6 @@ public class EnvanterSetService {
         for (Long envanterId : tekil) {
             Envanter envanter = envanterRepository.findByIdAndIsletmeId(envanterId, isletmeId)
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Envanter bulunamadı: " + envanterId));
-            if (envanter.getTur().isBedenli() && !beden.equals(envanter.getBeden())) {
-                throw new ApiException(HttpStatus.BAD_REQUEST,
-                        envanter.getTur().getAd() + " (" + envanter.getBeden() + ") set bedeniyle (" + beden + ") uyuşmuyor");
-            }
             if (!turler.add(envanter.getTur().getId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST,
                         "Sette her envanter türünden yalnızca bir kayıt olabilir: " + envanter.getTur().getAd());

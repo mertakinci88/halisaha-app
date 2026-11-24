@@ -14,7 +14,7 @@ import { tumBedenler, useEnvanterTurleri } from '@/lib/envanter';
 import { cn } from '@/lib/utils';
 
 /**
- * Yeni set ve set güncelleme formu. Beden seçilince o bedendeki bedenli envanterler (kaleci forma, eşofman, yağmurluk,
+ * Yeni set ve set güncelleme formu. Beden seçilince bedenli envanterler (parça bedeni satırdan değiştirilebilir) (kaleci forma, eşofman, yağmurluk,
  * yazlık forma) ve bedensiz ürünler (kampon çantası, tozluk) listelenir; sete girecekleri kullanıcı işaretler.
  * Hiçbir ürün hazır işaretli gelmez. Envanter kaydı olmayan ya da stoğu biten ürün işaretlenemez.
  */
@@ -26,26 +26,34 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
   const [ad, setAd] = useState(baslangic?.ad || '');
   const [beden, setBeden] = useState(baslangic?.beden || '');
   const [tutar, setTutar] = useState(baslangic?.tutar != null ? String(Number(baslangic.tutar)) : '');
-  const [secili, setSecili] = useState(() => new Set(baslangic?.envanterIdleri || []));
+  // Seçili ürünler tür bazındadır: secili = tür kodları, turBeden = setin bedeninden farklı seçilen parça bedenleri
+  const [secili, setSecili] = useState(new Set());
+  const [turBeden, setTurBeden] = useState({});
 
   useEffect(() => {
     envanterService
       .list()
-      .then(setEnvanterler)
+      .then((liste) => {
+        setEnvanterler(liste);
+        const mevcut = (baslangic?.envanterIdleri || []).map((id) => liste.find((e) => e.id === id)).filter(Boolean);
+        setSecili(new Set(mevcut.map((e) => e.turId)));
+        setTurBeden(Object.fromEntries(mevcut.filter((e) => e.beden !== 'STANDART' && e.beden !== baslangic.beden).map((e) => [e.turId, e.beden])));
+      })
       .catch((e) => setHata(apiHata(e), { sessiz: true }));
   }, []);
 
   if (!envanterler || !turler) return <Yukleniyor />;
 
-  // Seçilen bedenin satırları: bedenli türler (set bedeninde) ve bedensiz türler (varsa)
+  // Bedenli türlerde parça bedeni varsayılan olarak set bedenidir; satırdan değiştirilebilir. Bedensiz türler standarttır.
+  const bedenOf = (tur) => (tur.bedenli ? turBeden[tur.kod] || beden : 'STANDART');
   const satirlar = beden
     ? turler.map((tur) => ({
         tur,
-        env: envanterler.find((e) => e.turId === tur.kod && e.beden === (tur.bedenli ? beden : 'STANDART')),
+        env: envanterler.find((e) => e.turId === tur.kod && e.beden === bedenOf(tur)),
       })).filter((r) => r.env || r.tur.bedenli)
     : [];
   const durumu = (r) => (!r.env ? 'YOK' : r.env.adet <= 0 ? 'STOKSUZ' : 'TAMAM');
-  const seciliSatirlar = satirlar.filter((r) => r.env && secili.has(r.env.id));
+  const seciliSatirlar = satirlar.filter((r) => r.env && secili.has(r.tur.kod));
   const stoksuzSecili = seciliSatirlar.filter((r) => durumu(r) === 'STOKSUZ');
   const tutarSayi = Number(tutar);
   const kaydetPasif =
@@ -53,15 +61,18 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
 
   const bedenDegisti = (yeniBeden) => {
     setBeden(yeniBeden);
-    // Hiçbir ürün hazır işaretli gelmez; önceki bedenin bedenli seçimleri temizlenir, bedensiz seçimler korunur
-    setSecili((onceki) => new Set(envanterler.filter((e) => onceki.has(e.id) && e.beden === 'STANDART').map((e) => e.id)));
+    // Set bedeni değişince parça bedenleri sıfırlanır; önceki seçimler temizlenir, bedensiz seçimler korunur
+    setTurBeden({});
+    setSecili((onceki) => new Set(turler.filter((t) => !t.bedenli && onceki.has(t.kod)).map((t) => t.kod)));
   };
 
-  const sec = (id) =>
+  const parcaBedenDegisti = (tur, yeni) => setTurBeden((p) => ({ ...p, [tur.kod]: yeni }));
+
+  const sec = (kod) =>
     setSecili((onceki) => {
       const yeni = new Set(onceki);
-      if (yeni.has(id)) yeni.delete(id);
-      else yeni.add(id);
+      if (yeni.has(kod)) yeni.delete(kod);
+      else yeni.add(kod);
       return yeni;
     });
 
@@ -120,13 +131,13 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
           <div className="mb-1 text-[13.5px] text-ink/70">Sette yer alacak envanterler</div>
           {!beden ? (
             <div className="border border-dashed border-ink/30 px-4 py-6 text-[14.5px] text-ink/60">
-              Beden seçince o bedendeki envanterler burada listelenir; sete girecekleri siz işaretlersiniz.
+              Beden seçince envanterler burada listelenir; sete girecekleri siz işaretlersiniz. Gerekirse parça bedenini ayrıca değiştirebilirsiniz.
             </div>
           ) : (
             <div className="flex flex-col border border-divider">
               {satirlar.map((r) => {
                 const durum = durumu(r);
-                const on = Boolean(r.env && secili.has(r.env.id));
+                const on = Boolean(r.env && secili.has(r.tur.kod));
                 const pasif = durum === 'YOK' || (durum === 'STOKSUZ' && !on);
                 return (
                   <label
@@ -142,7 +153,7 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
                       className="peer sr-only"
                       checked={on}
                       disabled={pasif}
-                      onChange={() => sec(r.env.id)}
+                      onChange={() => sec(r.tur.kod)}
                       aria-label={r.tur.ad}
                     />
                     <span
@@ -155,7 +166,22 @@ export default function EnvanterSetFormu({ baslangic, kaydetEtiketi, kaydediyor,
                       {on ? <Check size={13} strokeWidth={3} /> : null}
                     </span>
                     <span className="font-semibold">{r.tur.ad}</span>
-                    <span className="text-ink/60">{r.tur.bedenli ? beden : 'Standart'}</span>
+                    {r.tur.bedenli ? (
+                      <Select
+                        value={bedenOf(r.tur)}
+                        onChange={(e) => parcaBedenDegisti(r.tur, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={r.tur.ad + ' bedeni'}
+                        className={cn('min-h-9 w-[96px] py-1 text-[16px]', bedenOf(r.tur) !== beden && 'border-accent font-semibold')}
+                      >
+                        {r.tur.bedenler.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <span className="text-ink/60">Standart</span>
+                    )}
+                    {r.tur.bedenli && bedenOf(r.tur) !== beden ? <Tag tone="outline">Set bedeninden farklı</Tag> : null}
                     <span className="ml-auto">
                       {durum === 'YOK' ? (
                         <Tag tone="danger">Envanter kaydı yok</Tag>

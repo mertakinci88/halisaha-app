@@ -199,23 +199,22 @@ class EnvanterSatisServiceTest {
     }
 
     @Test
-    void teslimEdilenEnvanterinBedeniDegistirilemezOnceTeslimGeriAlinmalidir() {
+    void teslimEdilenEnvanterinBedeniDegisirEskiStokGeriDonerYeniDuser() {
         var satis = satisService.olustur(ogrenci, set("140", "164", List.of(YAGMURLUK), List.of(), "100"));
         assertEquals(3, stok(k.yagmurluk164.id()));
 
-        ApiException e = hata(() -> satisService.guncelle(ogrenci, satis.id(), set("140", "Small", List.of(YAGMURLUK), List.of(), "100")));
-        assertEquals(400, e.getStatus().value());
-        assertTrue(e.getMessage().contains("bedeni değiştirilemez"));
-        // Teslimi geri alırken beden değişimi de aynı istekte reddedilir
-        assertEquals(400, hata(() -> satisService.guncelle(ogrenci, satis.id(), set("140", "Small", List.of(), List.of(), "100"))).getStatus().value());
-        assertEquals(3, stok(k.yagmurluk164.id()));
-        assertEquals(11, stok(k.yagmurlukSmall.id()));
-
-        // Önce teslimi geri al (aynı beden), sonra bedeni değiştir
-        satisService.guncelle(ogrenci, satis.id(), set("140", "164", List.of(), List.of(), "100"));
-        assertEquals(4, stok(k.yagmurluk164.id()));
-        var g = satisService.guncelle(ogrenci, satis.id(), set("140", "Small", List.of(), List.of(), "100"));
+        // Teslim kalırken beden değişir: 164 +1, Small -1
+        var g = satisService.guncelle(ogrenci, satis.id(), set("140", "Small", List.of(YAGMURLUK), List.of(), "100"));
         assertEquals("Small", kalem(g, YAGMURLUK).beden());
+        assertTrue(kalem(g, YAGMURLUK).teslimEdildi());
+        assertEquals(4, stok(k.yagmurluk164.id()));
+        assertEquals(10, stok(k.yagmurlukSmall.id()));
+
+        // Teslim geri alınırken beden değişirse yalnızca eski bedene iade olur
+        var g2 = satisService.guncelle(ogrenci, satis.id(), set("140", "164", List.of(), List.of(), "100"));
+        assertEquals("164", kalem(g2, YAGMURLUK).beden());
+        assertEquals(4, stok(k.yagmurluk164.id()));
+        assertEquals(11, stok(k.yagmurlukSmall.id()));
     }
 
     @Test

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 /**
  * Öğrenciye envanter seti satışı. Set, işletmede kaydı olan envanter türlerinden oluşur (her türden en fazla bir kalem);
- * satış güncellenirken envanter eklenebilir / çıkarılabilir (çıkarılan teslim edilmişse stoğu geri döner); beden, ödendi ve teslim de güncellenir.
+ * satış güncellenirken envanter eklenebilir / çıkarılabilir (çıkarılan teslim edilmişse stoğu geri döner); beden (teslim edilmişse stok eski bedene döner, yeni bedenden düşer), ödendi ve teslim de güncellenir.
  * Stok yalnızca teslim edilen kalem için düşer: teslim işaretlenip kaydedilince düşer, teslim geri alınırsa
  * ya da satış silinirse geri döner. Stoğu biten envanter satılabilir ama teslim edilemez (409).
  */
@@ -79,7 +79,7 @@ public class EnvanterSatisService {
         Map<Long, EnvanterSatisRequest.Kalem> istekler = kalemleriTopla(request);
         EnvanterSet set = setBul(isletmeId, request.setId(), istekler);
         // Set satışında envanterler (beden dahil) setten gelir, kalemlerin fiyatı yoktur; tutar setin tutarıdır
-        Map<Long, Envanter> envanterler = set != null ? setEnvanterleri(set) : envanterleriBul(isletmeId, istekler);
+        Map<Long, Envanter> envanterler = set != null ? setEnvanterleri(isletmeId, set, istekler) : envanterleriBul(isletmeId, istekler);
 
         EnvanterSatis satis = EnvanterSatis.builder()
                 .isletme(isletmeContext.getir())
@@ -131,17 +131,6 @@ public class EnvanterSatisService {
         Map<Long, EnvanterSatisKalem> mevcut = satis.getKalemler().stream()
                 .collect(Collectors.toMap(k -> k.getEnvanter().getTur().getId(), Function.identity()));
 
-        // Önce tüm istek doğrulanır; hatalıysa hiçbir stok/kalem değişmez
-        for (Long tur : mevcut.keySet()) {
-            EnvanterSatisKalem kalem = mevcut.get(tur);
-            if (istekler.containsKey(tur) && kalem.isTeslimEdildi()
-                    && !kalem.getEnvanter().getId().equals(hedefler.get(tur).getId())) {
-                throw new ApiException(HttpStatus.BAD_REQUEST,
-                        "Teslim edilen envanterin bedeni değiştirilemez: " + EnvanterStokService.ad(kalem.getEnvanter())
-                                + " (önce teslimi geri alıp kaydedin)");
-            }
-        }
-
         // Satıştan çıkarılan envanter: teslim edilmişse stoğu geri döner
         for (Long tur : mevcut.keySet()) {
             if (!istekler.containsKey(tur)) {
@@ -172,13 +161,25 @@ public class EnvanterSatisService {
                 }
                 continue;
             }
+            boolean bedenDegisti = !kalem.getEnvanter().getId().equals(hedef.getId());
             if (kalem.isTeslimEdildi()) {
-                if (!istek.teslim()) {
+                if (bedenDegisti) {
+                    // Teslim edilmiş parçanın bedeni değişti: eski bedenin stoğu geri döner, yeni bedenden düşer
+                    String neden = "beden değişti: " + kalem.getEnvanter().getBeden() + " → " + hedef.getBeden();
+                    stokService.iade(kalem.getEnvanter(), satis, neden);
+                    kalem.setTeslimEdildi(false);
+                    kalem.setEnvanter(hedef);
+                    kalem.setBirimFiyat(hedef.getSatisFiyati());
+                    if (istek.teslim()) {
+                        stokService.teslimEt(hedef, satis, neden);
+                        kalem.setTeslimEdildi(true);
+                    }
+                } else if (!istek.teslim()) {
                     stokService.iade(kalem.getEnvanter(), satis, "teslim geri alındı");
                     kalem.setTeslimEdildi(false);
                 }
             } else {
-                if (!kalem.getEnvanter().getId().equals(hedef.getId())) {
+                if (bedenDegisti) {
                     kalem.setEnvanter(hedef);
                     kalem.setBirimFiyat(hedef.getSatisFiyati());     // beden değişince yeni bedenin güncel fiyatı
                 }
@@ -218,7 +219,21 @@ public class EnvanterSatisService {
         for (Long tur : mevcut.keySet()) {
             EnvanterSatisKalem kalem = mevcut.get(tur);
             EnvanterSatisRequest.Kalem istek = istekler.get(tur);
-            if (kalem.isTeslimEdildi() && !istek.teslim()) {
+            Envanter eski = kalem.getEnvanter();
+            Envanter hedef = bedenliEnvanter(satis.getIsletme().getId(), eski, istek.beden());
+            if (!hedef.getId().equals(eski.getId())) {
+                // Parça bedeni değişti: teslim edilmişse eski bedenin stoğu geri döner, yeni bedenden düşer
+                String neden = "beden değişti: " + eski.getBeden() + " → " + hedef.getBeden();
+                if (kalem.isTeslimEdildi()) {
+                    stokService.iade(eski, satis, neden);
+                    kalem.setTeslimEdildi(false);
+                }
+                kalem.setEnvanter(hedef);
+                if (istek.teslim()) {
+                    stokService.teslimEt(hedef, satis, neden);
+                    kalem.setTeslimEdildi(true);
+                }
+            } else if (kalem.isTeslimEdildi() && !istek.teslim()) {
                 stokService.iade(kalem.getEnvanter(), satis, "teslim geri alındı");
                 kalem.setTeslimEdildi(false);
             } else if (!kalem.isTeslimEdildi() && istek.teslim()) {
@@ -244,10 +259,28 @@ public class EnvanterSatisService {
         }
     }
 
-    private Map<Long, Envanter> setEnvanterleri(EnvanterSet set) {
+    /** Set satışında her parça setteki envanterdir; istekte farklı beden gönderilmişse o parça için o bedenin envanteri alınır. */
+    private Map<Long, Envanter> setEnvanterleri(Long isletmeId, EnvanterSet set, Map<Long, EnvanterSatisRequest.Kalem> istekler) {
         Map<Long, Envanter> sonuc = new LinkedHashMap<>();
         set.getEnvanterler().forEach(e -> sonuc.put(e.getTur().getId(), e));
+        for (Long turId : sonuc.keySet()) {
+            Envanter varsayilan = sonuc.get(turId);
+            sonuc.put(turId, bedenliEnvanter(isletmeId, varsayilan, istekler.get(turId).beden()));
+        }
         return sonuc;
+    }
+
+    /** İstekte beden yoksa ya da mevcutla aynıysa mevcut envanter; farklıysa aynı türün o bedendeki envanteri (kaydı yoksa 404). */
+    private Envanter bedenliEnvanter(Long isletmeId, Envanter mevcut, String beden) {
+        if (beden == null || beden.isBlank() || !mevcut.getTur().isBedenli() || beden.equals(mevcut.getBeden())) {
+            return mevcut;
+        }
+        if (!mevcut.getTur().bedenGecerli(beden)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, mevcut.getTur().getAd() + " için geçersiz beden: " + beden);
+        }
+        return envanterRepository.findByIsletmeIdAndTurIdAndBeden(isletmeId, mevcut.getTur().getId(), beden)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
+                        mevcut.getTur().getAd() + " · " + beden + " için envanter kaydı yok; önce Envanter menüsünden ekleyin"));
     }
 
     /**

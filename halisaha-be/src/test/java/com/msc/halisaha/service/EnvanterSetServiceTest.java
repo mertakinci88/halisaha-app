@@ -102,8 +102,6 @@ class EnvanterSetServiceTest {
         assertEquals(400, stoksuz.getStatus().value());
         assertTrue(stoksuz.getMessage().contains("Stoğu biten") && stoksuz.getMessage().contains("Kışlık Eşofman"));
 
-        // set bedeninden farklı bedenli ürün
-        assertEquals(400, olusmaz("152", List.of(forma152.id(), k.esofman140.id())).getStatus().value());
         // aynı türden iki kayıt, boş liste, geçersiz beden
         assertEquals(400, olusmaz("Small", List.of(k.yagmurlukSmall.id(), k.yagmurluk164.id())).getStatus().value());
         assertEquals(400, olusmaz("152", List.of()).getStatus().value());
@@ -223,5 +221,60 @@ class EnvanterSetServiceTest {
                 List.of(new EnvanterSatisRequest.Kalem(TestTur.TOZLUK.id(), null, true, false)), null));
         assertNull(satis.setId());
         assertNull(satis.setAd());
+    }
+
+    @Test
+    void setteParcaBedeniSetBedenindenFarkliOlabilir() {
+        EnvanterSetResponse set = setService.create(new EnvanterSetRequest("Karışık", "152", new BigDecimal("1000"),
+                List.of(forma152.id(), k.esofman140.id())));
+        assertEquals("152", set.beden());
+        assertEquals(2, set.kalemler().size());
+    }
+
+    @Test
+    void setSatisindaParcaBedeniDegisirTeslimEdilmisseStokDogruKayar() {
+        EnvanterSetResponse set = set152("152 Seti");
+        Long ogr = k.ogrenciA.getId();
+        // satışta kaleci forma 152 yerine 140 verilir
+        List<EnvanterSatisRequest.Kalem> ilk = List.of(
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "152", false, true),
+                new EnvanterSatisRequest.Kalem(TestTur.KALECI_FORMA.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAGMURLUK.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAZLIK_FORMA.id(), "152", false, false));
+        EnvanterSatisResponse satis = satisService.olustur(ogr, new EnvanterSatisRequest(ilk, null, set.id()));
+        assertEquals(5, envanterRepository.mevcutAdet(esofman152.id()));
+
+        int onceki140 = envanterRepository.mevcutAdet(k.esofman140.id());
+        List<EnvanterSatisRequest.Kalem> degisen = List.of(
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "140", false, true),
+                ilk.get(1), ilk.get(2), ilk.get(3));
+        EnvanterSatisResponse g = satisService.guncelle(ogr, satis.id(), new EnvanterSatisRequest(degisen, null));
+        assertEquals(6, envanterRepository.mevcutAdet(esofman152.id()));          // eski beden geri döndü
+        assertEquals(onceki140 - 1, envanterRepository.mevcutAdet(k.esofman140.id()));   // yeni bedenden düştü
+        assertTrue(g.kalemler().stream().anyMatch(x -> x.turId().equals(TestTur.KISLIK_ESOFMAN.id())
+                && "140".equals(x.beden()) && x.teslimEdildi()));
+        assertEquals(0, new BigDecimal("1500").compareTo(g.setTutari()));
+
+        // teslimi geri alırken beden değişirse stok yalnızca iade olur
+        List<EnvanterSatisRequest.Kalem> geri = List.of(
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "152", false, false),
+                ilk.get(1), ilk.get(2), ilk.get(3));
+        satisService.guncelle(ogr, satis.id(), new EnvanterSatisRequest(geri, null));
+        assertEquals(onceki140, envanterRepository.mevcutAdet(k.esofman140.id()));
+        assertEquals(6, envanterRepository.mevcutAdet(esofman152.id()));
+    }
+
+    @Test
+    void setSatisiniOlusturmadaParcaBedeniFarkliVerilebilir() {
+        EnvanterSetResponse set = set152("152 Seti");
+        List<EnvanterSatisRequest.Kalem> kalemler = List.of(
+                new EnvanterSatisRequest.Kalem(TestTur.KISLIK_ESOFMAN.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.KALECI_FORMA.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAGMURLUK.id(), "152", false, false),
+                new EnvanterSatisRequest.Kalem(TestTur.YAZLIK_FORMA.id(), "128", false, true));
+        EnvanterSatisResponse satis = satisService.olustur(k.ogrenciA.getId(), new EnvanterSatisRequest(kalemler, null, set.id()));
+        assertTrue(satis.kalemler().stream().anyMatch(x -> x.turId().equals(TestTur.YAZLIK_FORMA.id()) && "128".equals(x.beden())));
+        assertEquals(6, envanterRepository.mevcutAdet(forma152.id()));
+        assertEquals(24, envanterRepository.mevcutAdet(k.forma128.id()));
     }
 }
