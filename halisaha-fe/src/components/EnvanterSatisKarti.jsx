@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Lock, Pencil, Plus, Save, Trash2, TriangleAlert, X } from 'lucide-react';
+import { Check, Pencil, Plus, Save, Trash2, TriangleAlert, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
@@ -62,8 +62,9 @@ const adBeden = (tur, beden) => (tur.bedenli ? tur.ad + ' (' + beden + ')' : tur
  * (tutar elle de değiştirilebilir, set tutarını aşamaz). Satış fiyatı envanterden gelir ama satırda elle değiştirilebilir;
  * girilen fiyat o satış için geçerli olur. Stok yalnızca teslim edilen kalem için düşer; teslim
  * geri alınırsa geri döner. Stoğu biten envanter satılabilir ama teslim edilemez (Eksik envanter'de bekler).
- * Teslim edilmiş kalemin bedeni değiştirilemez.
- * Set satışında (sabit tutar) tutar ve beden setten gelir: kalemlerde fiyat ve beden seçimi yoktur, kalem bazında
+ * Teslim edilmiş kalemin bedeni de değiştirilebilir: stok eski bedene geri döner, yeni bedenden düşer.
+ * Set satışında (sabit tutar) tutar setten gelir, kalemlerde fiyat yoktur; parça bedeni setten gelir ama değiştirilebilir
+ * (teslim edilmişse stok eski bedene döner, yeni bedenden düşer). Kalem bazında
  * Ödendi / Teslim işaretlenir; ödenen tutar elle girilir, kalan tutar set tutarından hesaplanır ve tutar
  * tamamlanınca tüm kalemler Ödendi olur.
  */
@@ -355,13 +356,12 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
       ) : durumu === 'AZ' ? (
         <Tag tone="outline" className="ml-2">Stok az</Tag>
       ) : null;
-    const bedenAlani = sabit ? (
-      <span>{tur.bedenli ? secim[tur.kod] || '—' : 'Standart'}</span>
-    ) : tur.bedenli ? (
+    // Teslim edilmiş olsa da parça bedeni değiştirilebilir (stok eski bedene geri döner, yeni bedenden düşer)
+    const bedenAlani = tur.bedenli ? (
       <div className="flex items-center gap-1.5">
         <Select
           value={secim[tur.kod] || ''}
-          disabled={kilitli(tur) || secenekler.length === 0 || !ekle.has(tur.kod)}
+          disabled={secenekler.length === 0 || (!sabit && !ekle.has(tur.kod))}
           onChange={(e) => bedenSec(tur, e.target.value)}
           aria-label={tur.ad + ' bedeni'}
           className="min-h-9 w-[170px] py-1 text-[16px] disabled:bg-neutral-200 disabled:text-ink/60"
@@ -373,11 +373,6 @@ export default function EnvanterSatisKarti({ ogrenciId }) {
             </option>
           ))}
         </Select>
-        {kilitli(tur) ? (
-          <span title="Teslim edilen envanterin bedeni değiştirilemez">
-            <Lock size={16} strokeWidth={1.5} className="text-ink/55" />
-          </span>
-        ) : null}
       </div>
     ) : (
       <span className="text-ink/55">{env ? 'Standart' : 'Envanter yok'}</span>
